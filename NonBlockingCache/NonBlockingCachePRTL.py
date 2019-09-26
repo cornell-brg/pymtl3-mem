@@ -29,7 +29,7 @@ class NonBlockingCachePRTL ( Model ):
     ccbw = 4,   # bit width of cache commands (from S1 -> S2)
     srw  = 2   # Bit width of src and dst IDs
   ):
-    s.explicit_modulename = 'CacheNOPE'
+    s.explicit_modulename = 'NonBlockingCache'
     idw  = clog2(nbl)   # Short name for index width, clog2(512) = 9
     ofw  = clog2(clw/8)   # Short name for offset bit width, clog2(128/8) = 4
 
