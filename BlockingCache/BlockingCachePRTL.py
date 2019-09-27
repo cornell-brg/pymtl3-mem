@@ -14,15 +14,16 @@ dbw  = 32,  # Short name for data bitwidth
 
 class BlockingCachePRTL ( Component ):
   def construct( s,                
-                 size = 8192, # Cache size in bytes
-                 clw  = 128, # Short name for cacheline bitwidth
-                 way  = 1 # associativity
+                 size = 8192,# Cache size in bytes
+                 clw  = 128, # cacheline bitwidth
+                 way  = 1    # associativity
   ):
     s.explicit_modulename = 'BlockingCache'
-    nbl = size*8/clw, # Short name for number of cache blocks, 8192*8/128 = 512
-    idw = clog2(nbl)   # Short name for index width, clog2(512) = 9
-    ofw = clog2(clw/8)   # Short name for offset bit width, clog2(128/8) = 4
-    tgw = abw - ofw - idw # tag bit width; 32 - 4 - 9 = 19
+    nbl = size*8/clw,        # number of cache blocks; 8192*8/128 = 512
+    nby = nbl/way            # blocks per way; 1
+    idw = clog2(nbl)         # index width; clog2(512) = 9
+    ofw = clog2(clw/8)       # offset bit width; clog2(128/8) = 4
+    tgw = abw - ofw - idw    # tag bit width; 32 - 4 - 9 = 19
     #---------------------------------------------------------------------
     # Interface to Proc & Mem
     #---------------------------------------------------------------------
