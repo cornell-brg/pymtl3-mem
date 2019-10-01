@@ -10,14 +10,12 @@ import struct
 
 from pymtl3      import *
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
-from pymtl3.stdlib.test.test_srcs import TestSrcCL
-from pymtl3.stdlib.test.test_sinks import TestSinkCL
-
+from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
+from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.ifcs.MemMsg import *
-
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL, RecvCL2SendRTL, RecvRTL2SendCL
-
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
+from pymtl3.stdlib.connects import connect_pairs
 
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
@@ -34,27 +32,26 @@ class tb( Component ):
                 src_delay, sink_delay, CacheModel, test_verilog=False ):
     # Instantiate models
 
-    s.src   = TestSrcCL   ( MemReqMsg4B, src_msgs, src_delay  )
+    s.src   = TestSrcRTL   ( MemReqMsg4B, src_msgs, src_delay  )
     s.cache = CacheModel   (  )
     s.mem   = MemoryCL   ( 1, latency = latency )
-    s.cache2mem = RecvRTL2SendCL( MemReqMsg16B  )
-    s.mem2cache = RecvCL2SendRTL( MemRespMsg16B )
-    s.sink  = TestSinkCL( MemRespMsg4B, sink_msgs, sink_delay )
+    s.cache2mem = RecvRTL2SendCL( MemReqMsg4B  )
+    s.mem2cache = RecvCL2SendRTL( MemRespMsg4B )
+    s.sink  = TestSinkRTL( MemRespMsg4B, sink_msgs, sink_delay )
 
     # Verilog translation
 
     # if test_verilog:
     #   s.cache = TranslationTool( s.cache, enable_blackbox=True )
 
-    # Feed 
-    s.connect( s.src.out,  s.cache.cachereq  )
-    s.connect( s.sink.in_, s.cache.cacheresp )
+    connect( s.src.send,  s.cache.cachereq  )
+    connect( s.sink.recv, s.cache.cacheresp )
 
-    s.connect( s.mem.memresp, s.mem2cache.recv )
-    s.connect( s.cache.memresp, s.mem2cache.send )
+    connect( s.mem.ifc[0].resp, s.mem2cache.recv )
+    connect( s.cache.memresp, s.mem2cache.send )
 
-    s.connect( s.cache.memreq, s.cache2mem.recv )
-    s.connect( s.mem.memreq, s.cache2mem.send )
+    connect( s.cache.memreq, s.cache2mem.recv )
+    connect( s.mem.ifc[0].req, s.cache2mem.send )
 
 
   def load( s, addrs, data_ints ):

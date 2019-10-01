@@ -6,6 +6,8 @@ from pymtl3      import *
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.MemMsg import *
+from pymtl3.stdlib.connects import connect_pairs
+
 
 from BlockingCache.BlockingCacheCtrlPRTL import *
 from BlockingCache.BlockingCacheDpathPRTL import *
@@ -34,33 +36,43 @@ class BlockingCachePRTL ( Component ):
     #---------------------------------------------------------------------
 
     # Proc -> Cache
-
     s.cachereq  = RecvIfcRTL ( MemReqMsg4B )
-
-    # Mem -> Cache
-
-    s.memresp   = RecvIfcRTL ( MemRespMsg16B )
-
+    
     # Cache -> Proc
-
     s.cacheresp = SendIfcRTL( MemRespMsg4B )
+    
+    # Mem -> Cache
+    s.memresp   = RecvIfcRTL ( MemRespMsg4B )
 
     # Cache -> Mem
-
-    s.memreq    = SendIfcRTL( MemReqMsg16B )
-
+    s.memreq    = SendIfcRTL( MemReqMsg4B )
 
     s.cacheDpath = BlockingCacheDpathPRTL(
-      abw, dbw, size, clw, way 
+      abw, dbw, size, clw, way, MemReqMsg4B, MemRespMsg4B,
+      MemReqMsg4B, MemRespMsg4B
+    )(
+      cachereq_msg  = s.cachereq.msg,
+      cacheresp_msg = s.cacheresp.msg,
+      memreq_msg    = s.memreq.msg,
+      memresp_msg   = s.memresp.msg,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
-      abw, dbw, size, clw, way 
+      abw, dbw, size, clw, way
+    ) (
+      cachereq_en   = s.cachereq.en,
+      cachereq_rdy  = s.cachereq.rdy,
+      cacheresp_en  = s.cacheresp.en,
+      cacheresp_rdy = s.cacheresp.rdy,
+      memreq_en     = s.memreq.en,
+      memreq_rdy    = s.memreq.rdy,
+      memresp_en    = s.memresp.en,
+      memresp_rdy   = s.memresp.rdy,
     )
 
-    s.connect_pairs (
+    # connect_pairs (
      
-    )
+    # )
 
   # Line tracing
 
