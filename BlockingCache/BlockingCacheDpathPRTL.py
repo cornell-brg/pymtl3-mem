@@ -39,4 +39,4 @@ class BlockingCacheDpathPRTL ( Component ):
 
   def line_trace( s ):
     # return s.tag_array.line_trace()
-    return 0
+    return ""

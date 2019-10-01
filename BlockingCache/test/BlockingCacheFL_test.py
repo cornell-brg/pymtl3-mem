@@ -34,7 +34,8 @@ class tb( Component ):
 
     s.src   = TestSrcRTL   ( MemReqMsg4B, src_msgs, src_delay  )
     s.cache = CacheModel   (  )
-    s.mem   = MemoryCL   ( 1, latency = latency )
+    s.mem   = MemoryCL   ( 1, [(MemReqMsg4B, MemRespMsg4B)], 
+    latency = latency )
     s.cache2mem = RecvRTL2SendCL( MemReqMsg4B  )
     s.mem2cache = RecvCL2SendRTL( MemRespMsg4B )
     s.sink  = TestSinkRTL( MemRespMsg4B, sink_msgs, sink_delay )
@@ -61,7 +62,7 @@ class tb( Component ):
       s.mem.write_mem( addr, data_bytes_a )
 
   def done( s ):
-    return s.src.done and s.sink.done
+    return s.src.done() and s.sink.done()
 
   def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
@@ -82,6 +83,7 @@ def req( type_, opaque, addr, len, data ):
   msg.opaque = opaque
   msg.len    = len
   msg.data   = data
+  print (msg)
   return msg
 
 def resp( type_, opaque, test, len, data ):
@@ -96,22 +98,24 @@ def resp( type_, opaque, test, len, data ):
   msg.len    = len
   msg.test   = test
   msg.data   = data
+
   return msg
 
 #---------
 # Run the simulation
 #---------
 def run_sim(th, max_cycles):
+  # print (" -----------starting simulation----------- ")
   th.apply( SimpleSim )
   curr_cyc = 0
   while not th.done():
-    print
+    print 
     print ("cycle starts -------")
     th.tick()
     print (th.line_trace())
     print ("cycle ends   -------")
     curr_cyc += 1
-    assert T < max_cycles
+    assert curr_cyc < max_cycles
 
 
 #----------------------------------------------------------------------
@@ -119,10 +123,10 @@ def run_sim(th, max_cycles):
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
 
-def read_hit_1word_clean( base_addr ):
+def read_hit_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr      len data                type  opq  test len data
-    req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+    req( 'wr', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'wr', 0x0, 0,   0,  0          ),
     req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 0,   0,  0xdeadbeef ),
   ]
 

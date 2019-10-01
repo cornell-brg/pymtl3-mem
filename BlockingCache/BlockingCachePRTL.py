@@ -69,7 +69,7 @@ class BlockingCachePRTL ( Component ):
       memresp_en    = s.memresp.en,
       memresp_rdy   = s.memresp.rdy,
     )
-
+    
     # connect_pairs (
      
     # )
