@@ -2,7 +2,7 @@
 # cacheNopeFL_test.py
 #=========================================================================
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import pytest
 import random
@@ -13,105 +13,48 @@ from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL
 
-from pymtl3.stdlib.ifcs import MemMsg,    MemReqMsg,    MemRespMsg
-from pymtl3.stdlib.ifcs import MemMsg4B,  MemReqMsg4B,  MemRespMsg4B
-from pymtl3.stdlib.ifcs import MemMsg16B, MemReqMsg16B, MemRespMsg16B
+from pymtl3.stdlib.ifcs.MemMsg import *
 
-from pymtl3.stdlib.ifcs.ValRdyIfc import InValRdyIfc, OutValRdyIfc
+from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL, RecvCL2SendRTL, RecvRTL2SendCL
 
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
 
-from NonBlockingCache.ifcs.CoherentMemMsg import *
+from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
-from NonBlockingCache.NonBlockingCachePRTL import NonBlockingCachePRTL
-
+MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
+MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 
 #-------------------------------------------------------------------------
 # TestHarness
 #-------------------------------------------------------------------------
 
-class TestHarness( Model ):
-  def __init__( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, check_test, dump_vcd, test_verilog=False ):
-    # Messge type
-
-    cache_msgs = MemMsg4B()
-    mem_msgs   = CoherentMemMsg16B()
-
+class tb( Component ):
+  
+  def construct( s, src_msgs, sink_msgs, stall_prob, latency,
+                src_delay, sink_delay, CacheModel, test_verilog=False ):
     # Instantiate models
 
-    s.src   = TestSrcCL   ( cache_msgs.req,  src_msgs,  src_delay  )
-    s.cache = CacheModel   ( ncaches = 1, cache_id = 0 )
-    s.mem   = MemoryCL   ( mem_msgs, 1, stall_prob, latency )
-    s.sink  = TestSinkCL( cache_msgs.resp, sink_msgs, sink_delay, check_test )
-    # Dump VCD
-
-    if dump_vcd:
-      s.cache.vcd_file = dump_vcd
+    s.src   = TestSrcCL   ( MemReqMsg4B, src_msgs, src_delay  )
+    s.cache = CacheModel   (  )
+    s.mem   = MemoryCL   ( 1, latency = latency )
+    s.cache2mem = RecvRTL2SendCL( MemReqMsg16B  )
+    s.mem2cache = RecvCL2SendRTL( MemRespMsg16B )
+    s.sink  = TestSinkCL( MemRespMsg4B, sink_msgs, sink_delay )
 
     # Verilog translation
 
-    if test_verilog:
-      s.cache = TranslationTool( s.cache, enable_blackbox=True )
+    # if test_verilog:
+    #   s.cache = TranslationTool( s.cache, enable_blackbox=True )
 
-    # Proc -> Cache
-    s.cachereq  = InValRdyIfc ( MemReqMsg4B )
+    # Feed 
+    s.connect( s.src.out,  s.cache.cachereq  )
+    s.connect( s.sink.in_, s.cache.cacheresp )
 
-    # Mem -> Cache
-    s.memresp   = InValRdyIfc ( CoherentMemRespMsg16B )
+    s.connect( s.mem.memresp, s.mem2cache.recv )
+    s.connect( s.cache.memresp, s.mem2cache.send )
 
-    # Cache -> Proc
-    s.cacheresp = OutValRdyIfc( MemRespMsg4B )
-
-    # Cache -> Mem
-    s.memreq    = OutValRdyIfc( CoherentMemReqMsg16B )
-
-    # Mem -> Cache (fwdreq)
-
-    s.fwdreq    = InValRdyIfc ( CoherentMemReqMsg16B )
-
-    # Cache -> Mem (fwdresp)
-
-    s.fwdresp   = OutValRdyIfc( CoherentMemRespMsg16B )
-
-    # Connect
-    s.connect_pairs(
-      # cachereq
-      s.cache.cachereq_val,   s.cachereq.val,
-      s.cache.cachereq_rdy,   s.cachereq.rdy,
-      s.cache.cachereq_msg,   s.cachereq.msg,
-
-      # memresp
-      s.cache.memresp_val,    s.memresp.val,
-      s.cache.memresp_rdy,    s.memresp.rdy,
-      s.cache.memresp_msg,    s.memresp.msg,
-
-      # cacheresp
-      s.cache.cacheresp_val,  s.cacheresp.val,
-      s.cache.cacheresp_rdy,  s.cacheresp.rdy,
-      s.cache.cacheresp_msg,  s.cacheresp.msg,
-
-      # memreq
-      s.cache.memreq_val,     s.memreq.val,
-      s.cache.memreq_rdy,     s.memreq.rdy,
-      s.cache.memreq_msg,     s.memreq.msg,
-
-      # fwdreq
-      s.cache.fwdreq_val,     s.fwdreq.val,
-      s.cache.fwdreq_rdy,     s.fwdreq.rdy,
-      s.cache.fwdreq_msg,     s.fwdreq.msg,
-
-      # fwdresp
-      s.cache.fwdresp_val,    s.fwdresp.val,
-      s.cache.fwdresp_rdy,    s.fwdresp.rdy,
-      s.cache.fwdresp_msg,    s.fwdresp.msg,
-    )
-
-    s.connect( s.src.out,       s.cachereq  )
-    s.connect( s.sink.in_,      s.cacheresp )
-
-    s.connect( s.memreq,  s.mem.reqs[0]     )
-    s.connect( s.memresp, s.mem.resps[0]    )
+    s.connect( s.cache.memreq, s.cache2mem.recv )
+    s.connect( s.mem.memreq, s.cache2mem.send )
 
 
   def load( s, addrs, data_ints ):
@@ -134,9 +77,9 @@ class TestHarness( Model ):
 def req( type_, opaque, addr, len, data ):
   msg = MemReqMsg4B()
 
-  if   type_ == 'rd': msg.type_ = MemReqMsg.TYPE_READ
-  elif type_ == 'wr': msg.type_ = MemReqMsg.TYPE_WRITE
-  elif type_ == 'in': msg.type_ = MemReqMsg.TYPE_WRITE_INIT
+  if   type_ == 'rd': msg.type_ = MemMsgType.READ
+  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
+  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
 
   msg.addr   = addr
   msg.opaque = opaque
@@ -146,16 +89,33 @@ def req( type_, opaque, addr, len, data ):
 
 def resp( type_, opaque, test, len, data ):
   msg = MemRespMsg4B()
+  # print ("msg = " + str( msg))
 
-  if   type_ == 'rd': msg.type_ = MemRespMsg.TYPE_READ
-  elif type_ == 'wr': msg.type_ = MemRespMsg.TYPE_WRITE
-  elif type_ == 'in': msg.type_ = MemRespMsg.TYPE_WRITE_INIT
+  if   type_ == 'rd': msg.type_ = MemMsgType.READ
+  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
+  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
 
   msg.opaque = opaque
   msg.len    = len
   msg.test   = test
   msg.data   = data
   return msg
+
+#---------
+# Run the simulation
+#---------
+def run_sim(th, max_cycles):
+  th.apply( SimpleSim )
+  curr_cyc = 0
+  while not th.done():
+    print
+    print ("cycle starts -------")
+    th.tick()
+    print (th.line_trace())
+    print ("cycle ends   -------")
+    curr_cyc += 1
+    assert T < max_cycles
+
 
 #----------------------------------------------------------------------
 # Test Case: read hit path
@@ -179,17 +139,17 @@ test_case_table_generic = mk_test_case_table([
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )
-def test_generic( test_params, dump_vcd ):
+def test_generic( test_params):
   msgs = test_params.msg_func( 0 )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( 0 )
   # Instantiate testharness
-  harness = TestHarness( msgs[::2], msgs[1::2],
+  harness = tb( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
-                         cacheNopePRTL, False, dump_vcd )
+                         BlockingCachePRTL, False)
   # Load memory before the test
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )
   # Run the test
-  run_sim( harness, dump_vcd, max_cycles=100 )
+  run_sim( harness, max_cycles=100 )
