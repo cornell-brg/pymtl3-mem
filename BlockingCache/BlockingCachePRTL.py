@@ -55,11 +55,23 @@ class BlockingCachePRTL ( Component ):
       abw, dbw, size, clw, way, MemReqMsg4B, MemRespMsg4B,
       MemReqMsg4B, MemRespMsg4B
     )(
-      cachereq_msg  = s.cachereq.msg,
-      cacheresp_msg = s.cacheresp.msg,
-      memreq_msg    = s.memreq.msg,
-      memresp_msg   = s.memresp.msg,
-      tag_array_val_M0 = s.tag_array_val_M0,
+      cachereq_opaque   = s.cachereq.msg.opaque,
+      cachereq_type     = s.cachereq.msg.type_,
+      cachereq_address  = s.cachereq.msg.address,
+      cachereq_data     = s.cachereq.msg.data,
+      
+      cacheresp_opaque  = s.cacheresp.msg.opaque,
+      cacheresp_type    = s.cacheresp.msg.type_,
+      cacheresp_data    = s.cacheresp.msg.data,
+      
+      memresp_opaque    = s.memresp.msg.opaque,
+      memresp_data      = s.memresp.msg.data,
+      
+      memreq_opaque     = s.memreq.msg.opaque,
+      memreq_addr       = s.memreq.msg.addr,
+      memreq_data       = s.memreq.msg.data,
+      
+      tag_array_val_M0  = s.tag_array_val_M0,
       tag_array_type_M0 = s.tag_array_type_M0,
       tag_array_wben_M0 = s.tag_array_wben_M0,
     )

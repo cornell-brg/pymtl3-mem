@@ -1,22 +1,17 @@
 #=========================================================================
-# cacheNopeFL_test.py
+# BlockingCacheFL_test.py
 #=========================================================================
 
-from __future__ import print_function, absolute_import
-
 import pytest
-import random
 import struct
 
-from pymtl3      import *
+from pymtl3 import *
+from pymtl3.stdlib.cl.MemoryCL import MemoryCL
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
-from pymtl3.stdlib.ifcs.MemMsg import *
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL, RecvCL2SendRTL, RecvRTL2SendCL
-from pymtl3.stdlib.cl.MemoryCL import MemoryCL
-from pymtl3.stdlib.connects import connect_pairs
-
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
@@ -26,24 +21,17 @@ MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 # TestHarness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
   
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, CacheModel, test_verilog=False ):
     # Instantiate models
-
-    s.src   = TestSrcRTL   ( MemReqMsg4B, src_msgs, src_delay  )
-    s.cache = CacheModel   (  )
-    s.mem   = MemoryCL   ( 1, [(MemReqMsg4B, MemRespMsg4B)], 
-    latency = latency )
-    s.cache2mem = RecvRTL2SendCL( MemReqMsg4B  )
-    s.mem2cache = RecvCL2SendRTL( MemRespMsg4B )
-    s.sink  = TestSinkRTL( MemRespMsg4B, sink_msgs, sink_delay )
-
-    # Verilog translation
-
-    # if test_verilog:
-    #   s.cache = TranslationTool( s.cache, enable_blackbox=True )
+    s.src   = TestSrcRTL(MemReqMsg4B, src_msgs, src_delay)
+    s.cache = CacheModel()
+    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[MemReqMsg4B, MemRespMsg4B], latency=latency)
+    s.cache2mem = RecvRTL2SendCL(MemReqMsg4B)
+    s.mem2cache = RecvCL2SendRTL(MemRespMsg4B)
+    s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
 
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
