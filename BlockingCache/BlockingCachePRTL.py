@@ -6,7 +6,7 @@ from pymtl3      import *
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.MemMsg import *
-from pymtl3.stdlib.connects import connect_pairs
+# from pymtl3.stdlib.connects import connect_pairs
 
 
 from BlockingCache.BlockingCacheCtrlPRTL import *

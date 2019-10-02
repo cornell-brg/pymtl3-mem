@@ -3,12 +3,10 @@
 #=========================================================================
 
 import pytest
-# import random
 import struct
 
 from pymtl3 import *
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
-# from pymtl3.stdlib.connects import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
@@ -135,7 +133,7 @@ def test_generic( test_params):
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( 0 )
   # Instantiate testharness
-  harness = tb( msgs[::2], msgs[1::2],
+  harness = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)
