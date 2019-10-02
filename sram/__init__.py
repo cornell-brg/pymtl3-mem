@@ -2,5 +2,5 @@
 # sram
 #=========================================================================
 
-from SramPRTL import SramPRTL
-
+# from sram.SramGenericPRTL import SramGenericPRTL
+# from sram.SramPRTL import SramPRTL

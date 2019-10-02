@@ -6,8 +6,11 @@
 import pytest
 import random
 
-from pymtl        import *
+from pymtl3        import *
 from sram.SramPRTL import SramPRTL as SramRTL
+
+dump_vcd = False
+test_verilog = False
 
 #-------------------------------------------------------------------------
 # run_test_vector_sim
@@ -37,14 +40,14 @@ def run_test_vector_sim( model, test_vectors, dump_vcd=None, test_verilog=False 
   # Reset model
 
   sim.reset()
-  print ""
+  print ("")
 
   # Run the simulation
 
   row_num = 0
   for row in test_vectors:
-    print
-    print "start a new vector:"
+    print ()
+    print ("start a new vector:")
     row_num += 1
 
     # Apply test inputs
@@ -98,7 +101,7 @@ def run_test_vector_sim( model, test_vectors, dump_vcd=None, test_verilog=False 
             expected_msg = ref_value,
             actual_msg   = out_value
           )
-          print error_msg
+          print (error_msg)
           assert False
 
     # Tick the simulation
@@ -115,7 +118,7 @@ def run_test_vector_sim( model, test_vectors, dump_vcd=None, test_verilog=False 
 # Directed test for 32x256 SRAM
 #-----------------------------------------------------------------------
 
-def test_direct_32x256( dump_vcd, test_verilog ):
+def test_direct_32x256( ):#dump_vcd, test_verilog ):
   test_vectors = [ header_str,
     # val,  type,  wben,    idx,  wdata,      rdata
     [    1, 0,  0b0000,     0, 0x00000000, '?'        ],
@@ -149,7 +152,7 @@ def test_direct_32x256( dump_vcd, test_verilog ):
 # Directed test for 128x256 SRAM
 #-----------------------------------------------------------------------
 
-def test_direct_128x256( dump_vcd, test_verilog ):
+def test_direct_128x256( ):#dump_vcd, test_verilog ):
   test_vectors = [ header_str,
     # val,  type,  wben,    idx,  wdata,      rdata
     [    1, 0,  0b0000,     0, 0x00000000, '?'        ],
@@ -184,7 +187,7 @@ def test_direct_128x256( dump_vcd, test_verilog ):
 # Directed test for 128x256 SRAM
 #-----------------------------------------------------------------------
 
-def test_direct_128x512( dump_vcd, test_verilog ):
+def test_direct_128x512( ):#dump_vcd, test_verilog ):
   test_vectors = [ header_str,
     # val,  type,  wben,    idx,  wdata,      rdata
     [    1, 0,  0b0000,     0, 0x00000000, '?'        ],

@@ -26,7 +26,7 @@ MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 # TestHarness
 #-------------------------------------------------------------------------
 
-class tb( Component ):
+class TestHarness( Component ):
   
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, CacheModel, test_verilog=False ):
@@ -83,7 +83,6 @@ def req( type_, opaque, addr, len, data ):
   msg.opaque = opaque
   msg.len    = len
   msg.data   = data
-  print (msg)
   return msg
 
 def resp( type_, opaque, test, len, data ):
@@ -108,14 +107,13 @@ def run_sim(th, max_cycles):
   # print (" -----------starting simulation----------- ")
   th.apply( SimpleSim )
   curr_cyc = 0
+  print()
   while not th.done():
-    print 
-    print ("cycle starts -------")
     th.tick()
     print (th.line_trace())
-    print ("cycle ends   -------")
     curr_cyc += 1
     assert curr_cyc < max_cycles
+  th.tick()
 
 
 #----------------------------------------------------------------------
@@ -145,7 +143,7 @@ def test_generic( test_params):
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( 0 )
   # Instantiate testharness
-  harness = tb( msgs[::2], msgs[1::2],
+  harness = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)

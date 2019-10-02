@@ -22,11 +22,11 @@
 #  port0_rdata   O          read data output
 #
 
-from pymtl           import *
-from SramGenericPRTL import SramGenericPRTL
-from SRAM_32x256_1P  import SRAM_32x256_1P
-from SRAM_128x256_1P import SRAM_128x256_1P
-from SRAM_128x512_1P import SRAM_128x512_1P
+from pymtl3          import *
+from sram.SramGenericPRTL import SramGenericPRTL
+# from sram.SRAM_32x256_1P  import SRAM_32x256_1P
+# from sram.SRAM_128x256_1P import SRAM_128x256_1P
+# from sram.SRAM_128x512_1P import SRAM_128x512_1P
 
 # ''' TUTORIAL TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''
 # Import new SRAM configuration RTL model
@@ -37,7 +37,7 @@ class SramPRTL( Component ):
   def construct( s, num_bits = 32, num_words = 256 ):
 
     idx_nbits = clog2( num_words )      # address width
-    nbytes    = int( num_bits + 7 ) / 8 # $ceil(num_bits/8)
+    nbytes    = int( num_bits + 7 ) // 8 # $ceil(num_bits/8)
 
     s.port0_val   = InPort ( Bits1 )
     s.port0_type  = InPort ( Bits1 )
@@ -55,28 +55,28 @@ class SramPRTL( Component ):
     def inverters():
       s.port0_val_bar  = ~s.port0_val
       s.port0_type_bar = ~s.port0_type
-      print "generate new WEB = " + str(s.port0_type_bar)
+      print ("generate new WEB = " + str(s.port0_type_bar))
 
     # if you have implemented a new SRAM, make sure use it
     # here instead of the generic one.
 
-    if   num_bits == 32 and num_words == 256:
-      s.sram = m = SRAM_32x256_1P()
-    elif num_bits == 128 and num_words == 256:
-      s.sram = m = SRAM_128x256_1P()
-    elif num_bits == 128 and num_words == 512:
-      s.sram = m = SRAM_128x512_1P()
-    else:
-      s.sram = m = SramGenericPRTL( num_bits, num_words )
+    # if   num_bits == 32 and num_words == 256:
+    #   s.sram = m = SRAM_32x256_1P()
+    # elif num_bits == 128 and num_words == 256:
+    #   s.sram = m = SRAM_128x256_1P()
+    # elif num_bits == 128 and num_words == 512:
+    #   s.sram = m = SRAM_128x512_1P()
+    # else:
+    s.sram = m = SramGenericPRTL( num_bits, num_words )
 
-    s.connect( m.CE1,  s.clk           )
-    s.connect( m.CSB1, s.port0_val_bar  ) # CSB1 low-active
-    s.connect( m.OEB1, 0                )
-    s.connect( m.WBM1, s.port0_wben     )
-    s.connect( m.WEB1, s.port0_type_bar ) # WEB1 low-active
-    s.connect( m.A1,   s.port0_idx      )
-    s.connect( m.I1,   s.port0_wdata    )
-    s.connect( m.O1,   s.port0_rdata    )
+    connect( m.CE1,  s.clk           )
+    connect( m.CSB1, s.port0_val_bar  ) # CSB1 low-active
+    connect( m.OEB1, 0                )
+    connect( m.WBM1, s.port0_wben     )
+    connect( m.WEB1, s.port0_type_bar ) # WEB1 low-active
+    connect( m.A1,   s.port0_idx      )
+    connect( m.I1,   s.port0_wdata    )
+    connect( m.O1,   s.port0_rdata    )
 
   def line_trace( s ):
     return s.sram.line_trace()

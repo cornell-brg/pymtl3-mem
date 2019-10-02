@@ -17,9 +17,9 @@ class BlockingCacheCtrlPRTL ( Component ):
                  req_type = "inv",
                  resp_type = "inv",
   ):
-    nbl = size*8/clw # Short name for number of cache blocks, 8192*8/128 = 512
+    nbl = size*8//clw # Short name for number of cache blocks, 8192*8/128 = 512
     idw = clog2(nbl)   # Short name for index width, clog2(512) = 9
-    ofw = clog2(clw/8)   # Short name for offset bit width, clog2(128/8) = 4
+    ofw = clog2(clw//8)   # Short name for offset bit width, clog2(128/8) = 4
     tgw = abw - ofw - idw
 
     s.cachereq_en   = InPort(Bits1)
@@ -34,14 +34,23 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.memresp_en    = InPort(Bits1)
     s.memresp_rdy   = OutPort(Bits1)
 
+    # M0 Ctrl Signals
+    # Tag Array Ctrl Signals
+    s.tag_array_val_M0 = OutPort(Bits1) 
+    s.tag_array_type_M0 = OutPort(Bits1)
+    s.tag_array_wben_M0 = OutPort(Bits3)
+
     connect( s.cachereq_en, s.memreq_en )
     connect( s.cachereq_rdy, s.memreq_rdy )
 
     connect( s.memresp_en, s.cacheresp_en )
     connect( s.memresp_rdy, s.cacheresp_rdy )
-    # @s.update
-    # def comb_block():
-    #   s.
+    @s.update
+    def comb_block():
+      s.tag_array_val_M0 = 0
+      s.tag_array_type_M0 = 0
+      s.tag_array_wben_M0 = 0xf
+   
     
   def line_trace( s ):
     return 'hello'

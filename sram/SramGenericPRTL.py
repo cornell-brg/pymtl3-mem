@@ -5,14 +5,14 @@
 # so the outer module corresponds to an SRAM generated with the
 # CACTI-based memory compiler.
 
-from pymtl import *
+from pymtl3 import *
 
 class SramGenericPRTL( Component ):
 
   def construct( s, num_bits = 32, num_words = 256 ):
 
     addr_width = clog2( num_words )      # address width
-    nbytes     = int( num_bits + 7 ) / 8 # $ceil(num_bits/8)
+    nbytes     = int( num_bits + 7 ) // 8 # $ceil(num_bits/8)
 
     dtype = mk_bits( num_bits )
 
@@ -32,8 +32,8 @@ class SramGenericPRTL( Component ):
 
     # memory array
 
-    s.ram      = [ Wire( dtype ) for x in xrange( num_words ) ]
-    s.ram_next = [ Wire( dtype ) for x in xrange( num_words ) ]
+    s.ram      = [ Wire( dtype ) for x in range( num_words ) ]
+    s.ram_next = [ Wire( dtype ) for x in range( num_words ) ]
 
     # read path
 
@@ -43,7 +43,7 @@ class SramGenericPRTL( Component ):
     @s.update_on_edge
     def update_sram():
       s.dout = dtype( s.dout_next )
-      for i in xrange( num_words ):
+      for i in range( num_words ):
         s.ram[i] = dtype( s.ram_next[i] )
 
     @s.update
@@ -57,7 +57,7 @@ class SramGenericPRTL( Component ):
 
     @s.update
     def write_logic():
-      for i in xrange( nbytes ):
+      for i in range( nbytes ):
         if ~s.CSB1 and ~s.WEB1 and s.WBM1[i]:
           s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
 
@@ -70,5 +70,5 @@ class SramGenericPRTL( Component ):
 
 
   def line_trace( s ):
-    print [int(x) for x in s.ram], [int(x) for x in s.ram_next]
+    print ([int(x) for x in s.ram], [int(x) for x in s.ram_next])
     return "(WE={} OE={} A1={} I1A={} O1={} s.WBM1={})".format(~s.WEB1, ~s.OEB1, s.A1, s.I1, s.O1, s.WBM1)

@@ -9,8 +9,8 @@ from pymtl3.stdlib.ifcs.MemMsg import *
 from pymtl3.stdlib.connects import connect_pairs
 
 
-from BlockingCache.BlockingCacheCtrlPRTL import *
-from BlockingCache.BlockingCacheDpathPRTL import *
+from BlockingCache.BlockingCacheCtrlPRTL import BlockingCacheCtrlPRTL
+from BlockingCache.BlockingCacheDpathPRTL import BlockingCacheDpathPRTL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
@@ -26,10 +26,10 @@ class BlockingCachePRTL ( Component ):
                  way  = 1    # associativity
   ):
     s.explicit_modulename = 'BlockingCache'
-    nbl = size*8/clw         # number of cache blocks; 8192*8/128 = 512
+    nbl = size*8//clw         # number of cache blocks; 8192*8/128 = 512
     nby = nbl/way            # blocks per way; 1
     idw = clog2(nbl)         # index width; clog2(512) = 9
-    ofw = clog2(clw/8)       # offset bit width; clog2(128/8) = 4
+    ofw = clog2(clw//8)       # offset bit width; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bit width; 32 - 4 - 9 = 19
    #---------------------------------------------------------------------
     # Interface
@@ -47,6 +47,10 @@ class BlockingCachePRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemReqMsg4B )
 
+    s.tag_array_val_M0 = Wire(Bits1) 
+    s.tag_array_type_M0 = Wire(Bits1)
+    s.tag_array_wben_M0 = Wire(Bits3)
+
     s.cacheDpath = BlockingCacheDpathPRTL(
       abw, dbw, size, clw, way, MemReqMsg4B, MemRespMsg4B,
       MemReqMsg4B, MemRespMsg4B
@@ -55,6 +59,9 @@ class BlockingCachePRTL ( Component ):
       cacheresp_msg = s.cacheresp.msg,
       memreq_msg    = s.memreq.msg,
       memresp_msg   = s.memresp.msg,
+      tag_array_val_M0 = s.tag_array_val_M0,
+      tag_array_type_M0 = s.tag_array_type_M0,
+      tag_array_wben_M0 = s.tag_array_wben_M0,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
@@ -68,14 +75,14 @@ class BlockingCachePRTL ( Component ):
       memreq_rdy    = s.memreq.rdy,
       memresp_en    = s.memresp.en,
       memresp_rdy   = s.memresp.rdy,
+      tag_array_val_M0 = s.tag_array_val_M0,
+      tag_array_type_M0 = s.tag_array_type_M0,
+      tag_array_wben_M0 = s.tag_array_wben_M0,
     )
     
-    # connect_pairs (
-     
-    # )
+
 
   # Line tracing
-
   def line_trace( s ):
     return s.cacheDpath.line_trace() + ' ' + s.cacheCtrl.line_trace()
 
