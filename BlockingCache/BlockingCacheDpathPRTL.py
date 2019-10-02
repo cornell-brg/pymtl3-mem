@@ -3,11 +3,8 @@
 #=========================================================================
 
 from pymtl3      import *
-# from pclib.ifcs import MemReqMsg4B, MemRespMsg4B
-# from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
-# from sram.SramRTL import * 
 
-class BlockingCacheDpathPRTL ( Component ):
+class BlockingCacheDpathPRTL (Component):
   def construct( s,
                  abw  = 32,
                  dbw  = 32,
