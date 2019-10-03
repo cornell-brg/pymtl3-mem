@@ -26,10 +26,10 @@ class BlockingCachePRTL ( Component ):
                  way  = 1    # associativity
   ):
     s.explicit_modulename = 'BlockingCache'
-    nbl = size*8//clw         # number of cache blocks; 8192*8/128 = 512
+    nbl = size*8//clw        # number of cache blocks; 8192*8/128 = 512
     nby = nbl/way            # blocks per way; 1
     idw = clog2(nbl)         # index width; clog2(512) = 9
-    ofw = clog2(clw//8)       # offset bit width; clog2(128/8) = 4
+    ofw = clog2(clw//8)      # offset bit width; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bit width; 32 - 4 - 9 = 19
    #---------------------------------------------------------------------
     # Interface
@@ -74,6 +74,9 @@ class BlockingCachePRTL ( Component ):
       tag_array_val_M0  = s.tag_array_val_M0,
       tag_array_type_M0 = s.tag_array_type_M0,
       tag_array_wben_M0 = s.tag_array_wben_M0,
+      data_array_val_M0 = s.tag_array_val_M0,
+      data_array_type_M0= s.tag_array_type_M0,
+      data_array_wben_M0= s.tag_array_wben_M0,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
