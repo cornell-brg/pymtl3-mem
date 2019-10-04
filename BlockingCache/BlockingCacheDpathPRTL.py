@@ -42,7 +42,6 @@ class BlockingCacheDpathPRTL (Component):
     s.memreq_opaque    = OutPort(mk_bits(obw))
     s.memreq_addr      = OutPort(mk_bits(abw))
     s.memreq_data			 = OutPort(mk_bits(clw))
-
     # Control Signals (ctrl -> dpath)
     s.reg_en_M0             = InPort(Bits1)
     s.write_data_mux_sel_M0 = InPort(Bits1)
@@ -118,6 +117,15 @@ class BlockingCacheDpathPRTL (Component):
       out = s.memresp_data_M0,
     )
 
+    s.tag_array = SramPRTL(tgw, nbl)(
+      port0_val  = s.tag_array_val_M0,
+      port0_type = s.tag_array_type_M0,
+      port0_idx  = s.tag_array_idx_M0,
+      port0_wdata = s.tag_array_wdata_M0,
+      port0_wben  = s.tag_array_wben_M0,
+      port0_rdata = s.tag_array_rdata_M1,
+    )
+
     s.write_data_mux_M0 = Mux(Bits128, 2)(
       in_ = {0: s.cachereq_data,
              1: s.memresp_data},
@@ -151,15 +159,6 @@ class BlockingCacheDpathPRTL (Component):
       in_ = ,
       out = ,
     )
-
-    s.tag_array = SramPRTL(tgw, nbl)(
-      port0_val  = s.tag_array_val_M0,
-      port0_type = s.tag_array_type_M0,
-      port0_idx  = s.tag_array_idx_M0,
-      port0_wdata = s.tag_array_wdata_M0,
-      port0_wben  = s.tag_array_wben_M0,
-      port0_rdata = s.tag_array_rdata_M1,
-    )
   
     s.data_array = SramPRTL(tgw, nbl)(
       port0_val   = s.data_array_val_M0,
@@ -171,7 +170,7 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     s.cachereq_opaque_M1 //= s.cacheresp_opaque
-    s.cachereq
+
 
   def line_trace( s ):
     return ""
