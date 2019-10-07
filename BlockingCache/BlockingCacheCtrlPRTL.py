@@ -13,9 +13,6 @@ class BlockingCacheCtrlPRTL ( Component ):
                  size = 8192, # Cache size in bytes
                  clw  = 128, # Short name for cacheline bitwidth
                  way  = 1, # associativity
-
-                 req_type = "inv",
-                 resp_type = "inv",
   ):
     nbl = size*8//clw # Short name for number of cache blocks, 8192*8/128 = 512
     idw = clog2(nbl)   # Short name for index width, clog2(512) = 9
@@ -33,24 +30,36 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     s.memresp_en    = InPort(Bits1)
     s.memresp_rdy   = OutPort(Bits1)
-
-    # M0 Ctrl Signals
-    # Tag Array Ctrl Signals
-    s.tag_array_val_M0 = OutPort(Bits1) 
-    s.tag_array_type_M0 = OutPort(Bits1)
-    s.tag_array_wben_M0 = OutPort(Bits3)
-
-    connect( s.cachereq_en, s.memreq_en )
-    connect( s.cachereq_rdy, s.memreq_rdy )
-
-    connect( s.memresp_en, s.cacheresp_en )
-    connect( s.memresp_rdy, s.cacheresp_rdy )
+    # M0 Ctrl Signals 
+    s.reg_en_M0             = OutPort(Bits1)
+    s.write_data_mux_sel_M0 = OutPort(mk_bits(clog2(2)))
+    # tag array
+    s.tag_array_val_M0      = OutPort(Bits1)
+    s.tag_array_type_M0     = OutPort(Bits1)
+    s.tag_array_wben_M0     = OutPort(Bits1)
+    
+    # M1 Ctrl Signals
+    s.tag_match_M1          = InPort(Bits1)
+    s.reg_en_M1             = OutPort(Bits1)
+    # data array
+    s.data_array_val_M1     = OutPort(Bits1)
+    s.data_array_type_M1    = OutPort(Bits1)
+    s.data_array_wben_M1    = OutPort(Bits1)
+    # M2 Ctrl Signals
+    s.reg_en_M2             = OutPort(Bits1)
+    s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
+    s.read_word_mux_sel_M2  = OutPort(mk_bits(clog2(5)))
+    #--------------------------------------------------------------------
+    # M0 Stage
+    #--------------------------------------------------------------------
     @s.update
     def comb_block():
       s.tag_array_val_M0 = 0
       s.tag_array_type_M0 = 0
       s.tag_array_wben_M0 = 0xf
-   
+    #-----------------------------------------------------
+    # M1 Stage 
+    #-----------------------------------------------------
     
   def line_trace( s ):
     return 'hello'

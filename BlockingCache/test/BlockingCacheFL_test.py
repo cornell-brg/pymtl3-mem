@@ -6,13 +6,14 @@ import pytest
 import struct
 
 from pymtl3 import *
-from pymtl3.stdlib.cl.MemoryCL import MemoryCL
+# from pymtl3.stdlib.cl.MemoryCL import MemoryCL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
+from CacheMemory import MemoryCL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)

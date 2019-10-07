@@ -47,52 +47,87 @@ class BlockingCachePRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemReqMsg4B )
 
-    s.tag_array_val_M0 = Wire(Bits1) 
-    s.tag_array_type_M0 = Wire(Bits1)
-    s.tag_array_wben_M0 = Wire(Bits3)
+    # M0 Signals to be connected
+    s.reg_en_M0             = Wire(Bits1)
+    s.write_data_mux_sel_M0 = Wire(mk_bits(clog2(2)))
+    s.tag_array_val_M0      = Wire(Bits1) 
+    s.tag_array_type_M0     = Wire(Bits1)
+    s.tag_array_wben_M0     = Wire(Bits3)
+    # M1 
+    s.reg_en_M1             = Wire(Bits1)
+    s.tag_match_M1          = Wire(Bits1)
+    s.data_array_val_M1     = Wire(Bits1)
+    s.data_array_type_M1    = Wire(Bits1)
+    s.data_array_wben_M1    = Wire(Bits3)
+    # M2
+    s.reg_en_M2             = Wire(Bits1)
+    s.read_data_mux_sel_M2  = Wire(mk_bits(clog2(2)))
+    s.read_word_mux_sel_M2  = Wire(mk_bits(clog2(5)))
 
     s.cacheDpath = BlockingCacheDpathPRTL(
       abw, dbw, size, clw, way, MemReqMsg4B, MemRespMsg4B,
       MemReqMsg4B, MemRespMsg4B
     )(
-      cachereq_opaque   = s.cachereq.msg.opaque,
-      cachereq_type     = s.cachereq.msg.type_,
-      cachereq_address  = s.cachereq.msg.address,
-      cachereq_data     = s.cachereq.msg.data,
+      cachereq_opaque       = s.cachereq.msg.opaque,
+      cachereq_type         = s.cachereq.msg.type_,
+      cachereq_address      = s.cachereq.msg.address,
+      cachereq_data         = s.cachereq.msg.data,
+    
+      memresp_opaque        = s.memresp.msg.opaque,
+      memresp_data          = s.memresp.msg.data,
+          
+      cacheresp_opaque      = s.cacheresp.msg.opaque,
+      cacheresp_type        = s.cacheresp.msg.type_,
+      cacheresp_data        = s.cacheresp.msg.data,
+          
+      memreq_opaque         = s.memreq.msg.opaque,
+      memreq_addr           = s.memreq.msg.addr,
+      memreq_data           = s.memreq.msg.data,
       
-      cacheresp_opaque  = s.cacheresp.msg.opaque,
-      cacheresp_type    = s.cacheresp.msg.type_,
-      cacheresp_data    = s.cacheresp.msg.data,
+      reg_en_M0             = s.reg_en_M0,
+      write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
+      tag_array_val_M0      = s.tag_array_val_M0,
+      tag_array_type_M0     = s.tag_array_type_M0,
+      tag_array_wben_M0     = s.tag_array_wben_M0,
       
-      memresp_opaque    = s.memresp.msg.opaque,
-      memresp_data      = s.memresp.msg.data,
+      reg_en_M1             = s.reg_en_M1    ,
+      tag_match_M1          = s.tag_match_M1 ,
+      data_array_val_M1     = s.data_array_val_M1,
+      data_array_type_M1    = s.data_array_type_M1,
+      data_array_wben_M1    = s.data_array_wben_M1,
       
-      memreq_opaque     = s.memreq.msg.opaque,
-      memreq_addr       = s.memreq.msg.addr,
-      memreq_data       = s.memreq.msg.data,
-      
-      tag_array_val_M0  = s.tag_array_val_M0,
-      tag_array_type_M0 = s.tag_array_type_M0,
-      tag_array_wben_M0 = s.tag_array_wben_M0,
-      data_array_val_M0 = s.tag_array_val_M0,
-      data_array_type_M0= s.tag_array_type_M0,
-      data_array_wben_M0= s.tag_array_wben_M0,
+      reg_en_M2             = s.reg_en_M2           ,
+      read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
+      read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       abw, dbw, size, clw, way
     ) (
-      cachereq_en   = s.cachereq.en,
-      cachereq_rdy  = s.cachereq.rdy,
-      cacheresp_en  = s.cacheresp.en,
-      cacheresp_rdy = s.cacheresp.rdy,
-      memreq_en     = s.memreq.en,
-      memreq_rdy    = s.memreq.rdy,
-      memresp_en    = s.memresp.en,
-      memresp_rdy   = s.memresp.rdy,
-      tag_array_val_M0 = s.tag_array_val_M0,
-      tag_array_type_M0 = s.tag_array_type_M0,
-      tag_array_wben_M0 = s.tag_array_wben_M0,
+      cachereq_en           = s.cachereq.en,
+      cachereq_rdy          = s.cachereq.rdy,
+      memresp_en            = s.memresp.en,
+      memresp_rdy           = s.memresp.rdy,
+      cacheresp_en          = s.cacheresp.en,
+      cacheresp_rdy         = s.cacheresp.rdy,
+      memreq_en             = s.memreq.en,
+      memreq_rdy            = s.memreq.rdy,
+
+      reg_en_M0             = s.reg_en_M0,
+      write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
+      tag_array_val_M0      = s.tag_array_val_M0,
+      tag_array_type_M0     = s.tag_array_type_M0,
+      tag_array_wben_M0     = s.tag_array_wben_M0,
+      
+      reg_en_M1             = s.reg_en_M1    ,
+      tag_match_M1          = s.tag_match_M1 ,
+      data_array_val_M1     = s.data_array_val_M1,
+      data_array_type_M1    = s.data_array_type_M1,
+      data_array_wben_M1    = s.data_array_wben_M1,
+
+      reg_en_M2             = s.reg_en_M2           ,
+      read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
+      read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
     )
     
 
