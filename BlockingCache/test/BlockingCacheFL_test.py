@@ -6,14 +6,14 @@ import pytest
 import struct
 
 from pymtl3 import *
-# from pymtl3.stdlib.cl.MemoryCL import MemoryCL
+from pymtl3.stdlib.cl.MemoryCL import MemoryCL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
-from CacheMemory import MemoryCL
+# from BlockingCache.test.CacheMemory import MemoryCL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
@@ -29,9 +29,9 @@ class TestHarness(Component):
     # Instantiate models
     s.src   = TestSrcRTL(MemReqMsg4B, src_msgs, src_delay)
     s.cache = CacheModel()
-    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[MemReqMsg4B, MemRespMsg4B], latency=latency)
-    s.cache2mem = RecvRTL2SendCL(MemReqMsg4B)
-    s.mem2cache = RecvCL2SendRTL(MemRespMsg4B)
+    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[MemReqMsg16B, MemRespMsg16B], latency=latency)
+    s.cache2mem = RecvRTL2SendCL(MemReqMsg16B)
+    s.mem2cache = RecvCL2SendRTL(MemRespMsg16B)
     s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
 
     connect( s.src.send,  s.cache.cachereq  )
@@ -113,7 +113,7 @@ def run_sim(th, max_cycles):
 def read_hit_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr      len data                type  opq  test len data
-    req( 'wr', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'wr', 0x0, 0,   0,  0          ),
+    req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
     req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 0,   0,  0xdeadbeef ),
   ]
 

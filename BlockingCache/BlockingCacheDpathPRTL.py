@@ -9,6 +9,9 @@ from sram.SramPRTL     import SramPRTL
 
 class BlockingCacheDpathPRTL (Component):
   def construct(s, 
+                obw = 8,			            # Opaque bitwidth
+                abw = 32,		            # Address bitwidth
+                dbw = 32,		            # Data bitwidth
                 size = 8192, # Cache size in bytes
                 clw  = 128,  # Cacheline bitwidth
                 way  = 1     # Associativity
@@ -16,9 +19,7 @@ class BlockingCacheDpathPRTL (Component):
     #-------------------------------------------------------------------------
     # Bitwidths
     #-------------------------------------------------------------------------
-    obw = 8			            # Opaque bitwidth
-    abw = 32		            # Address bitwidth
-    dbw = 32		            # Data bitwidth
+
     nbl = size*8//clw       # Number of Cache Blocks
     idw = clog2(nbl)        # Index bitwidth
     ofw = clog2(clw//8)     # Offset bitwidth
@@ -37,8 +38,8 @@ class BlockingCacheDpathPRTL (Component):
     s.memresp_data     = InPort(mk_bits(clw))
     # Cache -> Proc
     s.cacheresp_opaque = OutPort(mk_bits(obw))
-    s.cacheresp_type   = OutPort(mkbits(3)) 
-    s.cacheresp_data	 = OutPort(mkbits(dbw))	
+    s.cacheresp_type   = OutPort(mk_bits(3)) 
+    s.cacheresp_data	 = OutPort(mk_bits(dbw))	
     # Cache -> Mem
     s.memreq_opaque    = OutPort(mk_bits(obw))
     s.memreq_addr      = OutPort(mk_bits(abw))
@@ -59,19 +60,18 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_match_M1          = OutPort(Bits1)
     # M2
     s.reg_en_M2             = InPort(Bits1)
-    s.read_data_mux_sel_M2  = InPort(Bits1)
+    # s.read_data_mux_sel_M2  = InPort(Bits1)
     s.read_word_mux_sel_M2  = InPort(Bits3)
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
-    # Wires
+    # Tag Array
     # s.memresp_data_M0     = Wire(mk_bits(dbw))
     s.tag_array_idx_M0    = Wire(mk_bits(idw))
     s.tag_array_wdata_M0  = Wire(mk_bits(tgw))
     s.tag_array_rdata_M1  = Wire(mk_bits(tgw))
-    # Connect wires
-    s.tag_array_idx_M0    //= s.cachereq_address[mk_bits(idw+ofw):ofw]
-    s.tag_array_wdata_M0  //= s.cachereq_address[tgw+idw+ofw:idw+ofw]
+    s.tag_array_idx_M0    //= s.cachereq_addr[ofw:idw+ofw]
+    s.tag_array_wdata_M0  //= s.cachereq_addr[idw+ofw:tgw+idw+ofw]
     s.tag_array_M0_M1 = SramPRTL(tgw, nbl)(
       port0_val  = s.tag_array_val_M0,
       port0_type = s.tag_array_type_M0,
@@ -80,13 +80,12 @@ class BlockingCacheDpathPRTL (Component):
       port0_wben  = s.tag_array_wben_M0,
       port0_rdata = s.tag_array_rdata_M1,
     )
-
-    s.write_data_mux_M0 = Mux(mk_bits(clw), 2)(
-      in_ = {0: s.cachereq_data,
-             1: s.memresp_data},
-      sel = s.write_data_mux_sel_M0,
-      out = s.data_array_wdata_M0,
-    )
+    # s.write_data_mux_M0 = Mux(mk_bits(clw), 2)(
+    #   in_ = {0: s.cachereq_data,
+    #          1: s.memresp_data},
+    #   sel = s.write_data_mux_sel_M0,
+    #   out = s.data_array_wdata_M0,
+    # )
 
     #-----------------------------------------------------
     # M1 Stage 
@@ -114,7 +113,7 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_data_reg_M1 = RegEnRst(mk_bits(dbw))(
       en  = s.reg_en_M1,
       in_ = s.cachereq_data,
-      out = cachereq_data_M1,
+      out = s.cachereq_data_M1,
     )
     # s.memresp_opaque_M0   = Wire(mk_bits(obw))
     # s.memresp_opaque_reg_M1 = RegEnRst(mk_bits(obw))(
@@ -127,12 +126,15 @@ class BlockingCacheDpathPRTL (Component):
     #   in_ = s.memresp_data,
     #   out = s.memresp_data_M0,
     # )
+    # Comparator
+    s.tag_match_M1 /= s.tag_array_rdata_M1 == s.cachereq_addr_M1[idw+ofw:abw]
 
+    # Data Array ( Btwn M1 and M2 )
     s.data_array_idx_M1   = Wire(mk_bits(idw))
     s.data_array_wdata_M1 = Wire(mk_bits(dbw))
     s.data_array_rdata_M2 = Wire(mk_bits(clw))
-    s.data_array_idx_M1   //= s.cachereq_addr_M1[mk_bits(idw+ofw):ofw]
-    s.data_array_wdata_M1 //= s.cachereq_addr_M1[tgw+idw+ofw:idw+ofw]
+    s.data_array_idx_M1   //= s.cachereq_addr_M1[ofw:idw+ofw]
+    s.data_array_wdata_M1 //= s.cachereq_data_M1
     s.data_array_M1_M2 = SramPRTL(tgw, nbl)(
       port0_val   = s.data_array_val_M1,
       port0_type  = s.data_array_type_M1,
@@ -150,13 +152,13 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_opaque_reg_M2 = RegEnRst(mk_bits(obw))(
       en  = s.reg_en_M2,
       in_ = s.cachereq_opaque_M1,
-      out = s.cachereq_opaque_M2,
+      out = s.cacheresp_opaque,
     )
     s.cachereq_type_M2    = Wire(mk_bits(3))
     s.cachereq_type_reg_M2 = RegEnRst(mk_bits(3))(
       en  = s.reg_en_M2,
       in_ = s.cachereq_type_M1,
-      out = s.cachereq_type_M2,
+      out = s.cacheresp_type,
     )
     s.cachereq_addr_M2    = Wire(mk_bits(abw))
     s.cachereq_address_reg_M2 = RegEnRst(mk_bits(abw))(
@@ -164,17 +166,21 @@ class BlockingCacheDpathPRTL (Component):
       in_ = s.cachereq_addr_M1,
       out = s.cachereq_addr_M2,
     )
-    s.cachereq_data_M2      = Wire(mk_bits(dbw))
-    s.cachereq_data_reg_M2  = RegEnRst(mk_bits(dbw))(
-      en  = s.reg_en_M2,
-      in_ = s.cachereq_data_M1,
-      out = cachereq_data_M2,
-    )
+    # s.cachereq_data_M2      = Wire(mk_bits(dbw))
+    # s.cachereq_data_reg_M2  = RegEnRst(mk_bits(dbw))(
+    #   en  = s.reg_en_M2,
+    #   in_ = s.cachereq_data_M1,
+    #   out = cachereq_data_M2,
+    # )
     s.read_word_mux_M2 = Mux(mk_bits(clw), 5)(
-      in_ = {0: s.cachereq_data,
-             1: s.memresp_data},
-      sel = s.write_data_mux_sel_M0,
-      out = s.data_array_wdata_M0,
+      in_ = {0: Bits32(0),
+             1: s.data_array_rdata_M2[0    :   dbw],
+             2: s.data_array_rdata_M2[1*dbw: 2*dbw],
+             3: s.data_array_rdata_M2[2*dbw: 3*dbw],
+             4: s.data_array_rdata_M2[3*dbw: 4*dbw]
+             },
+      sel = s.read_word_mux_sel_M2,
+      out = s.cacheresp_data,
     )   
 
   def line_trace( s ):
