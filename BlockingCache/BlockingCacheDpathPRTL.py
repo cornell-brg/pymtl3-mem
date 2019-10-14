@@ -127,7 +127,9 @@ class BlockingCacheDpathPRTL (Component):
     #   out = s.memresp_data_M0,
     # )
     # Comparator
-    s.tag_match_M1 /= s.tag_array_rdata_M1 == s.cachereq_addr_M1[idw+ofw:abw]
+    @s.update
+    def Comparator():
+      s.tag_match_M1 = s.tag_array_rdata_M1 == s.cachereq_addr_M1[idw+ofw:abw]
 
     # Data Array ( Btwn M1 and M2 )
     s.data_array_idx_M1   = Wire(mk_bits(idw))
@@ -135,7 +137,7 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_rdata_M2 = Wire(mk_bits(clw))
     s.data_array_idx_M1   //= s.cachereq_addr_M1[ofw:idw+ofw]
     s.data_array_wdata_M1 //= s.cachereq_data_M1
-    s.data_array_M1_M2 = SramPRTL(tgw, nbl)(
+    s.data_array_M1_M2 = SramPRTL(clw, nbl)(
       port0_val   = s.data_array_val_M1,
       port0_type  = s.data_array_type_M1,
       port0_idx   = s.data_array_idx_M1,
