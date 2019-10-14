@@ -57,7 +57,7 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(Bits16)
-    s.tag_match_M1          = OutPort(Bits2)
+    s.tag_match_M1          = OutPort(Bits1)
     # M2
     s.reg_en_M2             = InPort(Bits1)
     # s.read_data_mux_sel_M2  = InPort(Bits1)
@@ -137,7 +137,7 @@ class BlockingCacheDpathPRTL (Component):
     # Comparator
     @s.update
     def Comparator():
-      s.tag_match_M1[0] = s.tag_array_rdata_M1[0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]
+      s.tag_match_M1 = s.tag_array_rdata_M1[0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]
 
     # Duplicator
     s.rep_out_M1 = Wire(mk_bits(clw))
@@ -202,7 +202,13 @@ class BlockingCacheDpathPRTL (Component):
              },
       sel = s.read_word_mux_sel_M2,
       out = s.cacheresp_data,
-    )   
+    )
 
+    @s.update
+    def tmp_comb_M2():   
+      s.memreq_opaque = 0
+      s.memreq_addr   = 0
+      s.memreq_data   = 0
+      
   def line_trace( s ):
     return ""

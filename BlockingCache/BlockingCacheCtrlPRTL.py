@@ -42,7 +42,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.tag_array_wben_M0     = OutPort(Bits4)
     
     # M1 Ctrl Signals
-    s.tag_match_M1          = InPort(Bits2)
+    s.tag_match_M1          = InPort(Bits1)
     s.reg_en_M1             = OutPort(Bits1)
     # data array
     s.data_array_val_M1     = OutPort(Bits1)
@@ -62,16 +62,19 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.stall_M0 = Wire(Bits1)
     @s.update
     def comb_block_M0():
+      s.cachereq_rdy = 1
+      s.memreq_en = 0
+      s.memresp_rdy = 0
       if (s.cachereq_type == MemMsgType.WRITE_INIT):
-        s.tag_array_type_M0.value = 1
-        s.tag_array_val_M0.value  = 1
-        s.tag_array_wben_M0.value = 1
-        s.write_data_mux_sel_M0.value = 0 # Choose write data from cachereq
+        s.tag_array_type_M0 = 1
+        s.tag_array_val_M0  = 1
+        s.tag_array_wben_M0 = 1
+        s.write_data_mux_sel_M0 = 0 # Choose write data from cachereq
       elif (s.cachereq_type == MemMsgType.READ):
-        s.tag_array_type_M0.value = 0
-        s.tag_array_val_M0.value  = 1
-        s.tag_array_wben_M0.value = 0 # DON'T CARE
-        s.write_data_mux_sel_M0.value = 0 # DON"T CARE
+        s.tag_array_type_M0 = 0
+        s.tag_array_val_M0  = 1
+        s.tag_array_wben_M0 = 0 # DON'T CARE
+        s.write_data_mux_sel_M0 = 0 # DON"T CARE
 
 
     #-----------------------------------------------------
@@ -79,27 +82,29 @@ class BlockingCacheCtrlPRTL ( Component ):
     #-----------------------------------------------------
     @s.update
     def comb_block_M1():
-      s.reg_en_M1.value = 1
+      s.reg_en_M1 = 1
       if (s.cachereq_type == MemMsgType.WRITE_INIT):
-        s.data_array_type_M1.value = 1
-        s.data_array_val_M1.value  = 1
-        s.data_array_wben_M1.value = 1
+        s.data_array_type_M1 = 1
+        s.data_array_val_M1  = 1
+        s.data_array_wben_M1 = 1
       elif (s.cachereq_type == MemMsgType.READ):
-        s.data_array_type_M1.value = 0
-        s.data_array_val_M1.value  = 1
-        s.data_array_wben_M1.value = 0 # DON'T CARE
-    s.hit //= s.tag_match_M1
+        s.data_array_type_M1 = 0
+        s.data_array_val_M1  = 1
+        s.data_array_wben_M1 = 0 # DON'T CARE
+    s.hit[0:1] //= s.tag_match_M1
 
     #-----------------------------------------------------
     # M2 Stage 
     #-----------------------------------------------------
     @s.update
-    def comb_block():
-      s.reg_en_M2.value = 1
+    def comb_block_M2():
+      # if s.cacheresp_rdy:
+      s.cacheresp_en = 1
+      s.reg_en_M2 = 1
       if (s.cachereq_type == MemMsgType.WRITE_INIT):
-        s.read_word_mux_sel_M2.value = 0
+        s.read_word_mux_sel_M2 = 0
       elif (s.cachereq_type == MemMsgType.READ):
-        s.read_word_mux_sel_M2.value = 1
+        s.read_word_mux_sel_M2 = 1
 
 
   def line_trace( s ):

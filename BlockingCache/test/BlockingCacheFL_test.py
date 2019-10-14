@@ -29,7 +29,7 @@ class TestHarness(Component):
     # Instantiate models
     s.src   = TestSrcRTL(MemReqMsg4B, src_msgs, src_delay)
     s.cache = CacheModel()
-    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[MemReqMsg16B, MemRespMsg16B], latency=latency)
+    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[(MemReqMsg16B, MemRespMsg16B)], latency=latency)
     s.cache2mem = RecvRTL2SendCL(MemReqMsg16B)
     s.mem2cache = RecvCL2SendRTL(MemRespMsg16B)
     s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
