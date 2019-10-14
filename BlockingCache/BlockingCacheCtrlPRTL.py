@@ -15,6 +15,7 @@ class BlockingCacheCtrlPRTL ( Component ):
                  clw  = 128, # Short name for cacheline bitwidth
                  way  = 1, # associativity
   ):
+
     nbl = size*8//clw # Short name for number of cache blocks, 8192*8/128 = 512
     idw = clog2(nbl)   # Short name for index width, clog2(512) = 9
     ofw = clog2(clw//8)   # Short name for offset bit width, clog2(128/8) = 4
@@ -22,7 +23,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     s.cachereq_en   = InPort(Bits1)
     s.cachereq_rdy  = OutPort(Bits1)
-    s.cachereq_type = InPort(mk_bits(3))
+    s.cachereq_type = InPort(Bits4)
 
     s.cacheresp_en  = OutPort(Bits1)
     s.cacheresp_rdy = InPort(Bits1) 
@@ -38,15 +39,15 @@ class BlockingCacheCtrlPRTL ( Component ):
     # tag array
     s.tag_array_val_M0      = OutPort(Bits1)
     s.tag_array_type_M0     = OutPort(Bits1)
-    s.tag_array_wben_M0     = OutPort(Bits1)
+    s.tag_array_wben_M0     = OutPort(Bits4)
     
     # M1 Ctrl Signals
-    s.tag_match_M1          = InPort(Bits1)
+    s.tag_match_M1          = InPort(Bits2)
     s.reg_en_M1             = OutPort(Bits1)
     # data array
     s.data_array_val_M1     = OutPort(Bits1)
     s.data_array_type_M1    = OutPort(Bits1)
-    s.data_array_wben_M1    = OutPort(Bits1)
+    s.data_array_wben_M1    = OutPort(Bits16)
     # M2 Ctrl Signals
     s.reg_en_M2             = OutPort(Bits1)
     # s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
@@ -60,7 +61,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Stall logic
     s.stall_M0 = Wire(Bits1)
     @s.update
-    def comb_block():
+    def comb_block_M0():
       if (s.cachereq_type == MemMsgType.WRITE_INIT):
         s.tag_array_type_M0.value = 1
         s.tag_array_val_M0.value  = 1
@@ -77,7 +78,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     # M1 Stage 
     #-----------------------------------------------------
     @s.update
-    def comb_block():
+    def comb_block_M1():
       s.reg_en_M1.value = 1
       if (s.cachereq_type == MemMsgType.WRITE_INIT):
         s.data_array_type_M1.value = 1

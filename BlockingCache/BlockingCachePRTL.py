@@ -55,7 +55,7 @@ class BlockingCachePRTL ( Component ):
     s.tag_array_wben_M0     = Wire(Bits4)
     # M1 
     s.reg_en_M1             = Wire(Bits1)
-    s.tag_match_M1          = Wire(Bits1)
+    s.tag_match_M1          = Wire(Bits2)
     s.data_array_val_M1     = Wire(Bits1)
     s.data_array_type_M1    = Wire(Bits1)
     s.data_array_wben_M1    = Wire(Bits16)
