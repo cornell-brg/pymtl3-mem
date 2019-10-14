@@ -52,13 +52,13 @@ class BlockingCachePRTL ( Component ):
     s.write_data_mux_sel_M0 = Wire(mk_bits(clog2(2)))
     s.tag_array_val_M0      = Wire(Bits1) 
     s.tag_array_type_M0     = Wire(Bits1)
-    s.tag_array_wben_M0     = Wire(Bits3)
+    s.tag_array_wben_M0     = Wire(Bits4)
     # M1 
     s.reg_en_M1             = Wire(Bits1)
     s.tag_match_M1          = Wire(Bits1)
     s.data_array_val_M1     = Wire(Bits1)
     s.data_array_type_M1    = Wire(Bits1)
-    s.data_array_wben_M1    = Wire(Bits3)
+    s.data_array_wben_M1    = Wire(Bits16)
     # M2
     s.reg_en_M2             = Wire(Bits1)
     # s.read_data_mux_sel_M2  = Wire(mk_bits(clog2(2)))

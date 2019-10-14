@@ -131,12 +131,21 @@ class BlockingCacheDpathPRTL (Component):
     def Comparator():
       s.tag_match_M1 = s.tag_array_rdata_M1 == s.cachereq_addr_M1[idw+ofw:abw]
 
+    # Duplicator
+    s.rep_out_M1 = Wire(mk_bits(clw))
+    @s.update
+    def Replicator():
+      s.rep_out_M1[0:dbw] = cachereq_data_M1
+      s.rep_out_M1[1*dbw:2*dbw] = cachereq_data_M1
+      s.rep_out_M1[2*dbw:3*dbw] = cachereq_data_M1
+      s.rep_out_M1[3*dbw:4*dbw] = cachereq_data_M1
+
     # Data Array ( Btwn M1 and M2 )
     s.data_array_idx_M1   = Wire(mk_bits(idw))
-    s.data_array_wdata_M1 = Wire(mk_bits(dbw))
+    s.data_array_wdata_M1 = Wire(mk_bits(clw))
     s.data_array_rdata_M2 = Wire(mk_bits(clw))
     s.data_array_idx_M1   //= s.cachereq_addr_M1[ofw:idw+ofw]
-    s.data_array_wdata_M1 //= s.cachereq_data_M1
+    s.data_array_wdata_M1 //= s.rep_out_M1
     s.data_array_M1_M2 = SramPRTL(clw, nbl)(
       port0_val   = s.data_array_val_M1,
       port0_type  = s.data_array_type_M1,
