@@ -55,7 +55,7 @@ class SramPRTL( Component ):
     def inverters():
       s.port0_val_bar  = ~s.port0_val
       s.port0_type_bar = ~s.port0_type
-      print ("generate new WEB = " + str(s.port0_type_bar))
+      # print ("generate new WEB = " + str(s.port0_type_bar))
 
     # if you have implemented a new SRAM, make sure use it
     # here instead of the generic one.
@@ -68,10 +68,9 @@ class SramPRTL( Component ):
     #   s.sram = m = SRAM_128x512_1P()
     # else:
     s.sram = m = SramGenericPRTL( num_bits, num_words )
-
     connect( m.CE1,  s.clk           )
     connect( m.CSB1, s.port0_val_bar  ) # CSB1 low-active
-    connect( m.OEB1, 0                )
+    connect( m.OEB1, b1(0)            )
     connect( m.WBM1, s.port0_wben     )
     connect( m.WEB1, s.port0_type_bar ) # WEB1 low-active
     connect( m.A1,   s.port0_idx      )

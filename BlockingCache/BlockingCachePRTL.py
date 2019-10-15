@@ -26,12 +26,25 @@ class BlockingCachePRTL ( Component ):
                  way  = 1    # associativity
   ):
     s.explicit_modulename = 'BlockingCache'
+    #-------------------------------------------------------------------------
+    # Bitwidths
+    #-------------------------------------------------------------------------
     nbl = size*8//clw        # number of cache blocks; 8192*8/128 = 512
     nby = nbl/way            # blocks per way; 1
     idw = clog2(nbl)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bit width; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bit width; 32 - 4 - 9 = 19
-   #---------------------------------------------------------------------
+    #-------------------------------------------------------------------------
+    # Dtypes
+    #-------------------------------------------------------------------------
+    ab = mk_bits(abw)
+    ob = mk_bits(obw)
+    ty = mk_bits(4)
+    db = mk_bits(dbw)
+    cl = mk_bits(clw)
+    ix = mk_bits(idw)
+    tg = mk_bits(tgw)
+    #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
 
@@ -59,10 +72,12 @@ class BlockingCachePRTL ( Component ):
     s.data_array_val_M1     = Wire(Bits1)
     s.data_array_type_M1    = Wire(Bits1)
     s.data_array_wben_M1    = Wire(Bits16)
+    s.cachereq_type_M1      = Wire(ty)
     # M2
     s.reg_en_M2             = Wire(Bits1)
     # s.read_data_mux_sel_M2  = Wire(mk_bits(clog2(2)))
     s.read_word_mux_sel_M2  = Wire(mk_bits(clog2(5)))
+    s.cachereq_type_M2      = Wire(ty)
     # Output Signals
 
     s.cacheDpath = BlockingCacheDpathPRTL(
@@ -102,7 +117,7 @@ class BlockingCachePRTL ( Component ):
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
-      abw, dbw, size, clw, way
+      obw, abw, dbw, size, clw, way
     ) (
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
@@ -133,8 +148,6 @@ class BlockingCachePRTL ( Component ):
 
       hit                   = s.cacheresp.msg.test,
     )
-    
-
 
   # Line tracing
   def line_trace( s ):

@@ -94,9 +94,10 @@ def resp( type_, opaque, test, len, data ):
 #---------
 def run_sim(th, max_cycles):
   # print (" -----------starting simulation----------- ")
-  th.apply( SimpleSim )
+  th.apply( DynamicSim )
+  th.sim_reset()
   curr_cyc = 0
-  print()
+  print("")
   while not th.done():
     th.tick()
     print (th.line_trace())
@@ -132,12 +133,13 @@ def test_generic( test_params):
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( 0 )
   # Instantiate testharness
-  harness = TestHarness( msgs[::2], msgs[1::2],
+  th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)
+  # th.elaborate()
   # Load memory before the test
   if test_params.mem_data_func != None:
-    harness.load( mem[::2], mem[1::2] )
+    th.load( mem[::2], mem[1::2] )
   # Run the test
-  run_sim( harness, max_cycles=100 )
+  run_sim( th, max_cycles=100 )
