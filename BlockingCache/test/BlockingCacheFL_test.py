@@ -142,4 +142,4 @@ def test_generic( test_params):
   if test_params.mem_data_func != None:
     th.load( mem[::2], mem[1::2] )
   # Run the test
-  run_sim( th, max_cycles=100 )
+  run_sim( th, max_cycles=20 )

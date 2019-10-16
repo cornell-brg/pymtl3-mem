@@ -59,7 +59,7 @@ class BlockingCacheDpathPRTL (Component):
     # M0 Signals
     #-----------------
     # s.reg_en_M0             = InPort(Bits1)
-    s.write_data_mux_sel_M0 = InPort(Bits1)
+    # s.write_data_mux_sel_M0 = InPort(Bits1)
     s.tag_array_val_M0      = InPort(Bits1)
     s.tag_array_type_M0     = InPort(Bits1)
     s.tag_array_wben_M0     = InPort(Bits4)
@@ -71,12 +71,14 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(Bits16)
     s.tag_match_M1          = OutPort(Bits1)
+    s.cachereq_type_M1      = OutPort(ty)
     #-----------------
     # M2
     #-----------------
     s.reg_en_M2             = InPort(Bits1)
     # s.read_data_mux_sel_M2  = InPort(Bits1)
     s.read_word_mux_sel_M2  = InPort(mk_bits(clog2(5)))
+    s.cachereq_type_M2      = OutPort(ty)
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
@@ -119,11 +121,12 @@ class BlockingCacheDpathPRTL (Component):
       out = s.cachereq_opaque_M1,
     )
 
-    s.cachereq_type_M1    = Wire(ty)
+    s.cachereq_type_M1_w    = Wire(ty)
+    s.cachereq_type_M1    //= s.cachereq_type_M1_w
     s.cachereq_type_reg_M1 = RegEnRst(ty)(
       en  = s.reg_en_M1,
       in_ = s.cachereq_type,
-      out = s.cachereq_type_M1,
+      out = s.cachereq_type_M1_w,
     )
 
     s.cachereq_addr_M1    = Wire(ab)
@@ -199,11 +202,13 @@ class BlockingCacheDpathPRTL (Component):
       in_ = s.cachereq_opaque_M1,
       out = s.cacheresp_opaque,
     )
-    s.cachereq_type_M2    = Wire(ty)
+    s.cachereq_type_M2_w    = Wire(ty)
+    s.cachereq_type_M2   //= s.cachereq_type_M2_w
+    s.cacheresp_type      //= s.cachereq_type_M2_w
     s.cachereq_type_reg_M2 = RegEnRst(ty)(
       en  = s.reg_en_M2,
-      in_ = s.cachereq_type_M1,
-      out = s.cacheresp_type,
+      in_ = s.cachereq_type_M1_w,
+      out = s.cachereq_type_M2_w,
     )
     s.cachereq_addr_M2    = Wire(ab)
     s.cachereq_address_reg_M2 = RegEnRst(ab)(
@@ -217,7 +222,7 @@ class BlockingCacheDpathPRTL (Component):
     #   in_ = s.cachereq_data_M1,
     #   out = cachereq_data_M2,
     # )
-    s.read_word_mux_M2 = Mux(db, 5)(
+    s.read_word_mux_M2 = Mux(db, 8)(
       in_ = {0: Bits32(0),
              1: s.data_array_rdata_M2[0    :   dbw],
              2: s.data_array_rdata_M2[1*dbw: 2*dbw],

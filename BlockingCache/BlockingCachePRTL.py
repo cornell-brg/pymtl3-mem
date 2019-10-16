@@ -100,7 +100,7 @@ class BlockingCachePRTL ( Component ):
       memreq_data           = s.memreq.msg.data,
       
       # reg_en_M0             = s.reg_en_M0,
-      write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
+      # write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
       tag_array_val_M0      = s.tag_array_val_M0,
       tag_array_type_M0     = s.tag_array_type_M0,
       tag_array_wben_M0     = s.tag_array_wben_M0,
@@ -110,10 +110,12 @@ class BlockingCachePRTL ( Component ):
       data_array_val_M1     = s.data_array_val_M1,
       data_array_type_M1    = s.data_array_type_M1,
       data_array_wben_M1    = s.data_array_wben_M1,
+      cachereq_type_M1      = s.cachereq_type_M1,
       
       reg_en_M2             = s.reg_en_M2           ,
       # read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
       read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
+      cachereq_type_M2      = s.cachereq_type_M2,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
@@ -121,7 +123,6 @@ class BlockingCachePRTL ( Component ):
     ) (
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
-      cachereq_type         = s.cachereq.msg.type_,
 
       memresp_en            = s.memresp.en,
       memresp_rdy           = s.memresp.rdy,
@@ -131,20 +132,23 @@ class BlockingCachePRTL ( Component ):
       memreq_rdy            = s.memreq.rdy,
 
       # reg_en_M0             = s.reg_en_M0,
-      write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
+      # write_data_mux_sel_M0 = s.write_data_mux_sel_M0,
       tag_array_val_M0      = s.tag_array_val_M0,
       tag_array_type_M0     = s.tag_array_type_M0,
       tag_array_wben_M0     = s.tag_array_wben_M0,
+      cachereq_type_M0      = s.cachereq.msg.type_,
       
       reg_en_M1             = s.reg_en_M1    ,
       tag_match_M1          = s.tag_match_M1 ,
       data_array_val_M1     = s.data_array_val_M1,
       data_array_type_M1    = s.data_array_type_M1,
       data_array_wben_M1    = s.data_array_wben_M1,
+      cachereq_type_M1      = s.cachereq_type_M1,
 
       reg_en_M2             = s.reg_en_M2           ,
       # read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
       read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
+      cachereq_type_M2      = s.cachereq_type_M2,
 
       hit                   = s.cacheresp.msg.test,
     )
