@@ -9,8 +9,11 @@
 
 ## Pipeline Stages
 `Y `: Prior to receiving transaction. Pretransaction stage.
+
 `M0`: Refill stage used to process the memory response from a refill or a writeback request.
+
 `M1`: Data returns from tag array SRAM. Cache performs tag check and set signals for the data array.
+
 `M2`: Cache response and memory request stage.   
 
 ## Tag Array
@@ -18,6 +21,7 @@
 - 32-bit width SRAM with blocks equal to number of cachelines
 - We store valid at highest bit
 
+Example Cacheline
 ```
 |v | ... |  tag   |
  31   tgw        0
