@@ -1,5 +1,5 @@
 
-# Pipelined Block Cache 
+# Pipelined Blocking Cache 
 1. Written in PyMTL3 and tested using new method based testing.
 2. Supports init, read, and write transactions
 3. NOPE support (eventually?)
@@ -7,7 +7,10 @@
 5. Valid and dirty bits stored in SRAM
 6. Parametrizable by cache size, cache line size, associativity, and replacement policy 
 
+## Datapath
+![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache.svg)
 ## Pipeline Stages
+
 `Y `: Prior to receiving transaction. Pretransaction stage.
 
 `M0`: Refill stage used to process the memory response from a refill or a writeback request.
@@ -32,7 +35,7 @@ We have three possible cases each for read and write.
 
 ### Hit (read/write)
 ```
-Hit       : Y  M1 M2                           <- 2 Cycle Latency
+Hit       : Y  M1 M2                              <- 2 Cycle Latency
 ```
 
 ### Miss Clean (read/write)
