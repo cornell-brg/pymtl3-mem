@@ -37,15 +37,15 @@ Hit       : Y  M1 M2                           <- 2 Cycle Latency
 
 ### Miss Clean (read/write)
 ```
-Miss      : Y  M1 M2 .......... M0 M1 M2       <- Refill path
+Miss      : Y  M1 M2 .......... Y  M0 M1 M2       <- Refill path
 Trans     :    Y  Y  ............. Y  M1 M2    <- Next Transaction Path 
 ```
 
 ### Miss and dirty (read/write)
 ```
-Miss Dirty: Y  M1 M2 .......... M0 M1 M2       <- Evict path
-                  M1 M2 .......... M0 M1 M2    <- Refill path - New transaction spawns
-Hit       : Y  Y  Y  Y  .......... Y  Y  M1 M2 <- Hit path
+Miss Dirty: Y  M1 M2 .......... Y  M0 M1 M2       <- Evict path
+                  M1 M2 .......... Y  M0 M1 M2    <- Refill path - New transaction spawns
+Hit       : Y  Y  Y  Y  ............. Y  M1 M2 <- Hit path
 ```
 
 
