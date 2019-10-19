@@ -9,9 +9,9 @@ from sram.SramPRTL     import SramPRTL
 
 class BlockingCacheDpathPRTL (Component):
   def construct(s, 
-                obw = 8,			            # Opaque bitwidth
-                abw = 32,		            # Address bitwidth
-                dbw = 32,		            # Data bitwidth
+                obw = 8,		 # Opaque bitwidth
+                abw = 32,		 # Address bitwidth
+                dbw = 32,		 # Data bitwidth
                 size = 8192, # Cache size in bytes
                 clw  = 128,  # Cacheline bitwidth
                 way  = 1     # Associativity
@@ -56,13 +56,16 @@ class BlockingCacheDpathPRTL (Component):
 
     # Control Signals (ctrl -> dpath)
     #-----------------
+    # Y  Signals
+    #-----------------
+    s.tag_array_val_Y      = InPort(Bits1)
+    s.tag_array_type_Y     = InPort(Bits1)
+    s.tag_array_wben_Y     = InPort(Bits4)
+    s.ctrl_bit_val_wr_Y    = InPort(Bits1)
+    #-----------------
     # M0 Signals
     #-----------------
-    # s.reg_en_M0             = InPort(Bits1)
-    # s.write_data_mux_sel_M0 = InPort(Bits1)
-    s.tag_array_val_M0      = InPort(Bits1)
-    s.tag_array_type_M0     = InPort(Bits1)
-    s.tag_array_wben_M0     = InPort(Bits4)
+    s.reg_en_M0             = InPort(Bits1)
     #-----------------
     # M1 
     #-----------------
@@ -70,6 +73,7 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(Bits16)
+    s.ctrl_bit_val_rd_M1    = OutPort(Bits1)
     s.tag_match_M1          = OutPort(Bits1)
     s.cachereq_type_M1      = OutPort(ty)
     #-----------------
@@ -80,28 +84,29 @@ class BlockingCacheDpathPRTL (Component):
     s.read_word_mux_sel_M2  = InPort(mk_bits(clog2(5)))
     s.cachereq_type_M2      = OutPort(ty)
     #--------------------------------------------------------------------
-    # M0 Stage
+    # Y  Stage
     #--------------------------------------------------------------------
     # Tag Array
     # s.memresp_data_M0     = Wire(mk_bits(dbw))
-    s.tag_array_idx_M0    = Wire(ix)
-    s.tag_array_wdata_M0  = Wire(ab)
+    s.tag_array_idx_Y    = Wire(ix)
+    s.tag_array_wdata_Y  = Wire(ab)
     s.tag_array_rdata_M1  = Wire(ab)
-    @s.update
-    def tag_array_M1_connect():
-      s.tag_array_idx_M0   = ab(s.cachereq_addr)[ofw:idw+ofw]
-      #   print("-->{}".format(type(s.cachereq_addr)))
-      s.tag_array_wdata_M0[0:tgw] = ab(s.cachereq_addr)[ofw+idw:idw+ofw+tgw]
-
+    s.tag_array_idx_Y   //= s.cachereq_addr[ofw:idw+ofw]
+    s.tag_array_wdata_Y[0:tgw] //= s.cachereq_addr[ofw+idw:idw+ofw+tgw]
+    s.tag_array_wdata_Y[abw-1:abw] //= s.ctrl_bit_val_wr_Y
+    # print ("<print type>{}".format(type(s.cachereq_addr)))
 
     s.tag_array_M1 = SramPRTL(abw, nbl)(
-      port0_val  = s.tag_array_val_M0,
-      port0_type = s.tag_array_type_M0,
-      port0_idx  = s.tag_array_idx_M0,
-      port0_wdata = s.tag_array_wdata_M0,
-      port0_wben  = s.tag_array_wben_M0,
+      port0_val   = s.tag_array_val_Y,
+      port0_type  = s.tag_array_type_Y,
+      port0_idx   = s.tag_array_idx_Y,
+      port0_wdata = s.tag_array_wdata_Y,
+      port0_wben  = s.tag_array_wben_Y,
       port0_rdata = s.tag_array_rdata_M1,
     )
+    #--------------------------------------------------------------------
+    # M0 Stage
+    #--------------------------------------------------------------------
 
     # s.write_data_mux_M0 = Mux(mk_bits(clw), 2)(
     #   in_ = {0: s.cachereq_data,
@@ -154,11 +159,12 @@ class BlockingCacheDpathPRTL (Component):
     #   in_ = s.memresp_data,
     #   out = s.memresp_data_M0,
     # )
-
+    # Output the valid bit
+    s.ctrl_bit_val_rd_M1 //= s.tag_array_rdata_M1[abw-1:abw] 
     # Comparator
     @s.update
     def Comparator():
-      s.tag_match_M1 = ab(s.tag_array_rdata_M1[0:tgw]) \
+      s.tag_match_M1 = s.tag_array_rdata_M1[0:tgw] \
       == ab(s.cachereq_addr_M1)[idw+ofw:ofw+idw+tgw]
 
 
@@ -178,10 +184,7 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_wdata_M1 = Wire(cl)
     s.data_array_rdata_M2 = Wire(cl)
     s.data_array_wdata_M1 //= s.rep_out_M1
-    
-    @s.update
-    def data_array_M2_connect():
-      s.data_array_idx_M1   = ab(s.cachereq_addr_M1)[ofw:idw+ofw]
+    s.data_array_idx_M1   //= s.cachereq_addr_M1[ofw:idw+ofw]
     
     s.data_array_M2 = SramPRTL(clw, nbl)(
       port0_val   = s.data_array_val_M1,

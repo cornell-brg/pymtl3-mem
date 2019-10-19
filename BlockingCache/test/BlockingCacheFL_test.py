@@ -115,8 +115,28 @@ def read_hit_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr      len data                type  opq  test len data
     req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
-    req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 0,   0,  0xdeadbeef ),
+    req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
   ]
+
+#----------------------------------------------------------------------
+# Test Case: read hit/miss path, many requests
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+
+def read_hit_many_clean( base_addr ):
+  array = []
+  for i in range(4):
+    #                  type  opq  addr          len data
+
+    array.append(req(  'in', 0x0, base_addr+32*i, 0, i ))
+    #                  type  opq  test          len data
+    array.append(resp( 'in', 0x0, 0,             0, 0 ))
+
+  for i in range(4):
+    array.append(req(  'rd', 0x1, base_addr+32*i, 0, 0 ))
+    array.append(resp( 'rd', 0x1, 1,             0, i ))
+
+  return array
 
 #-------------------------------------------------------------------------
 # Test table for generic test
@@ -125,13 +145,14 @@ def read_hit_1word_clean( base_addr=0 ):
 test_case_table_generic = mk_test_case_table([
   (                         "msg_func               mem_data_func         stall lat src sink"),
   [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                 0.0,  0,  0,  0    ],
+  [ "read_hit_many_clean",   read_hit_many_clean ,  None,                 0.0,  0,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
-  msgs = test_params.msg_func( 0 )
+  msgs = test_params.msg_func( 100 )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( 0 )
+    mem = test_params.mem_data_func( 100 )
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
