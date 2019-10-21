@@ -48,7 +48,7 @@ class SramGenericPRTL( Component ):
 
     @s.update
     def read_logic():
-      if ( not s.CSB1 ) and s.WEB1:
+      if ( ~ s.CSB1 ) and s.WEB1:
         s.dout_next = s.ram[ s.A1 ]
       else:
         s.dout_next = dtype(0)
@@ -70,5 +70,5 @@ class SramGenericPRTL( Component ):
 
 
   def line_trace( s ):
-    print ([int(x) for x in s.ram], [int(x) for x in s.ram_next])
+    # print ([int(x) for x in s.ram], [int(x) for x in s.ram_next])
     return "(WE={} OE={} A1={} I1A={} O1={} s.WBM1={})".format(~s.WEB1, ~s.OEB1, s.A1, s.I1, s.O1, s.WBM1)

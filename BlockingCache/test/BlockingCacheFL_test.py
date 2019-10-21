@@ -4,6 +4,7 @@
 
 import pytest
 import struct
+import random
 
 from pymtl3 import *
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
@@ -100,7 +101,7 @@ def run_sim(th, max_cycles):
   print("")
   while not th.done():
     th.tick()
-    print (th.line_trace())
+    print (str(curr_cyc) + " " + th.line_trace())
     curr_cyc += 1
     assert curr_cyc < max_cycles
   th.tick()
@@ -113,9 +114,9 @@ def run_sim(th, max_cycles):
 
 def read_hit_1word_clean( base_addr=0 ):
   return [
-    #    type  opq  addr      len data                type  opq  test len data
-    req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
-    req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
+    #    type  opq  addr                 len data                type  opq  test len data
+    req( 'in', 0x0, base_addr+0xff000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+    req( 'rd', 0x1, base_addr+0xff000000, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
   ]
 
 #----------------------------------------------------------------------
@@ -123,18 +124,40 @@ def read_hit_1word_clean( base_addr=0 ):
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
 
-def read_hit_many_clean( base_addr ):
+def read_hit_many_clean( base_addr=100 ):
   array = []
   for i in range(4):
     #                  type  opq  addr          len data
 
-    array.append(req(  'in', 0x0, base_addr+32*i, 0, i ))
+    array.append(req(  'in', i, ((base_addr+0x0f000000)<<2)+i*4, 0, i ))
     #                  type  opq  test          len data
-    array.append(resp( 'in', 0x0, 0,             0, 0 ))
+    array.append(resp( 'in', i, 0,             0, 0 ))
 
   for i in range(4):
-    array.append(req(  'rd', 0x1, base_addr+32*i, 0, 0 ))
-    array.append(resp( 'rd', 0x1, 1,             0, i ))
+    array.append(req(  'rd', i, ((base_addr+0x0f000000)<<2)+i*4, 0, 0 ))
+    array.append(resp( 'rd', i, 1,             0, i ))
+
+  return array
+#----------------------------------------------------------------------
+# Test Case: read hit/miss path,random requests
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+
+def read_hit_random_clean( base_addr=100 ):
+  array = []
+  random.seed(0)
+  addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(4)]
+  data = [random.randint(0,0xfffff) for i in range(4)] 
+  for i in range(4):
+    #                  type  opq  addr  len data
+
+    array.append(req(  'in', i, addr[i], 0, data[i] ))
+    #                  type  opq  test       len data
+    array.append(resp( 'in', i, 0,             0, 0 ))
+
+  for i in range(4):
+    array.append(req(  'rd', i, addr[i], 0, 0 ))
+    array.append(resp( 'rd', i, 1,       0, data[i] ))
 
   return array
 
@@ -146,6 +169,7 @@ test_case_table_generic = mk_test_case_table([
   (                         "msg_func               mem_data_func         stall lat src sink"),
   [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                 0.0,  0,  0,  0    ],
   [ "read_hit_many_clean",   read_hit_many_clean ,  None,                 0.0,  0,  0,  0    ],
+  [ "read_hit_random_clean", read_hit_random_clean ,  None,                 0.0,  0,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )

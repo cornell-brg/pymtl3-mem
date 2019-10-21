@@ -21,7 +21,7 @@ dbw  = 32  # Short name for data bitwidth
 
 class BlockingCachePRTL ( Component ):
   def construct( s,                
-                 size = 8192,# Cache size in bytes
+                 size = 4096,# cache size in bytes
                  clw  = 128, # cacheline bitwidth
                  way  = 1    # associativity
   ):
@@ -32,18 +32,25 @@ class BlockingCachePRTL ( Component ):
     nbl = size*8//clw        # number of cache blocks; 8192*8/128 = 512
     nby = nbl/way            # blocks per way; 1
     idw = clog2(nbl)         # index width; clog2(512) = 9
-    ofw = clog2(clw//8)      # offset bit width; clog2(128/8) = 4
-    tgw = abw - ofw - idw    # tag bit width; 32 - 4 - 9 = 19
+    ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
+    tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
+    twb_b = int(abw+7)//8    # Tag array write byte bitwidth
+    dwb_b = int(clw+7)//8    # Data array write byte bitwidth 
+    mx2_b = clog2(clw//dbw+1)# Read word mux bitwidth
     #-------------------------------------------------------------------------
-    # Dtypes
+    # Make bit structs
     #-------------------------------------------------------------------------
-    ob = mk_bits(obw)
-    ty = mk_bits(4)
-    ab = mk_bits(abw)
-    db = mk_bits(dbw)
-    cl = mk_bits(clw)
-    ix = mk_bits(idw)
-    tg = mk_bits(tgw)
+    ob = mk_bits(obw)        # opaque 
+    ty = mk_bits(4)          # type ; always 4 bits
+    ab = mk_bits(abw)        # address 
+    db = mk_bits(dbw)        # data 
+    cl = mk_bits(clw)        # cacheline 
+    ix = mk_bits(idw)        # index 
+    tg = mk_bits(tgw)        # tag 
+    of = mk_bits(ofw-2)      # offset 
+    twb = mk_bits(twb_b)     # Tag array write byte enable
+    dwb = mk_bits(dwb_b)     # Data array write byte enable
+    mx2 = mk_bits(mx2_b)     # Read data mux M2 
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
@@ -69,7 +76,7 @@ class BlockingCachePRTL ( Component ):
 
     s.tag_array_val_Y      = Wire(Bits1) 
     s.tag_array_type_Y     = Wire(Bits1)
-    s.tag_array_wben_Y     = Wire(Bits4)
+    s.tag_array_wben_Y     = Wire(twb)
     s.ctrl_bit_val_wr_Y     = Wire(Bits1)
 
     # M0 Signals to be connected
@@ -77,16 +84,18 @@ class BlockingCachePRTL ( Component ):
     s.write_data_mux_sel_M0 = Wire(mk_bits(clog2(2)))
     # M1 
     s.cachereq_type_M1      = Wire(ty)
-    s.ctrl_bit_val_rd_M1     = Wire(Bits1)
+    s.ctrl_bit_val_rd_M1    = Wire(Bits1)
     s.tag_match_M1          = Wire(Bits1)
+    s.offset_M1             = Wire(of)
     s.reg_en_M1             = Wire(Bits1)
     s.data_array_val_M1     = Wire(Bits1)
     s.data_array_type_M1    = Wire(Bits1)
-    s.data_array_wben_M1    = Wire(Bits16)
+    s.data_array_wben_M1    = Wire(dwb)
     # M2
     s.reg_en_M2             = Wire(Bits1)
+    s.offset_M2             = Wire(of)
     # s.read_data_mux_sel_M2  = Wire(mk_bits(clog2(2)))
-    s.read_word_mux_sel_M2  = Wire(mk_bits(clog2(5)))
+    s.read_word_mux_sel_M2  = Wire(mx2)
     s.cachereq_type_M2      = Wire(ty)
     # Output Signals
 
@@ -98,15 +107,18 @@ class BlockingCachePRTL ( Component ):
       s.cachereq_data_Y   = db(s.cachereq.msg.data)
 
     s.cacheDpath = BlockingCacheDpathPRTL(
-      obw, abw, dbw, size, clw, way
+      abw, dbw, clw, idw, ofw, tgw, 
+      nbl,
+      ab, ob, ty, db, cl, ix, tg, of,
+      twb, dwb, mx2,
     )(
-      cachereq_opaque       = s.cachereq_opaque_Y,
-      cachereq_type         = s.cachereq_type_Y,
-      cachereq_addr         = s.cachereq_addr_Y,
-      cachereq_data         = s.cachereq_data_Y,
+      cachereq_opaque_Y     = s.cachereq_opaque_Y,
+      cachereq_type_Y       = s.cachereq_type_Y,
+      cachereq_addr_Y       = s.cachereq_addr_Y,
+      cachereq_data_Y       = s.cachereq_data_Y,
 
-      memresp_opaque        = s.memresp.msg.opaque,
-      memresp_data          = s.memresp.msg.data,
+      memresp_opaque_Y      = s.memresp.msg.opaque,
+      memresp_data_Y        = s.memresp.msg.data,
 
       cacheresp_opaque      = s.cacheresp.msg.opaque,
       cacheresp_type        = s.cacheresp.msg.type_,
@@ -130,15 +142,20 @@ class BlockingCachePRTL ( Component ):
       ctrl_bit_val_rd_M1     = s.ctrl_bit_val_rd_M1,
       tag_match_M1          = s.tag_match_M1 ,
       cachereq_type_M1      = s.cachereq_type_M1,
+      offset_M1             = s.offset_M1,
       
       reg_en_M2             = s.reg_en_M2           ,
       # read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
       read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
       cachereq_type_M2      = s.cachereq_type_M2,
+      offset_M2             = s.offset_M2,
     )
 
     s.cacheCtrl = BlockingCacheCtrlPRTL(
-      obw, abw, dbw, size, clw, way
+      ofw,
+      ab, ob, ty, db, cl, ix, tg, of,
+      twb, dwb, mx2, 
+      twb_b, dwb_b, mx2_b
     )(
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
@@ -161,12 +178,14 @@ class BlockingCachePRTL ( Component ):
       cachereq_type_M1      = s.cachereq_type_M1,
       ctrl_bit_val_rd_M1    = s.ctrl_bit_val_rd_M1,
       tag_match_M1          = s.tag_match_M1 ,
+      offset_M1             = s.offset_M1,
       reg_en_M1             = s.reg_en_M1    ,
       data_array_val_M1     = s.data_array_val_M1,
       data_array_type_M1    = s.data_array_type_M1,
       data_array_wben_M1    = s.data_array_wben_M1,
 
       cachereq_type_M2      = s.cachereq_type_M2,
+      offset_M2             = s.offset_M2,
       reg_en_M2             = s.reg_en_M2           ,
       # read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
       read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
