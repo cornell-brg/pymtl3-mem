@@ -39,16 +39,11 @@ class SramGenericPRTL( Component ):
 
     s.dout = Wire( dtype )
     s.dout_next = Wire( dtype )
-
-    @s.update_on_edge
-    def update_sram():
-      s.dout = dtype( s.dout_next )
-      for i in range( num_words ):
-        s.ram[i] = dtype( s.ram_next[i] )
+    
 
     @s.update
     def read_logic():
-      if ( ~ s.CSB1 ) and s.WEB1:
+      if ( not s.CSB1 ) and s.WEB1:
         s.dout_next = s.ram[ s.A1 ]
       else:
         s.dout_next = dtype(0)
@@ -67,7 +62,14 @@ class SramGenericPRTL( Component ):
         s.O1 = s.dout
       else:
         s.O1 = dtype(0)
+    
+    @s.update_on_edge
+    def update_sram():
+      s.dout = dtype( s.dout_next )
+      for i in range( num_words ):
+        s.ram[i] = dtype( s.ram_next[i] )
 
+    # s.add_constraints( U(read_logic)<U(write_logic)<U(update_sram)<U(comb_logic) )
 
   def line_trace( s ):
     # print ([int(x) for x in s.ram], [int(x) for x in s.ram_next])

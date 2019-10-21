@@ -25,7 +25,7 @@ class BlockingCachePRTL ( Component ):
                  clw  = 128, # cacheline bitwidth
                  way  = 1    # associativity
   ):
-    s.explicit_modulename = 'BlockingCache'
+    s.explicit_modulename = 'PipelinedBlockingCache'
     #-------------------------------------------------------------------------
     # Bitwidths
     #-------------------------------------------------------------------------

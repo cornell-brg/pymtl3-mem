@@ -263,5 +263,5 @@ class BlockingCacheDpathPRTL (Component):
     # return "tag_array_rdata = {}, cachereq_addr = {} ".format(\
     #   s.tag_array_rdata_M1[0:tgw],s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
     # return "t->{} ".format(s.tag_array_M1.line_trace())
-    return "t->{} <> d->{}".format(s.tag_array_M1.line_trace(),
+    return "t->{}  d->{}".format(s.tag_array_M1.line_trace(),
     s.data_array_M2.line_trace())

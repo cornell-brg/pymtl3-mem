@@ -152,8 +152,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.shift_amt = Wire(mk_bits(clog2(dwb_b)))
     @s.update
     def comb_block_M1(): 
-      wben = dwb(0xf) << s.shift_amt  
       s.shift_amt[2:ofw] = s.offset_M1
+      wben = dwb(0xf) << s.shift_amt  
       # print ("wben: "+str(wben))
       s.reg_en_M1 = y
       if s.val_M1: #                                                      wben  ty  val      

@@ -145,17 +145,18 @@ def read_hit_many_clean( base_addr=100 ):
 
 def read_hit_random_clean( base_addr=100 ):
   array = []
+  test_amount = 4
   random.seed(0)
-  addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(4)]
-  data = [random.randint(0,0xfffff) for i in range(4)] 
-  for i in range(4):
+  addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(test_amount)]
+  data = [random.randint(0,0xfffff) for i in range(test_amount)] 
+  for i in range(test_amount):
     #                  type  opq  addr  len data
 
     array.append(req(  'in', i, addr[i], 0, data[i] ))
     #                  type  opq  test       len data
     array.append(resp( 'in', i, 0,             0, 0 ))
 
-  for i in range(4):
+  for i in range(test_amount):
     array.append(req(  'rd', i, addr[i], 0, 0 ))
     array.append(resp( 'rd', i, 1,       0, data[i] ))
 
