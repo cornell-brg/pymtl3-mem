@@ -4,6 +4,9 @@
 
 import pytest
 import random
+import sys
+
+sys.path.append("../")
 
 from pymtl3 import *
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
@@ -19,17 +22,20 @@ MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,10,32)
 class memWrapper(Component):
   def construct(s,abw,nbl):
     idw         = clog2(nbl)         # index width; clog2(512) = 9
-    twb_b       = int(abw+7)//8    # Tag array write byte bitwidth
+    twb_b       = int(abw+7)//8      # Tag array write byte bitwidth
+    
     ab          = mk_bits(abw)
     ix          = mk_bits(idw)
-    s.sramreq   = RecvIfcRTL(MemReqMsg4B)
-    s.sramresp  = SendIfcRTL(MemRespMsg4B)
-    s.sram_val  = Wire(b1)
-    s.sram_type = Wire(b1)
-    s.sram_idx  = Wire(ix)
+    
+    s.sramreq    = RecvIfcRTL(MemReqMsg4B)
+    s.sramresp   = SendIfcRTL(MemRespMsg4B)
+    s.sram_val   = Wire(b1)
+    s.sram_type  = Wire(b1)
+    s.sram_idx   = Wire(ix)
     s.sram_wdata = Wire(ab)
     s.sram_wben  = Wire(mk_bits(twb_b))
     s.sram_rdata = Wire(ab)
+
     s.SRAM = SramPRTL(abw, nbl)(
       port0_val   = s.sram_val,
       port0_type  = s.sram_type,
@@ -38,15 +44,18 @@ class memWrapper(Component):
       port0_wben  = s.sram_wben,
       port0_rdata = s.sram_rdata,
     )
+
     s.done = Wire(b1)
     s.reg_val = RegRst(b1)(
       in_ = s.sramreq.en,
       out = s.done
     )
+
     s.reg_type_ = RegRst(b4)(
       in_ = s.sramreq.msg.type_,
       out = s.sramresp.msg.type_
     )
+
     s.reg_opaque = RegRst(b8)(
       in_ = s.sramreq.msg.opaque,
       out = s.sramresp.msg.opaque
@@ -88,7 +97,7 @@ class TestHarness(Component):
 
   def done(s):
     return s.src.done() and s.sink.done()
-  def line_trace( s ):
+  def line_trace(s):
     return s.src.line_trace() + " " + s.mem.line_trace() \
          + " " + s.sink.line_trace()
 
@@ -111,7 +120,6 @@ def req( type_, opaque, addr, len, data ):
 
 def resp( type_, opaque, test, len, data ):
   msg = MemRespMsg4B()
-  # print ("msg = " + str( msg))
 
   if   type_ == 'rd': msg.type_ = MemMsgType.READ
   elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
@@ -124,9 +132,9 @@ def resp( type_, opaque, test, len, data ):
 
   return msg
 
-#---------
+#----------------------------------------------------------------
 # Run the simulation
-#---------
+#----------------------------------------------------------------
 def run_sim(th, max_cycles):
   th.elaborate()
   # print (" -----------starting simulation----------- ")
@@ -166,10 +174,8 @@ def random_test( base_addr=100 ):
   data = [random.randint(0,0xfffff) for i in range(test_amount)] 
   for i in range(test_amount):
     #                  type  opq  addr  len data
-
     array.append(req(  'in', i, addr[i], 0, data[i] ))
-    #                  type  opq  test       len data
-    array.append(resp( 'in', i, 0,             0, 0 ))
+    array.append(resp( 'in', i, 0,       0, 0 ))
 
   for i in range(test_amount):
     array.append(req(  'rd', i, addr[i], 0, 0 ))
@@ -182,23 +188,18 @@ def random_test( base_addr=100 ):
 #-------------------------------------------------------------------------
 
 test_case_table_generic = mk_test_case_table([
-  (                         "msg_func               mem_data_func         stall lat src sink"),
-  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                 0.0,  0,  0,  0    ],
-  [ "random_test",  random_test,  None,                 0.0,  0,  0,  0    ],
+  (                         "msg_func               stall lat src sink"),
+  [ "read_hit_1word_clean",  read_hit_1word_clean,  0.0,  0,  0,  0    ],
+  [ "random_test",           random_test,           0.0,  0,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )
-def test_generic( test_params):
+def test_generic( test_params ):
   msgs = test_params.msg_func(  )
-  if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( 100 )
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          memWrapper)
-  # Load memory before the test
-  if test_params.mem_data_func != None:
-    th.load( mem[::2], mem[1::2] )
   # Run the test
   run_sim( th, max_cycles=250 )
