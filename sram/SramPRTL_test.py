@@ -18,15 +18,15 @@ MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,10,32)
 
 class memWrapper(Component):
   def construct(s,abw,nbl):
-    s.sramreq = RecvIfcRTL(MemReqMsg4B)
-    s.sramresp = SendIfcRTL(MemRespMsg4B)
-    idw = clog2(nbl)         # index width; clog2(512) = 9
-    twb_b = int(abw+7)//8    # Tag array write byte bitwidth
-    ab = mk_bits(abw)
-    ix = mk_bits(idw)
-    s.sram_val = Wire(b1)
+    idw         = clog2(nbl)         # index width; clog2(512) = 9
+    twb_b       = int(abw+7)//8    # Tag array write byte bitwidth
+    ab          = mk_bits(abw)
+    ix          = mk_bits(idw)
+    s.sramreq   = RecvIfcRTL(MemReqMsg4B)
+    s.sramresp  = SendIfcRTL(MemRespMsg4B)
+    s.sram_val  = Wire(b1)
     s.sram_type = Wire(b1)
-    s.sram_idx = Wire(ix)
+    s.sram_idx  = Wire(ix)
     s.sram_wdata = Wire(ab)
     s.sram_wben  = Wire(mk_bits(twb_b))
     s.sram_rdata = Wire(ab)
@@ -69,17 +69,22 @@ class memWrapper(Component):
       
 
   def line_trace(s):
-    return s.SRAM.line_trace()
+    return s.SRAM.line_trace() + ""
 
 class TestHarness(Component):
   def construct(s,src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, memModel):
     # Instantiate models
-    s.src   = TestSrcRTL(MemReqMsg4B, src_msgs, src_delay)
+    s.src   = TestSrcCL(MemReqMsg4B, src_msgs, src_delay)
     s.mem   = memModel(32,1024)
     s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
-    connect (s.src.send, s.mem.sramreq)
-    connect (s.sink.recv, s.mem.sramresp)
+    s.src2mem  = RecvCL2SendRTL(MemReqMsg4B)
+    s.mem2sink = RecvRTL2SendCL(MemRespMsg4B)
+
+    connect (s.src.send, s.src2mem.recv)
+    connect (s.src2mem.send, s.mem.sramreq)
+    connect (s.mem.sramresp, s.mem2sink.recv)
+    connect (s.mem2sink.send, s.sink.recv)
 
   def done(s):
     return s.src.done() and s.sink.done()
