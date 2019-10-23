@@ -90,9 +90,9 @@ def resp( type_, opaque, test, len, data ):
 
   return msg
 
-#---------
+#----------------------------------------------------------------------
 # Run the simulation
-#---------
+#---------------------------------------------------------------------
 def run_sim(th, max_cycles):
   # print (" -----------starting simulation----------- ")
   th.apply( DynamicSim )
@@ -111,7 +111,6 @@ def run_sim(th, max_cycles):
 # Test Case: read hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-
 def read_hit_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
@@ -123,26 +122,21 @@ def read_hit_1word_clean( base_addr=0 ):
 # Test Case: read hit/miss path, many requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-
 def read_hit_many_clean( base_addr=100 ):
   array = []
   for i in range(4):
     #                  type  opq  addr          len data
-
     array.append(req(  'in', i, ((base_addr+0x0f000000)<<2)+i*4, 0, i ))
-    #                  type  opq  test          len data
     array.append(resp( 'in', i, 0,             0, 0 ))
-
   for i in range(4):
     array.append(req(  'rd', i, ((base_addr+0x0f000000)<<2)+i*4, 0, 0 ))
     array.append(resp( 'rd', i, 1,             0, i ))
-
   return array
+
 #----------------------------------------------------------------------
 # Test Case: read hit/miss path,random requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-
 def read_hit_random_clean( base_addr=100 ):
   array = []
   test_amount = 4
@@ -150,27 +144,37 @@ def read_hit_random_clean( base_addr=100 ):
   addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(test_amount)]
   data = [random.randint(0,0xfffff) for i in range(test_amount)] 
   for i in range(test_amount):
-    #                  type  opq  addr  len data
-
-    array.append(req(  'in', i, addr[i], 0, data[i] ))
-    #                  type  opq  test       len data
-    array.append(resp( 'in', i, 0,             0, 0 ))
-
+    #                  type  opq  addr     len data
+    array.append(req(  'in', i,   addr[i], 0,  data[i]))
+    #                  type  opq  test     len data
+    array.append(resp( 'in', i,   0,       0,  0 ))
   for i in range(test_amount):
     array.append(req(  'rd', i, addr[i], 0, 0 ))
     array.append(resp( 'rd', i, 1,       0, data[i] ))
-
   return array
+
+#----------------------------------------------------------------------
+# Test Case: write hit path
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+def write_hit_1word_clean( base_addr=0 ):
+  return [
+    #    type  opq  addr                 len data                type  opq  test len data
+    req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+    req( 'wr', 0x1, base_addr, 0, 0xffffffff ), resp( 'wr', 0x1, 1,   0,  0          ),
+    req( 'rd', 0x2, base_addr, 0, 0          ), resp( 'rd', 0x2, 1,   0,  0xffffffff ),
+  ]
 
 #-------------------------------------------------------------------------
 # Test table for generic test
 #-------------------------------------------------------------------------
 
 test_case_table_generic = mk_test_case_table([
-  (                         "msg_func               mem_data_func         stall lat src sink"),
-  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                 0.0,  0,  0,  0    ],
-  [ "read_hit_many_clean",   read_hit_many_clean ,  None,                 0.0,  0,  0,  0    ],
-  [ "read_hit_random_clean", read_hit_random_clean ,  None,                 0.0,  0,  0,  0    ],
+  ( "                        msg_func               mem_data_func  stall lat src sink"),
+  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,          0.0,  0,  0,  0    ],
+  [ "read_hit_many_clean",   read_hit_many_clean,   None,          0.0,  0,  0,  0    ],
+  [ "read_hit_random_clean", read_hit_random_clean, None,          0.0,  0,  0,  0    ],
+  [ "write_hit_1word_clean", write_hit_1word_clean, None,          0.0,  0,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )

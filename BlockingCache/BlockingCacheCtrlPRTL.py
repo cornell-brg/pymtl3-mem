@@ -155,9 +155,9 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.reg_en_M1 = y
       if s.val_M1: #                                                      wben   ty  val      
         if (s.cachereq_type_M1 == MemMsgType.WRITE_INIT): s.cs1 = concat( wben,  wr,  y )
-        elif s.hit_M1 == b1(1)
+        elif s.hit_M1 == b1(1):
           if (s.cachereq_type_M1 == MemMsgType.READ):     s.cs1 = concat(dwb(0), rd,  y )
-          elif (s.cachereq_type_M1 == MemMsgType.WRITE):  s.cs1 = concat(dwb(0), wr,  y )
+          elif (s.cachereq_type_M1 == MemMsgType.WRITE):  s.cs1 = concat(  wben, wr,  y )
           else:                                           s.cs1 = concat(dwb(0),  n,  n )
         else:                                             s.cs1 = concat(dwb(0),  n,  n )
       else:                                               s.cs1 = concat(dwb(0),  n,  n )
@@ -174,7 +174,6 @@ class BlockingCacheCtrlPRTL ( Component ):
       in_ = s.val_M1,
       out = s.val_M2,
     )
-    
     s.hit_reg_M2 = RegEnRst(Bits1)(
       en  = s.reg_en_M2,
       in_ = s.hit_M1,
@@ -189,14 +188,11 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
       off = mx2(s.offset_M2) + mx2(1)
-      # print ("M2_off = "+str(off)+" "+str(type(off)))
-      # if s.cacheresp_rdy:
-      #   s.cacheresp_en = b1(1)
-      # s.memreq_en = b1(0)
       s.reg_en_M2 = y
       if s.val_M2:                                                    # word_mux  memreq  cacheresp  
         if (s.cachereq_type_M2 == MemMsgType.WRITE_INIT): s.cs2 = concat( off,     n,       y   )
         elif (s.cachereq_type_M2 == MemMsgType.READ):     s.cs2 = concat( off ,    n,       y   )
+        elif (s.cachereq_type_M2 == MemMsgType.WRITE):    s.cs2 = concat( off ,    n,       y   )
         else:                                             s.cs2 = concat( off,     n,       n   )
       else:                                               s.cs2 = concat( off,     n,       n   )
         
