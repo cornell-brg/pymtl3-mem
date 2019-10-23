@@ -54,29 +54,24 @@ class BlockingCachePRTL ( Component ):
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
-
     # Proc -> Cache
     s.cachereq  = RecvIfcRTL ( MemReqMsg4B )
-    
     # Cache -> Proc
     s.cacheresp = SendIfcRTL( MemRespMsg4B )
-    
     # Mem -> Cache
     s.memresp   = RecvIfcRTL ( MemRespMsg16B )
-
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemReqMsg16B )
 
-
     # Y  Signals to be connected
-    s.cachereq_opaque_Y    = Wire(ob)
-    s.cachereq_type_Y      = Wire(ty)
-    s.cachereq_addr_Y      = Wire(ab)
-    s.cachereq_data_Y      = Wire(db)
-
-    s.tag_array_val_Y      = Wire(Bits1) 
-    s.tag_array_type_Y     = Wire(Bits1)
-    s.tag_array_wben_Y     = Wire(twb)
+    s.cachereq_opaque_Y     = Wire(ob)
+    s.cachereq_type_Y       = Wire(ty)
+    s.cachereq_addr_Y       = Wire(ab)
+    s.cachereq_data_Y       = Wire(db)
+ 
+    s.tag_array_val_Y       = Wire(Bits1) 
+    s.tag_array_type_Y      = Wire(Bits1)
+    s.tag_array_wben_Y      = Wire(twb)
     s.ctrl_bit_val_wr_Y     = Wire(Bits1)
 
     # M0 Signals to be connected
@@ -99,8 +94,9 @@ class BlockingCachePRTL ( Component ):
     s.cachereq_type_M2      = Wire(ty)
     # Output Signals
 
+    # Required as a result of the test harness using ints after it sends all the transactions
     @s.update
-    def input_cast(): # Required as a result of the test harness using ints after it sends all the transactions
+    def input_cast(): 
       s.cachereq_opaque_Y = ob(s.cachereq.msg.opaque)
       s.cachereq_type_Y   = ty(s.cachereq.msg.type_)
       s.cachereq_addr_Y   = ab(s.cachereq.msg.addr)

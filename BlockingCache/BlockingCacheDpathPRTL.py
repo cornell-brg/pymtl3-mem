@@ -49,21 +49,19 @@ class BlockingCacheDpathPRTL (Component):
     s.memreq_addr      = OutPort(ab)
     s.memreq_data			 = OutPort(cl)
 
+    #-------------------------------------------------------------------
     # Control Signals (ctrl -> dpath)
-    #-----------------
+    #-------------------------------------------------------------------
     # Y  Signals
-    #-----------------
     s.tag_array_val_Y      = InPort(Bits1)
     s.tag_array_type_Y     = InPort(Bits1)
     s.tag_array_wben_Y     = InPort(twb)
     s.ctrl_bit_val_wr_Y    = InPort(Bits1)
-    #-----------------
+
     # M0 Signals
-    #-----------------
     s.reg_en_M0             = InPort(Bits1)
-    #-----------------
-    # M1 
-    #-----------------
+
+    # M1 Signals
     s.reg_en_M1             = InPort(Bits1)
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
@@ -72,14 +70,14 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_match_M1          = OutPort(Bits1)
     s.cachereq_type_M1      = OutPort(ty)
     s.offset_M1             = OutPort(of)
-    #-----------------
+
     # M2
-    #-----------------
     s.reg_en_M2             = InPort(Bits1)
     # s.read_data_mux_sel_M2  = InPort(Bits1)
     s.read_word_mux_sel_M2  = InPort(mx2)
     s.cachereq_type_M2      = OutPort(ty)
     s.offset_M2             = OutPort(of)
+
     #--------------------------------------------------------------------
     # Y  Stage
     #--------------------------------------------------------------------
@@ -104,10 +102,10 @@ class BlockingCacheDpathPRTL (Component):
       port0_wben  = s.tag_array_wben_Y,
       port0_rdata = s.tag_array_rdata_M1,
     )
+
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
-
     # s.write_data_mux_M0 = Mux(mk_bits(clw), 2)(
     #   in_ = {0: s.cachereq_data,
     #          1: s.memresp_data},
@@ -115,9 +113,9 @@ class BlockingCacheDpathPRTL (Component):
     #   out = s.data_array_wdata_M0,
     # )
 
-    #-----------------------------------------------------
+    #--------------------------------------------------------------------
     # M1 Stage 
-    #-----------------------------------------------------    
+    #--------------------------------------------------------------------
     # Pipeline registers
     s.cachereq_opaque_M1  = Wire(ob)
     s.cachereq_opaque_reg_M1 = RegEnRst(ob)(
@@ -202,9 +200,9 @@ class BlockingCacheDpathPRTL (Component):
       port0_rdata = s.data_array_rdata_M2,
     )
   
-    #-----------------------------------------------------
+    #----------------------------------------------------------------
     # M2 Stage 
-    #-----------------------------------------------------
+    #----------------------------------------------------------------
     # Pipeline registers
     s.cachereq_opaque_M2  = Wire(ob)
     s.cachereq_opaque_reg_M2 = RegEnRst(ob)(
