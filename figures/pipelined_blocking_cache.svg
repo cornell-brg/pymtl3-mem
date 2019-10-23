@@ -2463,6 +2463,18 @@
        inkscape:stockid="TriangleOutM"
        orient="auto"
        refY="0"
+       refX="0"
+       id="marker5092-888-2"
+       style="overflow:visible">
+      <path
+         id="path5094-3-0"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;marker-start:none"
+         transform="scale(0.4)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="TriangleOutM"
        orient="auto"
        refY="0"
        refX="0"
