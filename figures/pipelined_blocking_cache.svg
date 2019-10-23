@@ -32,10 +32,10 @@
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
      inkscape:zoom="2.0000001"
-     inkscape:cx="302.09629"
-     inkscape:cy="593.41436"
+     inkscape:cx="372.77056"
+     inkscape:cy="631.88105"
      inkscape:document-units="px"
-     inkscape:current-layer="layer4"
+     inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:object-paths="false"
      inkscape:grid-bbox="false"
@@ -4753,38 +4753,6 @@
          sodipodi:role="line"
          style="font-size:8px;line-height:1"
          id="tspan7171-0" /></text>
-    <path
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc"
-       style="display:inline;overflow:visible;visibility:visible;fill:none;stroke:#4588d6;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-end:url(#TriangleOutMP65-48-0-6);enable-background:accumulate"
-       d="m 28.330442,14.566819 v 10"
-       id="path8877-5-4" />
-    <text
-       id="text3525-8-7"
-       y="3.7695312"
-       x="28.429688"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:Palatino;-inkscape-font-specification:Palatino;text-indent:0;text-align:center;text-decoration:none;text-decoration-line:none;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-anchor:middle;display:inline;overflow:visible;visibility:visible;fill:#4588d6;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;marker:none;enable-background:accumulate"
-       xml:space="preserve"><tspan
-         y="3.7695312"
-         x="28.429688"
-         sodipodi:role="line"
-         style="font-size:8px;line-height:1"
-         id="tspan4184-9">memresp_mux_</tspan><tspan
-         y="11.769531"
-         x="28.429688"
-         sodipodi:role="line"
-         style="font-size:8px;line-height:1"
-         id="tspan4188-1">sel_Y_M0</tspan><tspan
-         y="16.650848"
-         x="28.429688"
-         sodipodi:role="line"
-         style="font-size:8px;line-height:1"
-         id="tspan7169-8-3" /><tspan
-         y="16.650848"
-         x="28.429688"
-         sodipodi:role="line"
-         style="font-size:8px;line-height:1"
-         id="tspan7171-0-2" /></text>
     <text
        id="text3525-8-4"
        y="56.769955"
