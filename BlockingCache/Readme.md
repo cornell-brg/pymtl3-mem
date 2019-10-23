@@ -48,7 +48,7 @@ Trans     :    Y  Y  ............. Y  M1 M2       <- Next Transaction Path
 
 `M1`: Hit check; tag match and valid bit from tag array. Results in a miss and not dirty
 
-`M2`: Build and send memory request for refill request
+`M2`: Build and send memory request for refill request. Save opaque, address, and type in 1 entry MSHR or registers?
 
 .
 
