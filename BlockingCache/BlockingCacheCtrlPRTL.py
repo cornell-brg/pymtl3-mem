@@ -90,9 +90,28 @@ class BlockingCacheCtrlPRTL ( Component ):
     CS_memresp_rdy         = slice( 1,  2 )
     CS_cachereq_rdy        = slice( 0,  1 )
     s.csY = Wire( Bits32 )
+    
+    #--------------------------------------------------------------------
+    # M0 Stage (Refill Request)
+    #--------------------------------------------------------------------
+    s.val_M0 = Wire(Bits1)
+    s.val_reg_M0 = s.memresp_en
+    s.val_M1 = Wire(Bits1)
+    s.val_reg_M0 = RegEnRst(Bits1)(
+      en  = s.reg_en_M0,
+      in_ = b1(1) if s.memresp_en else b1(0),
+      out = s.val_M0,
+    )
+
+    @s.update
+    def comb_block_M0(): 
+      s.reg_en_M0 = s.memresp_en
+      s.memresp_rdy = b1(1)
+      
     @s.update
     def comb_block_Y(): # logic block for setting output ports
       s.val_Y = s.cachereq_en
+
       # s.cachereq_rdy = b1(1)
       # s.memresp_rdy = b1(0)
       if s.val_Y:#                                                       tg_wben  tg_ty tg_v  val  memresp cachereq
@@ -101,29 +120,13 @@ class BlockingCacheCtrlPRTL ( Component ):
         elif (s.cachereq_type_Y == MemMsgType.WRITE):    s.csY = concat( twb(0x0), rd,   y,    n,    n,      y    )
         else:                                            s.csY = concat( twb(0x0), rd,   n,    n,    n,      y    )
       else:                                              s.csY = concat( twb(0x0), rd,   n,    n,    n,      y    )
+
       s.tag_array_type_Y  = s.csY[ CS_tag_array_type_Y  ]
       s.tag_array_val_Y   = s.csY[ CS_tag_array_val_Y   ]
       s.tag_array_wben_Y  = s.csY[ CS_tag_array_wben_Y  ]
       s.ctrl_bit_val_wr_Y = s.csY[ CS_ctrl_bit_val_wr_Y ]
       s.memresp_rdy       = s.csY[ CS_memresp_rdy       ]
-      s.cachereq_rdy      = s.csY[ CS_cachereq_rdy      ]      
-    
-    #--------------------------------------------------------------------
-    # M0 Stage (Refill Request)
-    #--------------------------------------------------------------------
-    s.val_M0 = Wire(Bits1)
-    
-    s.tem_M0 = Wire(Bits1)
-    s.val_reg_M0 = RegEnRst(Bits1)(
-      en  = s.reg_en_M0,
-      in_ = s.val_M0,
-      out = s.tem_M0,
-    )
-    @s.update
-    def comb_block_M0():
-      s.reg_en_M0 = n
-      s.val_M0 = s.memresp_rdy 
-      
+      s.cachereq_rdy      = s.csY[ CS_cachereq_rdy      ]  
     #--------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------
