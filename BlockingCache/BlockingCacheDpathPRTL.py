@@ -27,9 +27,9 @@ class BlockingCacheDpathPRTL (Component):
                 twb = "inv",  # Tag array write byte enable
                 dwb = "inv",  # Data array write byte enable
                 mx2 = "inv",  # Read data mux M2 
-
   ):
-		#---------------------------------------------------------------------
+	
+  	#---------------------------------------------------------------------
 		# Interface
 		#--------------------------------------------------------------------- 
 		# Proc -> Cache
@@ -85,6 +85,7 @@ class BlockingCacheDpathPRTL (Component):
     #--------------------------------------------------------------------
     # Y  Stage
     #--------------------------------------------------------------------
+    
     # Duplicator
     s.rep_out_Y = Wire(cl)
     @s.update
@@ -95,6 +96,7 @@ class BlockingCacheDpathPRTL (Component):
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
+   
     s.memresp_data_M0     = Wire(cl)
     s.memresp_opaque_M0   = Wire(ob)
     s.opaque_M0_Y         = Wire(ob)
@@ -105,42 +107,47 @@ class BlockingCacheDpathPRTL (Component):
     s.addr_M0_Y           = Wire(ab)
     
     # Pipeline Registers
-    s.val_reg_M0 = RegEnRst(Bits1)(
-      en  = s.reg_en_M0,
-      in_ = s.val_M0,
-      out = s.,
-    )
-    s.memresp_data_reg_M0 = RegEnRst(cl)(
+    s.memresp_data_reg_M0 = RegEnRst(cl)\
+    (
       en  = s.reg_en_M0,
       in_ = s.memresp_data_Y,
       out = s.memresp_data_M0,
     )
-    s.memresp_opaque_reg_M0 = RegEnRst(ob)(
+
+    s.memresp_opaque_reg_M0 = RegEnRst(ob)\
+    (
       en  = s.reg_en_M0,
       in_ = s.memresp_opaque_Y,
       out = s.memresp_opaque_M0,
     )
 
     # Cachereq or Memresp select muxes
-    s.opaque_mux_M0 = Mux(ob, 2)(
+    s.opaque_mux_M0 = Mux(ob, 2)\
+    (
       in_ = {0: s.cachereq_opaque_Y,
              1: s.memresp_opaque_M0},
       sel = s.memresp_mux_sel_M0_Y,
       out = s.opaque_M0_Y,
     )
-    s.type_mux_M0 = Mux(ty, 2)(
+
+    s.type_mux_M0 = Mux(ty, 2)\
+    (
       in_ = {0: s.cachereq_type_Y,
              1: s.MSHR_type_M0},
       sel = s.memresp_mux_sel_M0_Y,
       out = s.type_M0_Y,
     )
-    s.addr_mux_M0 = Mux(ab, 2)(
+
+    s.addr_mux_M0 = Mux(ab, 2)\
+    (
       in_ = {0: s.cachereq_addr_Y,
              1: s.MSHR_addr_M0},
       sel = s.memresp_mux_sel_M0_Y,
       out = s.addr_M0_Y,
     )
-    s.write_data_mux_M0 = Mux(cl, 2)(
+
+    s.write_data_mux_M0 = Mux(cl, 2)\
+    (
       in_ = {0: s.rep_out_Y,
              1: s.memresp_data_M0},
       sel = s.memresp_mux_sel_M0_Y,
@@ -166,9 +173,11 @@ class BlockingCacheDpathPRTL (Component):
       port0_wben  = s.tag_array_wben_Y,
       port0_rdata = s.tag_array_rdata_M1,
     )
+
     #--------------------------------------------------------------------
     # M1 Stage 
     #--------------------------------------------------------------------
+    
     s.cachereq_opaque_M1  = Wire(ob)
     s.cachereq_type_M1_w  = Wire(ty)
     s.cachereq_addr_M1    = Wire(ab)

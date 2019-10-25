@@ -19,16 +19,19 @@ obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 
+# PARAMETRIZED BY TYPE OF CACHEREQ RESPONSE MEMREQ RESPONSE
 class BlockingCachePRTL ( Component ):
   def construct( s,                
-                 size = 4096,# cache size in bytes
-                 clw  = 128, # cacheline bitwidth
-                 way  = 1    # associativity
+                 size = 4096, # cache size in bytes, nbytes
+                 clw  = 128,  # cacheline bitwidth CHANGE TO BYTES, cacheline_nbytes
+                 way  = 1     # associativity, name: associativity
   ):
     s.explicit_modulename = 'PipelinedBlockingCache'
+
     #-------------------------------------------------------------------------
     # Bitwidths
     #-------------------------------------------------------------------------
+    
     nbl = size*8//clw        # number of cache blocks; 8192*8/128 = 512
     nby = nbl/way            # blocks per way; 1
     idw = clog2(nbl)         # index width; clog2(512) = 9
@@ -37,23 +40,27 @@ class BlockingCachePRTL ( Component ):
     twb_b = int(abw+7)//8    # Tag array write byte bitwidth
     dwb_b = int(clw+7)//8    # Data array write byte bitwidth 
     mx2_b = clog2(clw//dbw+1)# Read word mux bitwidth
+    
     #-------------------------------------------------------------------------
-    # Make bit structs
+    # Make bits
     #-------------------------------------------------------------------------
-    ob = mk_bits(obw)        # opaque 
-    ty = mk_bits(4)          # type ; always 4 bits
-    ab = mk_bits(abw)        # address 
-    db = mk_bits(dbw)        # data 
-    cl = mk_bits(clw)        # cacheline 
-    ix = mk_bits(idw)        # index 
-    tg = mk_bits(tgw)        # tag 
-    of = mk_bits(ofw-2)      # offset 
+    
+    BitsOpaque    = mk_bits(obw)   # opaque
+    BitsType      = mk_bits(4)     # type, always 4 bits
+    BitsAddress   = mk_bits(abw)   # address 
+    BitsData      = mk_bits(dbw)   # data 
+    BitsCacheline = mk_bits(clw)   # cacheline 
+    BitsIndex     = mk_bits(idw)   # index 
+    BitsTag       = mk_bits(tgw)   # tag 
+    BitsOffset    = mk_bits(ofw-2) # offset 
     twb = mk_bits(twb_b)     # Tag array write byte enable
     dwb = mk_bits(dwb_b)     # Data array write byte enable
     mx2 = mk_bits(mx2_b)     # Read data mux M2 
+    
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
+    
     # Proc -> Cache
     s.cachereq  = RecvIfcRTL ( MemReqMsg4B )
     # Cache -> Proc
@@ -64,10 +71,10 @@ class BlockingCachePRTL ( Component ):
     s.memreq    = SendIfcRTL( MemReqMsg16B )
 
     # Y  Signals to be connected
-    s.cachereq_opaque_Y     = Wire(ob)
-    s.cachereq_type_Y       = Wire(ty)
-    s.cachereq_addr_Y       = Wire(ab)
-    s.cachereq_data_Y       = Wire(db)
+    s.cachereq_opaque_Y     = Wire(BitsOpaque)
+    s.cachereq_type_Y       = Wire(BitsType)
+    s.cachereq_addr_Y       = Wire(BitsAddress)
+    s.cachereq_data_Y       = Wire(BitsData)
  
     s.tag_array_val_Y       = Wire(Bits1) 
     s.tag_array_type_Y      = Wire(Bits1)
@@ -78,34 +85,34 @@ class BlockingCachePRTL ( Component ):
     s.reg_en_M0             = Wire(Bits1)
     s.write_data_mux_sel_M0 = Wire(mk_bits(clog2(2)))
     # M1 
-    s.cachereq_type_M1      = Wire(ty)
+    s.cachereq_type_M1      = Wire(BitsType)
     s.ctrl_bit_val_rd_M1    = Wire(Bits1)
     s.tag_match_M1          = Wire(Bits1)
-    s.offset_M1             = Wire(of)
+    s.offset_M1             = Wire(BitsOffset)
     s.reg_en_M1             = Wire(Bits1)
     s.data_array_val_M1     = Wire(Bits1)
     s.data_array_type_M1    = Wire(Bits1)
     s.data_array_wben_M1    = Wire(dwb)
     # M2
     s.reg_en_M2             = Wire(Bits1)
-    s.offset_M2             = Wire(of)
+    s.offset_M2             = Wire(BitsOffset)
     # s.read_data_mux_sel_M2  = Wire(mk_bits(clog2(2)))
     s.read_word_mux_sel_M2  = Wire(mx2)
-    s.cachereq_type_M2      = Wire(ty)
+    s.cachereq_type_M2      = Wire(BitsType)
     # Output Signals
 
     # Required as a result of the test harness using ints after it sends all the transactions
     @s.update
     def input_cast(): 
-      s.cachereq_opaque_Y = ob(s.cachereq.msg.opaque)
-      s.cachereq_type_Y   = ty(s.cachereq.msg.type_)
-      s.cachereq_addr_Y   = ab(s.cachereq.msg.addr)
-      s.cachereq_data_Y   = db(s.cachereq.msg.data)
+      s.cachereq_opaque_Y = BitsOpaque(s.cachereq.msg.opaque)
+      s.cachereq_type_Y   = BitsType(s.cachereq.msg.type_)
+      s.cachereq_addr_Y   = BitsAddress(s.cachereq.msg.addr)
+      s.cachereq_data_Y   = BitsData(s.cachereq.msg.data)
 
     s.cacheDpath = BlockingCacheDpathPRTL(
       abw, dbw, clw, idw, ofw, tgw, 
       nbl,
-      ab, ob, ty, db, cl, ix, tg, of,
+      BitsAddress, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIndex, BitsTag, BitsOffset,
       twb, dwb, mx2,
     )(
       cachereq_opaque_Y     = s.cachereq_opaque_Y,
@@ -127,29 +134,29 @@ class BlockingCachePRTL ( Component ):
       tag_array_val_Y       = s.tag_array_val_Y,
       tag_array_type_Y      = s.tag_array_type_Y,
       tag_array_wben_Y      = s.tag_array_wben_Y,
-      ctrl_bit_val_wr_Y        = s.ctrl_bit_val_wr_Y,
+      ctrl_bit_val_wr_Y     = s.ctrl_bit_val_wr_Y,
       
       reg_en_M0             = s.reg_en_M0,
       
-      reg_en_M1             = s.reg_en_M1    ,
+      reg_en_M1             = s.reg_en_M1,
       data_array_val_M1     = s.data_array_val_M1,
       data_array_type_M1    = s.data_array_type_M1,
       data_array_wben_M1    = s.data_array_wben_M1,
-      ctrl_bit_val_rd_M1     = s.ctrl_bit_val_rd_M1,
+      ctrl_bit_val_rd_M1    = s.ctrl_bit_val_rd_M1,
       tag_match_M1          = s.tag_match_M1 ,
       cachereq_type_M1      = s.cachereq_type_M1,
       offset_M1             = s.offset_M1,
       
-      reg_en_M2             = s.reg_en_M2           ,
+      reg_en_M2             = s.reg_en_M2,
       # read_data_mux_sel_M2  = s.read_data_mux_sel_M2,
       read_word_mux_sel_M2  = s.read_word_mux_sel_M2,
       cachereq_type_M2      = s.cachereq_type_M2,
       offset_M2             = s.offset_M2,
     )
-
+    # TODO: AUTO CONNECT, GET RID OF TMP WIRES
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       ofw,
-      ab, ob, ty, db, cl, ix, tg, of,
+      BitsAddress, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIndex, BitsTag, BitsOffset,
       twb, dwb, mx2, 
       twb_b, dwb_b, mx2_b
     )(
