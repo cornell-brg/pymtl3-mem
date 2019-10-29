@@ -8,6 +8,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
+                 dbw   = 32,       # offset bitwidth
                  ofw   = 4,       # offset bitwidth
                  ab    = "inv",    # address bitstruct
                  ob    = "inv",    # opaque 
@@ -147,8 +148,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def comb_block_M1(): 
       s.shift_amt[2:ofw] = s.offset_M1
-      wben = dwb(0xf) << s.shift_amt  
-      # print ("wben: "+str(wben))
+      wben = dwb(2**(dbw//8)-1) << s.shift_amt  
+      print ("wben: "+str(wben))
       s.reg_en_M1 = y
       if s.val_M1: #                                                      wben   ty  val      
         if (s.cachereq_type_M1 == MemMsgType.WRITE_INIT): s.cs1 = concat( wben,  wr,  y )
@@ -185,15 +186,14 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      off = mx2(s.offset_M2) + mx2(1)
-      
+      off = mx2(s.offset_M2) + 1  
       s.reg_en_M2 = y
       if s.val_M2:                                                    # word_mux|rdata_mux|memreq|cacheresp  
-        if (s.cachereq_type_M2 == MemMsgType.WRITE_INIT): s.cs2 = concat( off,   b1(0),     n,       y   )
+        if (s.cachereq_type_M2 == MemMsgType.WRITE_INIT): s.cs2 = concat(mx2(0), b1(0),     n,       y   )
         elif (s.cachereq_type_M2 == MemMsgType.READ):     s.cs2 = concat( off,   b1(0),     n,       y   )
-        elif (s.cachereq_type_M2 == MemMsgType.WRITE):    s.cs2 = concat( off,   b1(0),     n,       y   )
-        else:                                             s.cs2 = concat( off,   b1(0),     n,       n   )
-      else:                                               s.cs2 = concat( off,   b1(0),     n,       n   )
+        elif (s.cachereq_type_M2 == MemMsgType.WRITE):    s.cs2 = concat(mx2(0), b1(0),     n,       y   )
+        else:                                             s.cs2 = concat(mx2(0), b1(0),     n,       n   )
+      else:                                               s.cs2 = concat(mx2(0), b1(0),     n,       n   )
         
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ] 
@@ -207,5 +207,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     msg_M1 = types[s.cachereq_type_M1] if s.val_M1 else "  "
     msg_M2 = types[s.cachereq_type_M2] if s.val_M2 else "  "
     
-    return "|{}|{}|{}|  H_M1:{} H_M2:{} TM_M1:{} off2:{}".format(\
-      msg_M0,msg_M1,msg_M2,s.hit_M1,s.hit_M2,s.tag_match_M1,s.offset_M2) 
+    return "|{}|{}|{}|  H_M1:{} H_M2:{} TM_M1:{} mux2:{}".format(\
+      msg_M0,msg_M1,msg_M2,s.hit_M1,s.hit_M2,s.tag_match_M1,
+      s.read_word_mux_sel_M2) 

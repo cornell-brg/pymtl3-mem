@@ -115,7 +115,7 @@ class BlockingCachePRTL ( Component ):
     )
     # TODO: AUTO CONNECT, GET RID OF TMP WIRES
     s.cacheCtrl = BlockingCacheCtrlPRTL(
-      ofw,
+      dbw, ofw,
       BitsAddress, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIndex, BitsTag, BitsOffset,
       twb, dwb, mx2, 
       twb_b, dwb_b, mx2_b

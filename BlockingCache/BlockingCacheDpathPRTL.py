@@ -303,16 +303,16 @@ class BlockingCacheDpathPRTL (Component):
       
       
   def line_trace( s ):
-    return (
-      "TAG:T={}|A={}  DATA:D={}|R={}".format(\
-      s.tag_array_rdata_M1,
-      s.cachereq_addr_M1,
-      s.data_array_rdata_M2,
-      s.cacheresp_data_M2
-      )
-    )
+    # return (
+      # "TAG:T={}|A={}  DATA:D={}|R={}".format(\
+      # s.tag_array_rdata_M1,
+      # s.cachereq_addr_M1,
+      # s.data_array_rdata_M2,
+      # s.cacheresp_data_M2
+      # )
+    # )
     # return "tag_array_rdata = {}, cachereq_addr = {} ".format(\
     #   s.tag_array_rdata_M1[0:tgw],s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
     # return "t->{} ".format(s.tag_array_M1.line_trace())
-    # return "{} {}".format(s.tag_array_M1.line_trace(),
-    # s.data_array_M2.line_trace())
+    return "{} {}".format(s.tag_array_M1.line_trace(),
+    s.data_array_M2.line_trace())

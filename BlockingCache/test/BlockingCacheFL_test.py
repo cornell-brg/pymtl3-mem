@@ -19,9 +19,9 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 obw  = 8   # Short name for opaque bitwidth
-abw  = 64  # Short name for addr bitwidth
+abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
-clw  = 256
+clw  = 128
 
 #-------------------------------------------------------------------------
 # ReqRespMsgTypes
@@ -82,7 +82,8 @@ class TestHarness(Component):
 #-------------------------------------------------------------------------
 
 def req( type_, opaque, addr, len, data ):
-  msg = MemReqMsg4B()
+  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+  msg = CacheMsg.Req()
 
   if   type_ == 'rd': msg.type_ = MemMsgType.READ
   elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
@@ -95,7 +96,8 @@ def req( type_, opaque, addr, len, data ):
   return msg
 
 def resp( type_, opaque, test, len, data ):
-  msg = MemRespMsg4B()
+  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+  msg = CacheMsg.Resp()
   # print ("msg = " + str( msg))
 
   if   type_ == 'rd': msg.type_ = MemMsgType.READ
