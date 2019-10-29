@@ -18,6 +18,21 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
+obw  = 8   # Short name for opaque bitwidth
+abw  = 64  # Short name for addr bitwidth
+dbw  = 32  # Short name for data bitwidth
+clw  = 256
+
+#-------------------------------------------------------------------------
+# ReqRespMsgTypes
+#-------------------------------------------------------------------------
+
+class ReqRespMsgTypes():
+  def __init__(s, opq, addr, data):
+    s.Req, s.Resp = mk_mem_msg(opq, addr, data)
+    s.obw = opq
+    s.abw = addr
+    s.dbw = data
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -27,13 +42,17 @@ class TestHarness(Component):
   
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, CacheModel, test_verilog=False ):
+    
+    CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+    MemMsg = ReqRespMsgTypes(obw, abw, clw)
+    cacheSize = 8196 # size in bytes
     # Instantiate models
-    s.src   = TestSrcRTL(MemReqMsg4B, src_msgs, src_delay)
-    s.cache = CacheModel()
-    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[(MemReqMsg16B, MemRespMsg16B)], latency=latency)
-    s.cache2mem = RecvRTL2SendCL(MemReqMsg16B)
-    s.mem2cache = RecvCL2SendRTL(MemRespMsg16B)
-    s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
+    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
+    s.cache = CacheModel(cacheSize, CacheMsg, MemMsg)
+    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[(MemMsg.Req, MemMsg.Resp)], latency=latency)
+    s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
+    s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
+    s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
@@ -164,6 +183,18 @@ def write_hit_1word_clean( base_addr=0 ):
     req( 'wr', 0x1, base_addr, 0, 0xffffffff ), resp( 'wr', 0x1, 1,   0,  0          ),
     req( 'rd', 0x2, base_addr, 0, 0          ), resp( 'rd', 0x2, 1,   0,  0xffffffff ),
   ]
+#----------------------------------------------------------------------
+# Test Case: write hit path
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+def write_hits_read_hits( base_addr=0 ):
+  return [
+    #    type  opq  addr                 len data                type  opq  test len data
+    req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+    req( 'rd', 0x1, base_addr, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
+    req( 'wr', 0x2, base_addr, 0, 0xffffffff ), resp( 'wr', 0x2, 1,   0,  0          ),
+    req( 'rd', 0x3, base_addr, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xffffffff ),
+  ]
 
 #-------------------------------------------------------------------------
 # Test table for generic test
@@ -175,8 +206,9 @@ test_case_table_generic = mk_test_case_table([
   [ "read_hit_many_clean",   read_hit_many_clean,   None,          0.0,  0,  0,  0    ],
   [ "read_hit_random_clean", read_hit_random_clean, None,          0.0,  0,  0,  0    ],
   [ "write_hit_1word_clean", write_hit_1word_clean, None,          0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits", write_hits_read_hits, None,          0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits", write_hits_read_hits, None,          0.5,  1,  0,  0    ],
 ])
-
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
   msgs = test_params.msg_func( 100 )
