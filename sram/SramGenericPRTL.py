@@ -58,7 +58,7 @@ class SramGenericPRTL( Component ):
           s.ram_next[s.A1][ i*8 : i*8+8 ] = dtype(s.I1)[ i*8 : i*8+8 ]
           # print ("in loop s.ram_next = {}".format(s.ram_next[s.A1]))
         # print ("not in loop s.ram_next = {}".format(s.ram_next[s.A1]))
-      print ("not in loop s.I1 = {}".format(s.I1))
+      # print ("not in loop s.I1 = {}".format(s.I1))
 
     @s.update
     def comb_logic():
@@ -71,7 +71,7 @@ class SramGenericPRTL( Component ):
     
     @s.update_on_edge
     def update_sram():
-      print("update_sram")
+      # print("update_sram")
       s.dout = dtype( s.dout_next )
       for i in range( num_words ):
         s.ram[i] = dtype( s.ram_next[i] )
