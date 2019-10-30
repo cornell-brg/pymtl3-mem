@@ -94,7 +94,7 @@ def translate():
   dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
   dut.elaborate()
   dut.yosys_translate_import = True
-  # dut = TranslationImportPass(  )( dut )
+  dut = TranslationImportPass(  )( dut )
 
 #-------------------------------------------------------------------------
 # make messages
@@ -240,8 +240,8 @@ def test_generic( test_params):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)
-  # th.elaborate()
-  translate()
+  th.elaborate()
+  # translate()
   # Load memory before the test
   if test_params.mem_data_func != None:
     th.load( mem[::2], mem[1::2] )

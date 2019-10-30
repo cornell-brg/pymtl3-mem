@@ -83,20 +83,8 @@ class BlockingCacheDpathPRTL (Component):
     s.offset_M2             = OutPort(BitsOffset)
 
     #--------------------------------------------------------------------
-    # Y  Stage
-    #--------------------------------------------------------------------
-    
-    # Duplicator
-    s.rep_out_M0 = Wire(BitsCacheline)
-    # @s.update
-    # def Replicator():
-    for i in range(0,clw,dbw):
-      connect(s.rep_out_M0[i:i+dbw], s.cachereq_data_M0)
-
-    #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
-   
     s.memresp_data_M0     = Wire(BitsCacheline)
     s.memresp_opaque_M0   = Wire(BitsOpaque)
     s.opaque_M0         = Wire(BitsOpaque)
@@ -105,6 +93,14 @@ class BlockingCacheDpathPRTL (Component):
     s.type_M0           = Wire(BitsType)
     s.MSHR_addr_M0        = Wire(BitsAddr)
     s.addr_M0           = Wire(BitsAddr)
+
+    # Duplicator
+    s.rep_out_M0 = Wire(BitsCacheline)
+    # @s.update
+    # def Replicator():
+    for i in range(0,clw,dbw):
+      connect(s.rep_out_M0[i:i+dbw], s.cachereq_data_M0)
+   
     
     # Pipeline Registers
     s.memresp_data_reg_M0 = RegEnRst(BitsCacheline)\
