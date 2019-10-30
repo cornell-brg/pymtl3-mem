@@ -11,7 +11,7 @@
 ![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache.svg)
 ## Pipeline Stages
 
-`Y `: Prior to receiving transaction. Pretransaction stage.
+`Y `: Prior to receiving transaction. Pretransaction stage. NOT USING ANYMORE
 
 `M0`: Refill stage used to process the memory response from a refill or a writeback request.
 
@@ -26,8 +26,8 @@
 
 Example Cacheline
 ```
-|v | ... |  tag   |
- 31   tgw        0
+|v | ...free bits... | tag |
+ 31               tgw     0
 ```
 
 ## Possible Transaction Cases
@@ -35,13 +35,17 @@ We have three possible cases each for read and write.
 
 ### Hit (read/write)
 ```
-Hit       : Y  M1 M2                              <- 2 Cycle Latency
+             1  2  3  4  5  6
+Hit       : M0 M1 M2                              <- 2 Cycle Latency
+Hit       :    M0 M1 M2                           
+Hit       :       M0 M1 M2                         
+Hit       :          M0 M1 M2                     <- 6 cycles for 4 transactions
 ```
 
 ### Miss Clean (read/write)
 ```
-Miss      : Y  M1 M2 .......... M0 M1 M2          <- Refill path
-Trans     :    Y  Y  ............. Y  M1 M2       <- Next Transaction Path 
+Miss      : M0 M1 M2 .......... M0 M1 M2          <- Refill path
+Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path 
 ```
 #### Read
 `Y `: Tag array access by setting index, valid, and read req.
@@ -57,9 +61,9 @@ Trans     :    Y  Y  ............. Y  M1 M2       <- Next Transaction Path
 
 ### Miss and dirty (read/write)
 ```
-Miss Dirty: Y  M1 M2 .......... M0 M1 M2          <- Evict path
+Miss Dirty: M0 M1 M2 .......... M0 M1 M2          <- Evict path
                   M1 M2 .......... M0 M1 M2       <- Refill path - New transaction spawns
-Hit       : Y  Y  Y  Y  ............. Y  M1 M2    <- Hit path
+Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 ```
 
 
