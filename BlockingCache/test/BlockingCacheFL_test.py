@@ -16,12 +16,15 @@ from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 # from BlockingCache.test.CacheMemory import MemoryCL
 
+from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
+
+
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
 MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
-clw  = 128
+clw  = 512
 
 #-------------------------------------------------------------------------
 # ReqRespMsgTypes
@@ -64,6 +67,7 @@ class TestHarness(Component):
     connect( s.mem.ifc[0].req, s.cache2mem.send )
 
 
+
   def load( s, addrs, data_ints ):
     for addr, data_int in zip( addrs, data_ints ):
       data_bytes_a = bytearray()
@@ -76,6 +80,21 @@ class TestHarness(Component):
   def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
          + s.mem.line_trace() + " " + s.sink.line_trace()
+
+#-------------------------------------------------------------------------
+# Translate Function for the cache
+#-------------------------------------------------------------------------
+
+def translate():
+  # Translate the checksum unit and import it back in using the yosys
+  # backend
+  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+  MemMsg = ReqRespMsgTypes(obw, abw, clw)
+  cacheSize = 8196 # size in bytes
+  dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
+  dut.elaborate()
+  dut.yosys_translate_import = True
+  # dut = TranslationImportPass(  )( dut )
 
 #-------------------------------------------------------------------------
 # make messages
@@ -222,6 +241,7 @@ def test_generic( test_params):
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)
   # th.elaborate()
+  translate()
   # Load memory before the test
   if test_params.mem_data_func != None:
     th.load( mem[::2], mem[1::2] )

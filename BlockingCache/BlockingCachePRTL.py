@@ -43,9 +43,9 @@ class BlockingCachePRTL ( Component ):
     idw = clog2(nbl)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
-    twb_b = int(abw+7)//8    # Tag array write byte bitwidth
-    dwb_b = int(clw+7)//8    # Data array write byte bitwidth 
-    mx2_b = clog2(clw//dbw+1)# Read word mux bitwidth
+    twb = int(abw+7)//8    # Tag array write byte bitwidth
+    dwb = int(clw+7)//8    # Data array write byte bitwidth 
+    rmx2 = clog2(clw//dbw+1)# Read word mux bitwidth
     
     #-------------------------------------------------------------------------
     # Make bits
@@ -53,15 +53,15 @@ class BlockingCachePRTL ( Component ):
     
     BitsOpaque    = mk_bits(obw)   # opaque
     BitsType      = mk_bits(4)     # type, always 4 bits
-    BitsAddress   = mk_bits(abw)   # address 
+    BitsAddr      = mk_bits(abw)   # address 
     BitsData      = mk_bits(dbw)   # data 
     BitsCacheline = mk_bits(clw)   # cacheline 
-    BitsIndex     = mk_bits(idw)   # index 
+    BitsIdx       = mk_bits(idw)   # index 
     BitsTag       = mk_bits(tgw)   # tag 
     BitsOffset    = mk_bits(ofw-2) # offset 
-    twb = mk_bits(twb_b)           # Tag array write byte enable
-    dwb = mk_bits(dwb_b)           # Data array write byte enable
-    mx2 = mk_bits(mx2_b)           # Read data mux M2 
+    BitsTagWben   = mk_bits(twb) # Tag array write byte enable
+    BitsDataWben  = mk_bits(dwb) # Data array write byte enable
+    BitsRdDataMux = mk_bits(rmx2) # Read data mux M2 
     
     #---------------------------------------------------------------------
     # Interface
@@ -79,7 +79,7 @@ class BlockingCachePRTL ( Component ):
     # # Y  Signals to be connected
     s.cachereq_opaque_M0     = Wire(BitsOpaque)
     s.cachereq_type_M0       = Wire(BitsType)
-    s.cachereq_addr_M0       = Wire(BitsAddress)
+    s.cachereq_addr_M0       = Wire(BitsAddr)
     s.cachereq_data_M0       = Wire(BitsData)
 
     # Required as a result of the test harness using ints after it sends all the transactions
@@ -87,14 +87,13 @@ class BlockingCachePRTL ( Component ):
     def input_cast(): 
       s.cachereq_opaque_M0 = BitsOpaque(s.cachereq.msg.opaque)
       s.cachereq_type_M0   = BitsType(s.cachereq.msg.type_)
-      s.cachereq_addr_M0   = BitsAddress(s.cachereq.msg.addr)
+      s.cachereq_addr_M0   = BitsAddr(s.cachereq.msg.addr)
       s.cachereq_data_M0   = BitsData(s.cachereq.msg.data)
 
     s.cacheDpath = BlockingCacheDpathPRTL(
-      abw, dbw, clw, idw, ofw, tgw, 
-      nbl,
-      BitsAddress, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIndex, BitsTag, BitsOffset,
-      twb, dwb, mx2,
+      abw, dbw, clw, idw, ofw, tgw, nbl,
+      BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
+      BitsTagWben, BitsDataWben, BitsRdDataMux,
     )(
       cachereq_opaque_M0     = s.cachereq_opaque_M0,
       cachereq_type_M0       = s.cachereq_type_M0,
@@ -116,9 +115,9 @@ class BlockingCachePRTL ( Component ):
     # TODO: AUTO CONNECT, GET RID OF TMP WIRES
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       dbw, ofw,
-      BitsAddress, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIndex, BitsTag, BitsOffset,
-      twb, dwb, mx2, 
-      twb_b, dwb_b, mx2_b
+      BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
+      BitsTagWben, BitsDataWben, BitsRdDataMux, 
+      twb, dwb, rmx2
     )(
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
