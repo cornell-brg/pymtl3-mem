@@ -43,7 +43,6 @@ class SramGenericPRTL( Component ):
 
     @s.update
     def read_logic():
-      # print("read_logic")
       if ( not s.CSB1 ) and s.WEB1:
         s.dout_next = s.ram[ s.A1 ]
       else:
@@ -52,15 +51,12 @@ class SramGenericPRTL( Component ):
     # write path
     @s.update
     def write_logic():
-      # print("write_logic| csb1={}, web1={}".format(s.CSB1,s.WEB1))
       for i in range( nbytes ):
         if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
           s.ram_next[s.A1][ i*8 : i*8+8 ] = dtype(s.I1)[ i*8 : i*8+8 ]
           
     @s.update
     def comb_logic():
-      # print("comb_logic"
-      # )
       if not s.OEB1:
         s.O1 = s.dout
       else:
@@ -68,7 +64,6 @@ class SramGenericPRTL( Component ):
     
     @s.update_on_edge
     def update_sram():
-      # print("update_sram")
       s.dout = dtype( s.dout_next )
       for i in range( num_words ):
         s.ram[i] = dtype( s.ram_next[i] )

@@ -6,6 +6,7 @@ from pymtl3            import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
 from pymtl3.stdlib.rtl.arithmetics import Mux
 from sram.SramPRTL     import SramPRTL
+from BlockingCache.utils import EComp
 
 class BlockingCacheDpathPRTL (Component):
   def construct(s, 
@@ -101,7 +102,7 @@ class BlockingCacheDpathPRTL (Component):
     for i in range(0,clw,dbw):
       connect(s.rep_out_M0[i:i+dbw], s.cachereq_data_M0)
    
-    
+ 
     # Pipeline Registers
     s.memresp_data_reg_M0 = RegEnRst(BitsCacheline)\
     (
@@ -201,11 +202,20 @@ class BlockingCacheDpathPRTL (Component):
     # Output the valid bit
     s.ctrl_bit_val_rd_M1 //= s.tag_array_rdata_M1[abw-1:abw] 
     s.offset_M1 //= s.cachereq_addr_M1[2:ofw]
-      
+
+    # s.comp_in1 = Wire(BitsTag)
+    # s.comp_in2 = Wire(BitsTag)
+    # s.comp_in1 //= s.tag_array_rdata_M1[0:tgw]
+    # s.comp_in2 //= s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]
+    # @s.update
+    # def Comparator():
+    #   s.tag_match_M1 = s.comp_in1 == s.comp_in2
     # Comparator
-    @s.update
-    def Comparator():
-      s.tag_match_M1 = (s.tag_array_rdata_M1[0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
+    s.Comparator = EComp(BitsTag)(
+      in0 = s.tag_array_rdata_M1[0:tgw],
+      in1 = s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw],
+      out = s.tag_match_M1
+    )
 
     # 1 Entry MSHR
     s.MSHR_type = RegEnRst(BitsType)(

@@ -57,6 +57,8 @@ class TestHarness(Component):
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
+    s.cache.yosys_translate_import = True
+    
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
 
@@ -95,6 +97,8 @@ def translate():
   dut.elaborate()
   dut.yosys_translate_import = True
   dut = TranslationImportPass(  )( dut )
+  dut.elaborate()
+  dut.apply( TranslationPass() )
 
 #-------------------------------------------------------------------------
 # make messages
@@ -240,7 +244,7 @@ def test_generic( test_params):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, False)
-  th.elaborate()
+  # th.elaborate()
   # translate()
   # Load memory before the test
   if test_params.mem_data_func != None:

@@ -5,6 +5,7 @@
 from pymtl3      import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.rtl.arithmetics import LShifter
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
@@ -33,7 +34,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     READ = BitsType(0)
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
-
+    data_array_wb_mask = 2**(dbw//8)-1
     
     #-------------------------------------------------------------------
     # Interface
@@ -112,8 +113,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en
       s.reg_en_M0 = s.memresp_en
-      # s.cachereq_rdy = b1(1)
-      # s.memresp_rdy = b1(0)
       if s.val_M0:#                                         tag_wben       |mr_mux|tg_ty|tg_v|val|memresp|cachereq
         if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf),b1(0),  wr,   y,    y,    n,      y    )
         elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n,      y    )
@@ -149,20 +148,27 @@ class BlockingCacheCtrlPRTL ( Component ):
         and s.cachereq_type_M1 != INIT)#MemMsgType.WRITE_INIT)
       s.hit_M2[1]= b1(0)
     
+    # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000 
-    s.shift_amt = Wire(mk_bits(clog2(dwb)))
-    s.shift_amt[2:ofw] //= s.offset_M1
-    s.shift_amt[0:2] //= b2(0)
+    s.shamt = Wire(mk_bits(clog2(dwb)))
+    s.shamt[0:2] //= b2(0)
+    s.shamt[2:ofw] //= s.offset_M1
+    s.wben_out = Wire(BitsDataWben)
+    s.wben_in  = Wire(BitsDataWben)
+    s.WbenGen = LShifter( BitsDataWben, clog2(dwb) )(
+      in_ = s.wben_in,
+      shamt = s.shamt,
+      out = s.wben_out
+    )
     @s.update
     def comb_block_M1(): 
-      wben = BitsDataWben(2**(dbw//8)-1) << s.shift_amt  
-      print ("wben: "+str(wben))
-      # wben = s.wben
+      s.wben_in = BitsDataWben(data_array_wb_mask)
+      wben = s.wben_out
       s.reg_en_M1 = y
       if s.val_M1: #                                         wben |ty|val      
         if (s.cachereq_type_M1 == INIT):     s.cs1 = concat( wben, wr, y )
         elif s.hit_M1 == y:
-          if (s.cachereq_type_M1 == READ):   s.cs1 = concat( wben0,rd, y )
+          if (s.cachereq_type_M1 == READ):   s.cs1 = concat(wben0, rd, y )
           elif (s.cachereq_type_M1 == WRITE):s.cs1 = concat( wben, wr, y )
           else:                              s.cs1 = concat(wben0, n, n )
         else:                                s.cs1 = concat(wben0, n, n )
