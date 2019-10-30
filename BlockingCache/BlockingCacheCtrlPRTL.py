@@ -8,22 +8,22 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
-                 dbw   = 32,       # offset bitwidth
-                 ofw   = 4,       # offset bitwidth
-                 BitsAddr = "inv",    # address bitstruct
+                 dbw           = 32,       # offset bitwidth
+                 ofw           = 4,        # offset bitwidth
+                 BitsAddr      = "inv",    # address bitstruct
                  BitsOpaque    = "inv",    # opaque 
-                 BitsType    = "inv",    # type
-                 BitsData    = "inv",    # data 
-                 BitsCacheline    = "inv",    # cacheline 
-                 BitsIdx    = "inv",    # index 
-                 BitsTag    = "inv",    # tag 
+                 BitsType      = "inv",    # type
+                 BitsData      = "inv",    # data 
+                 BitsCacheline = "inv",    # cacheline 
+                 BitsIdx       = "inv",    # index 
+                 BitsTag       = "inv",    # tag 
                  BitsOffset    = "inv",    # offset 
                  BitsTagWben   = "inv",    # Tag array write byte enable
-                 BitsDataWben   = "inv",    # Data array write byte enable
-                 BitsRdDataMux   = "inv",    # Read data mux M2 
-                 twb = 4,        # Tag array write byte enable bitwidth
-                 dwb = 16,       # Data array write byte enable bitwidth
-                 rmx2 = 3,        # Read word mux bitwidth
+                 BitsDataWben  = "inv",    # Data array write byte enable
+                 BitsRdDataMux = "inv",    # Read data mux M2 
+                 twb           = 4,        # Tag array write byte enable bitwidth
+                 dwb           = 16,       # Data array write byte enable bitwidth
+                 rmx2          = 3,        # Read word mux bitwidth
   ):
     # Constants
     wr = y = b1(1)
@@ -34,7 +34,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
 
-    
     #-------------------------------------------------------------------
     # Interface
     #-------------------------------------------------------------------
@@ -61,7 +60,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.tag_array_type_M0   = OutPort(Bits1)
     s.tag_array_wben_M0   = OutPort(BitsTagWben) 
     s.ctrl_bit_val_wr_M0  = OutPort(Bits1)
-    s.reg_en_M0          = OutPort(Bits1)
+    s.reg_en_M0           = OutPort(Bits1)
     
     #-------------------------------------------------------------------
     # M1 Ctrl Signals
@@ -90,7 +89,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.hit_M2                = OutPort(Bits2)
 
     #--------------------------------------------------------------------
-    # M0 Stage (Refill Request)
+    # M0 Stage 
     #--------------------------------------------------------------------
     # Stall logic
     # s.stall_M0 = Wire(Bits1)    
@@ -108,6 +107,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def dummy_driver():
       s.reg_en_MSHR = b1(1)
+      
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en

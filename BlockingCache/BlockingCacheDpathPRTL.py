@@ -55,12 +55,12 @@ class BlockingCacheDpathPRTL (Component):
     #-------------------------------------------------------------------
 
     # M0 Signals
-    s.tag_array_val_M0       = InPort(Bits1)
-    s.tag_array_type_M0      = InPort(Bits1)
-    s.tag_array_wben_M0      = InPort(BitsTagWben)
-    s.ctrl_bit_val_wr_M0     = InPort(Bits1)
+    s.tag_array_val_M0      = InPort(Bits1)
+    s.tag_array_type_M0     = InPort(Bits1)
+    s.tag_array_wben_M0     = InPort(BitsTagWben)
+    s.ctrl_bit_val_wr_M0    = InPort(Bits1)
     s.reg_en_M0             = InPort(Bits1)
-    s.memresp_mux_sel_M0  = InPort(Bits1)
+    s.memresp_mux_sel_M0    = InPort(Bits1)
 
     # M1 Signals
     s.reg_en_M1             = InPort(Bits1)
@@ -87,12 +87,12 @@ class BlockingCacheDpathPRTL (Component):
     #--------------------------------------------------------------------
     s.memresp_data_M0     = Wire(BitsCacheline)
     s.memresp_opaque_M0   = Wire(BitsOpaque)
-    s.opaque_M0         = Wire(BitsOpaque)
+    s.opaque_M0           = Wire(BitsOpaque)
     s.data_array_wdata_M0 = Wire(BitsCacheline)
     s.MSHR_type_M0        = Wire(BitsType)
-    s.type_M0           = Wire(BitsType)
+    s.type_M0             = Wire(BitsType)
     s.MSHR_addr_M0        = Wire(BitsAddr)
-    s.addr_M0           = Wire(BitsAddr)
+    s.addr_M0             = Wire(BitsAddr)
 
     # Duplicator
     s.rep_out_M0 = Wire(BitsCacheline)
