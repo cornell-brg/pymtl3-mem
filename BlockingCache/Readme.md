@@ -101,12 +101,11 @@ Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path
 - Send memory request for refill
 - Cache response invalid
 ##### `M0`: Refill Response
-- Deallocate and clear from MSHR and select mux for type, opaque, address, and data
-- Write to tag array new valid tag
+- Deallocate from MSHR and select mux for type, opaque, address, and data
+- Write new valid tag to tag array 
 ##### `M1`: Refill Response
 - New cacherequest can come in
 - Write refilled cacheline data to data array 
-- Clear dirty bit
 ##### `M2`: Refill Response
 - Data mux select correct word and cache response valid
 
@@ -121,9 +120,9 @@ Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path
 - Send memory request for refill
 - Cache response invalid
 ##### `M0`: Refill Response/Write
-- Deallocate and clear from MSHR and select mux for type, opaque, address, and data
-- Write to tag array new valid tag
-- _Insert write data into response cacheline using mux_
+- Deallocate from MSHR and select mux for type, opaque, address, and data
+- Write new valid tag to tag array 
+- _Insert write data into response cacheline before writing to data array_
 ##### `M1`: Refill Response
 - New cacherequest can come in
 - Write refilled cacheline data to data array 
@@ -143,9 +142,9 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 ##### `M1`: Evict
 - Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). MISS
 - Stall signal to prevent new cache request from coming in
-- Generate new write memory transaction
+- Generate new write memory transaction; with FSM?
 - Clear dirty bit
-##### `M2`: Evict
+##### `M2`: Evict Request
 - Send memory write request for the evicted cacheline
 ##### `M1`: Refill Request
 - Allocate address and type in MSHR
@@ -154,8 +153,8 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 ##### `M0/M1/M2`: Evict Response
 - Ignore? Don't really need to move through the pipeline since nothing changes
 ##### `M0`: Refill Response
-- Deallocate and clear from MSHR and select mux for type, opaque, address, and data
-- Write to tag array new valid tag
+- Deallocate from MSHR and select mux for type, opaque, address, and data
+- Write new valid tag to tag array 
 ##### `M1`: Refill Response
 - New cacherequest can come in
 - Write refilled cacheline data to data array 
@@ -178,9 +177,9 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 ##### `M2`: Refill Request
 - Send memory write request
 ##### `M0`: Refill Response/Write
-- Deallocate and clear from MSHR and select mux for type, opaque, address, and data
-- Write to tag array new valid tag
-- _Insert write data into response cacheline using mux_
+- Deallocate from MSHR and select mux for type, opaque, address, and data
+- Write new valid tag to tag array 
+- _Insert write data into response cacheline before writing to data array_
 ##### `M1`: Refill Response
 - New cacherequest can come in
 - Write refilled cacheline data to data array 
