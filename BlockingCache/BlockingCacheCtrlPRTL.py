@@ -97,14 +97,13 @@ class BlockingCacheCtrlPRTL ( Component ):
     # s.stall_M0 = Wire(Bits1)    
     # Valid
     s.val_M0 = Wire(Bits1)
-    CS_tag_array_wben_M0    = slice( 6,  6 + twb ) # last because variable
-    CS_memresp_mux_sel_M0    = slice( 5,  6 )
-    CS_tag_array_type_M0    = slice( 4,  5 )
-    CS_tag_array_val_M0     = slice( 3,  4 )
-    CS_ctrl_bit_val_wr_M0   = slice( 2,  3 )
-    CS_memresp_rdy         = slice( 1,  2 )
-    CS_cachereq_rdy        = slice( 0,  1 )
-    s.cs0 = Wire( mk_bits( 6 + twb ) )
+    CS_tag_array_wben_M0    = slice( 5,  5 + twb ) # last because variable
+    CS_memresp_mux_sel_M0    = slice( 4,  5 )
+    CS_tag_array_type_M0    = slice( 3,  4 )
+    CS_tag_array_val_M0     = slice( 2,  3 )
+    CS_ctrl_bit_val_wr_M0   = slice( 1,  2 )
+    CS_memresp_rdy         = slice( 0,  1 )
+    s.cs0 = Wire( mk_bits( 5 + twb ) )
 
     @s.update
     def dummy_driver():
@@ -114,20 +113,21 @@ class BlockingCacheCtrlPRTL ( Component ):
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en
       s.reg_en_M0 = s.memresp_en
-      if s.val_M0:#                                         tag_wben       |mr_mux|tg_ty|tg_v|val|memresp|cachereq
-        if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf),b1(0),  wr,   y,    y,    n,      y    )
-        elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n,      y    )
-        elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n,      y    )
-        else:                              s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n,      y    )
-      else:                                s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n,      y    )
+      if s.val_M0:#                                         tag_wben       |mr_mux|tg_ty|tg_v|val|memresp
+        if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf),b1(0),  wr,   y,    y,    n  )
+        elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n  )
+        elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n  )
+        else:                              s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n  )
+      else:                                s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n  )
 
       s.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
       s.tag_array_val_M0   = s.cs0[ CS_tag_array_val_M0   ]
       s.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
       s.memresp_rdy        = s.cs0[ CS_memresp_rdy       ]
-      s.cachereq_rdy       = s.cs0[ CS_cachereq_rdy      ]  
       s.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
+
+    s.cachereq_rdy //= s.ostall_M1 
     #--------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------
@@ -178,6 +178,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.data_array_val_M1         = s.cs1[ CS_data_array_val_M1  ]
       s.data_array_wben_M1        = s.cs1[ CS_data_array_wben_M1 ]      
 
+    s.ostall_M1 = 
     #-----------------------------------------------------
     # M2 Stage 
     #-----------------------------------------------------
@@ -219,10 +220,9 @@ class BlockingCacheCtrlPRTL ( Component ):
 
   def line_trace( s ):
     types = ["rd","wr","in"]
-    msg_M0 = types[s.cachereq_type_M0]  if s.val_M0 else "  "
+    msg_M0 = types[s.cachereq_type_M0] if s.val_M0 else "  "
     msg_M1 = types[s.cachereq_type_M1] if s.val_M1 else "  "
     msg_M2 = types[s.cachereq_type_M2] if s.val_M2 else "  "
     
-    return "|{}|{}|{}|  H_M1:{} H_M2:{} TM_M1:{} mux2:{}".format(\
-      msg_M0,msg_M1,msg_M2,s.hit_M1,s.hit_M2,s.tag_match_M1,
-      s.read_word_mux_sel_M2) 
+    return "|{}|{}|{}|  c_rdy:{} c_en:{}".format(\
+      msg_M0,msg_M1,msg_M2,s.cachereq_rdy,s.cachereq_en) 
