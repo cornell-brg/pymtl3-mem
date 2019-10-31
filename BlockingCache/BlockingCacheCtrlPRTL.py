@@ -120,11 +120,11 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.val_M0 = s.cachereq_en
       s.reg_en_M0 = s.memresp_en
       if s.val_M0:#                                         tag_wben       |mr_mux|tg_ty|tg_v|val|memresp
-        if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf),b1(0),  wr,   y,    y,    n  )
-        elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n  )
-        elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,    n,    n  )
-        else:                              s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n  )
-      else:                                s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,    n,    n  )
+        if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf),b1(0),  wr,   y,   y,    n  )
+        elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,   n,    n  )
+        elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   y,   n,    n  )
+        else:                              s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,   n,    n  )
+      else:                                s.cs0 = concat( BitsTagWben(0x0),b1(0),  rd,   n,   n,    n  )
 
       s.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
       s.tag_array_val_M0   = s.cs0[ CS_tag_array_val_M0   ]
@@ -133,7 +133,9 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.memresp_rdy        = s.cs0[ CS_memresp_rdy       ]
       s.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
 
-    s.cachereq_rdy //= s.ostall_M1 
+    @s.update
+    def stall_logic_M0():
+      s.cachereq_rdy = ~ s.ostall_M1 
     #--------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------
@@ -186,7 +188,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
 
     @s.update
-    def stall_logic():
+    def stall_logic_M1():
       s.ostall_M1 = b1(0)
     #-----------------------------------------------------
     # M2 Stage 
