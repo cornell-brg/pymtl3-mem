@@ -143,7 +143,6 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 - Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). MISS
 - Stall signal to prevent new cache request from coming in
 - Generate new write memory transaction; with FSM?
-- Clear dirty bit
 ##### `M2`: Evict Request
 - Send memory write request for the evicted cacheline
 ##### `M1`: Refill Request
