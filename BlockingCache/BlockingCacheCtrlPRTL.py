@@ -89,12 +89,18 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.read_word_mux_sel_M2  = OutPort(BitsRdDataMux)
     # Output Signals
     s.hit_M2                = OutPort(Bits2)
+    
+    #------------------------------------------------------------------
+    # Stall and Ostall Signals
+    #------------------------------------------------------------------
+    
+    s.stall_M0 = Wire(Bits1)    
+    s.ostall_M1 = Wire(Bits1)
 
     #--------------------------------------------------------------------
     # M0 Stage 
     #--------------------------------------------------------------------
-    # Stall logic
-    # s.stall_M0 = Wire(Bits1)    
+
     # Valid
     s.val_M0 = Wire(Bits1)
     CS_tag_array_wben_M0    = slice( 5,  5 + twb ) # last because variable
@@ -178,7 +184,10 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.data_array_val_M1         = s.cs1[ CS_data_array_val_M1  ]
       s.data_array_wben_M1        = s.cs1[ CS_data_array_wben_M1 ]      
 
-    s.ostall_M1 = 
+
+    @s.update
+    def stall_logic():
+      s.ostall_M1 = b1(0)
     #-----------------------------------------------------
     # M2 Stage 
     #-----------------------------------------------------

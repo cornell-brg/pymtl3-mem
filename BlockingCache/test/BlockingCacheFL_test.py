@@ -14,6 +14,8 @@ from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
+from BlockingCache.BlockingCacheFL import BlockingCacheFL
+
 # from BlockingCache.test.CacheMemory import MemoryCL
 
 from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
@@ -24,7 +26,7 @@ MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
-clw  = 512
+clw  = 128
 
 #-------------------------------------------------------------------------
 # ReqRespMsgTypes
@@ -57,7 +59,7 @@ class TestHarness(Component):
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
-    s.cache.yosys_translate_import = True
+    # s.cache.yosys_translate_import = True
     
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
@@ -145,7 +147,7 @@ def run_sim(th, max_cycles):
   print("")
   while not th.done():
     th.tick()
-    print (str(curr_cyc) + " " + th.line_trace())
+    print ("{:4d}: {}".format(curr_cyc, th.line_trace()))
     curr_cyc += 1
     assert curr_cyc < max_cycles
   th.tick()
@@ -158,8 +160,8 @@ def run_sim(th, max_cycles):
 def read_hit_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
-    req( 'in', 0x0, base_addr+0xff000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
-    req( 'rd', 0x1, base_addr+0xff000000, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
+    req( 'in', 0x0, base_addr+0x000ab000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+    req( 'rd', 0x1, base_addr+0x000ab000, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0xdeadbeef ),
   ]
 
 #----------------------------------------------------------------------
@@ -170,10 +172,10 @@ def read_hit_many_clean( base_addr=100 ):
   array = []
   for i in range(4):
     #                  type  opq  addr          len data
-    array.append(req(  'in', i, ((base_addr+0x0f000000)<<2)+i*4, 0, i ))
+    array.append(req(  'in', i, ((base_addr+0x00012000)<<2)+i*4, 0, i ))
     array.append(resp( 'in', i, 0,             0, 0 ))
   for i in range(4):
-    array.append(req(  'rd', i, ((base_addr+0x0f000000)<<2)+i*4, 0, 0 ))
+    array.append(req(  'rd', i, ((base_addr+0x00012000)<<2)+i*4, 0, 0 ))
     array.append(resp( 'rd', i, 1,             0, i ))
   return array
 
@@ -221,36 +223,18 @@ def write_hits_read_hits( base_addr=0 ):
     req( 'rd', 0x3, base_addr, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xffffffff ),
   ]
 
-#----------------------------------------------------------------------
-# Test Case: read miss path
-#----------------------------------------------------------------------
-# The test field in the response message: 0 == MISS, 1 == HIT
-def read_miss_1word_clean( base_addr=0 ):
-  return [
-    #    type  opq  addr                 len data                type  opq  test len data
-    req( 'rd', 0x0, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x0, 0,   0,  0xdeadbeef ),
-    req( 'rd', 0x1, base_addr+0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee ),
-  ]
-
-def read_miss_1word_mem( base_addr=0 ):
-  return [
-    # addr                data
-    base_addr+0x00000000, 0xdeadbeef,
-    base_addr+0x00000004, 0x00c0ffee
-  ]
 #-------------------------------------------------------------------------
 # Test table for generic test
 #-------------------------------------------------------------------------
 
 test_case_table_generic = mk_test_case_table([
-  ( "                        msg_func               mem_data_func        stall lat src sink"),
-  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                0.0,  0,  0,  0    ],
-  [ "read_hit_many_clean",   read_hit_many_clean,   None,                0.0,  0,  0,  0    ],
-  [ "read_hit_random_clean", read_hit_random_clean, None,                0.0,  0,  0,  0    ],
-  [ "write_hit_1word_clean", write_hit_1word_clean, None,                0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.5,  1,  0,  0    ],
-  [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  0,  0,  0    ],
+  ( "                        msg_func               mem_data_func  stall lat src sink"),
+  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,          0.0,  0,  0,  0    ],
+  [ "read_hit_many_clean",   read_hit_many_clean,   None,          0.0,  0,  0,  0    ],
+  [ "read_hit_random_clean", read_hit_random_clean, None,          0.0,  0,  0,  0    ],
+  [ "write_hit_1word_clean", write_hit_1word_clean, None,          0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits", write_hits_read_hits, None,          0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits", write_hits_read_hits, None,          0.5,  1,  0,  0    ],
 ])
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
@@ -261,8 +245,8 @@ def test_generic( test_params):
   th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
-                         BlockingCachePRTL, False)
-  th.elaborate()
+                         BlockingCacheFL, False)
+  # th.elaborate()
   # translate()
   # Load memory before the test
   if test_params.mem_data_func != None:

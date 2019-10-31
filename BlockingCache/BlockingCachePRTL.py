@@ -76,7 +76,7 @@ class BlockingCachePRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    # # Y  Signals to be connected
+    # M0  Signals to be connected
     s.cachereq_opaque_M0     = Wire(BitsOpaque)
     s.cachereq_type_M0       = Wire(BitsType)
     s.cachereq_addr_M0       = Wire(BitsAddr)
