@@ -4,6 +4,7 @@
 
 from pymtl3            import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
+from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.arithmetics import Mux
 from sram.SramPRTL     import SramPRTL
 from BlockingCache.utils import EComp
@@ -68,6 +69,8 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(BitsDataWben)
+    s.ctrl_bit_dty_wr_M1    = InPort(Bits1)
+    s.ctrl_bit_dty_rd_M1    = OutPort(Bits1)
     s.ctrl_bit_val_rd_M1    = OutPort(Bits1)
     s.tag_match_M1          = OutPort(Bits1)
     s.cachereq_type_M1      = OutPort(BitsType)
@@ -173,6 +176,14 @@ class BlockingCacheDpathPRTL (Component):
     # M1 Stage 
     #--------------------------------------------------------------------
     
+    s.RegFile_M1 = RegisterFile(Bits1,nbl)(
+      raddr = s.tag_array_idx_M0,
+      rdata = s.ctrl_bit_dty_rd_M1,
+      waddr = s.tag_array_idx_M0,
+      wdata = s.ctrl_bit_dty_wr_M1,
+      wen   = b1(1)
+    )
+
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
     s.cachereq_addr_M1    = Wire(BitsAddr)
     s.cachereq_data_M1    = Wire(BitsCacheline)

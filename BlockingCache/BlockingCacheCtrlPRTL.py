@@ -3,7 +3,7 @@
 #=========================================================================
 
 from pymtl3      import *
-from pymtl3.stdlib.rtl.registers import RegEnRst
+from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 
@@ -29,13 +29,16 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Constants
     wr = y = b1(1)
     rd = n = b1(0)
+    READ  = BitsType(0)
     WRITE = BitsType(1)
-    INIT = BitsType(2)
-    READ = BitsType(0)
+    INIT  = BitsType(2)
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
     data_array_wb_mask = 2**(dbw//8)-1
-    
+    STATE_GO     = b2(0)
+    STATE_REFILL = b2(1)
+    STATE_EVICT  = b2(2)
+
     #-------------------------------------------------------------------
     # Interface
     #-------------------------------------------------------------------
@@ -70,8 +73,11 @@ class BlockingCacheCtrlPRTL ( Component ):
     
     s.cachereq_type_M1   = InPort(BitsType)
     s.ctrl_bit_val_rd_M1 = InPort(Bits1)
+    s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
     s.tag_match_M1       = InPort(Bits1)
     s.offset_M1          = InPort(BitsOffset)
+    
+    s.ctrl_bit_dty_wr_M1 = OutPort(Bits1)
     s.reg_en_M1          = OutPort(Bits1)
     s.data_array_val_M1  = OutPort(Bits1)
     s.data_array_type_M1 = OutPort(Bits1)
@@ -91,29 +97,70 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.hit_M2                = OutPort(Bits2)
     
     #------------------------------------------------------------------
+    # Connection Wires
+    #------------------------------------------------------------------
+    s.is_refill_M0 = Wire(Bits1)
+    s.is_refill_M1 = Wire(Bits1)
+    s.is_refill_M2 = Wire(Bits1)
+    s.hit_M1 = Wire(Bits1)
+    
+    #------------------------------------------------------------------
     # Stall and Ostall Signals
     #------------------------------------------------------------------
     
-    s.stall_M0 = Wire(Bits1)    
+    s.stall = Wire(Bits1)    
+    s.ostall_M0 = Wire(Bits1)
     s.ostall_M1 = Wire(Bits1)
+    s.ostall_M2 = Wire(Bits1)
+
+    #------------------------------------------------------------------
+    # Cache-wide FSM
+    #------------------------------------------------------------------
+    # FSM to control refill and evict tranaction conditions. 
+    s.curr_state = Wire(Bits2)
+    s.next_state = Wire(Bits2)
+    s.state_transition_block = RegRst(Bits2, STATE_GO)(
+      out = s.curr_state,
+      in_ = s.next_state
+    )
+    @s.update
+    def next_state_block():
+      if s.curr_state == STATE_GO:
+        if ~ s.hit_M1 and s.ctrl_bit_dty_rd_M0:     s.next_state = STATE_EVICT
+        elif ~ s.hit_M1 and ~ s.ctrl_bit_dty_rd_M0: s.next_state = STATE_REFILL
+      elif s.curr_state == STATE_REFILL:
+        if s.is_refill_M0:                          s.next_state = STATE_GO
+        else:                                       s.next_state = STATE_REFILL
+      elif s.curr_state == STATE_EVICT:             s.next_state = STATE_REFILL
+      else:
+        assert False, 'undefined state: next state block'
 
     #--------------------------------------------------------------------
     # M0 Stage 
     #--------------------------------------------------------------------
-
+    s.is_refill_reg_M0 = RegRst(Bits1)( #NO STALLS should occur while refilling
+      in_ = s.memresp_en,
+      out = s.is_refill_M1
+    )
     # Valid
     s.val_M0 = Wire(Bits1)
     CS_tag_array_wben_M0    = slice( 5,  5 + twb ) # last because variable
-    CS_memresp_mux_sel_M0    = slice( 4,  5 )
+    CS_memresp_mux_sel_M0   = slice( 4,  5 )
     CS_tag_array_type_M0    = slice( 3,  4 )
     CS_tag_array_val_M0     = slice( 2,  3 )
     CS_ctrl_bit_val_wr_M0   = slice( 1,  2 )
-    CS_memresp_rdy         = slice( 0,  1 )
-    s.cs0 = Wire( mk_bits( 5 + twb ) )
+    CS_memresp_rdy          = slice( 0,  1 )
+
+    s.cs0 = Wire( mk_bits( 5 + twb ) ) # Bits for CS parameterized
+    @s.update 
+    def dummy_driver(): # TEMPORARY; NOT SURE WHAT TO DO WITH THAT SIGNAL YET
+      s.reg_en_MSHR = b1(1)
 
     @s.update
-    def dummy_driver():
-      s.reg_en_MSHR = b1(1)
+    def stall_logic_M0():
+      s.stall = s.ostall_M0 || s.ostall_M1 || s.ostall_M2 # Check stall for all stages
+      s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
+      s.cachereq_rdy = ~ s.stall # No more request if we are stalling
       
     @s.update
     def comb_block_M0(): # logic block for setting output ports
@@ -130,12 +177,9 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.tag_array_val_M0   = s.cs0[ CS_tag_array_val_M0   ]
       s.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
-      s.memresp_rdy        = s.cs0[ CS_memresp_rdy       ]
+      s.memresp_rdy        = s.cs0[ CS_memresp_rdy        ]
       s.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
 
-    @s.update
-    def stall_logic_M0():
-      s.cachereq_rdy = ~ s.ostall_M1 
     #--------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------
@@ -145,12 +189,16 @@ class BlockingCacheCtrlPRTL ( Component ):
       in_ = s.val_M0,
       out = s.val_M1,
     )
+
+    s.is_refill_reg_M1 = RegRst(Bits1)( #NO STALLS should occur while refilling
+      in_ = s.is_refill_M0,
+      out = s.is_refill_M1
+    )
+
     CS_data_array_wben_M1   = slice( 2,  2 + dwb )
     CS_data_array_type_M1   = slice( 1,  2 )
     CS_data_array_val_M1    = slice( 0,  1 )
     s.cs1 = Wire( mk_bits( 2 + dwb ) )
-    s.hit_M1 = Wire(Bits1)
-    
     @s.update
     def hit_logic_M1():
       s.hit_M1 = (s.tag_match_M1 and s.ctrl_bit_val_rd_M1 \
@@ -159,8 +207,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000 
-    s.shamt = Wire(mk_bits(clog2(dwb)))
-    s.shamt[0:2] //= b2(0)
+    s.shamt          = Wire(mk_bits(clog2(dwb)))
+    s.shamt[0:2]   //= b2(0)
     s.shamt[2:ofw] //= s.offset_M1
     s.wben_out = Wire(BitsDataWben)
     s.wben_in  = Wire(BitsDataWben)
