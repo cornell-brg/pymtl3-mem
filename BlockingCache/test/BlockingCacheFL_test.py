@@ -223,19 +223,39 @@ def write_hits_read_hits( base_addr=0 ):
     req( 'rd', 0x3, base_addr, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xffffffff ),
   ]
 
-#-------------------------------------------------------------------------
+#----------------------------------------------------------------------
+# Test Case: read miss path
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+def read_miss_1word_clean( base_addr=0 ):
+  return [
+    #    type  opq  addr                 len data                type  opq  test len data
+    req( 'rd', 0x0, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x0, 0,   0,  0xdeadbeef ),
+    req( 'rd', 0x1, base_addr+0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee ),
+  ]
+
+def read_miss_1word_mem( base_addr=0 ):
+  return [
+    # addr                data
+    base_addr+0x00000000, 0xdeadbeef,
+    base_addr+0x00000004, 0x00c0ffee
+  ]
+
+#---------------------------------------------------------------------------------------------
 # Test table for generic test
-#-------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------
 
 test_case_table_generic = mk_test_case_table([
-  ( "                        msg_func               mem_data_func  stall lat src sink"),
-  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,          0.0,  0,  0,  0    ],
-  [ "read_hit_many_clean",   read_hit_many_clean,   None,          0.0,  0,  0,  0    ],
-  [ "read_hit_random_clean", read_hit_random_clean, None,          0.0,  0,  0,  0    ],
-  [ "write_hit_1word_clean", write_hit_1word_clean, None,          0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits", write_hits_read_hits, None,          0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits", write_hits_read_hits, None,          0.5,  1,  0,  0    ],
+  ( "                        msg_func               mem_data_func        stall lat src sink"),
+  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                0.0,  0,  0,  0    ],
+  [ "read_hit_many_clean",   read_hit_many_clean,   None,                0.0,  0,  0,  0    ],
+  [ "read_hit_random_clean", read_hit_random_clean, None,                0.0,  0,  0,  0    ],
+  [ "write_hit_1word_clean", write_hit_1word_clean, None,                0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  0,  0,  0    ],
+  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.5,  1,  0,  0    ],
+  [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  0,  0,  0    ],
 ])
+
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
   msgs = test_params.msg_func( 100 )
@@ -246,7 +266,7 @@ def test_generic( test_params):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCacheFL, False)
-  # th.elaborate()
+  th.elaborate()
   # translate()
   # Load memory before the test
   if test_params.mem_data_func != None:

@@ -283,5 +283,5 @@ class BlockingCacheCtrlPRTL ( Component ):
     msg_M1 = types[s.cachereq_type_M1] if s.val_M1 else "  "
     msg_M2 = types[s.cachereq_type_M2] if s.val_M2 else "  "
     
-    return "|{}|{}|{}|  c_rdy:{} c_en:{}".format(\
-      msg_M0,msg_M1,msg_M2,s.cachereq_rdy,s.cachereq_en) 
+    return "|{}|{}|{}| req_rdy:{} req_en:{} resp_rdy:{} resp_en:{}".format(\
+      msg_M0,msg_M1,msg_M2,s.cachereq_rdy,s.cachereq_en,s.cacheresp_rdy, s.cacheresp_en) 
