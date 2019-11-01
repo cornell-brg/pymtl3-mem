@@ -131,6 +131,7 @@ class BlockingCachePRTL ( Component ):
 
       hit_M2                = s.cacheresp.msg.test,
     )
+   
     connect_pairs(
       s.cacheCtrl.memresp_mux_sel_M0, s.cacheDpath.memresp_mux_sel_M0,
       s.cacheCtrl.tag_array_val_M0, s.cacheDpath.tag_array_val_M0,
@@ -143,8 +144,8 @@ class BlockingCachePRTL ( Component ):
       
       s.cacheCtrl.cachereq_type_M1, s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.ctrl_bit_val_rd_M1, s.cacheDpath.ctrl_bit_val_rd_M1,
-      s.cacheCtrl.ctrl_bit_dty_rd_M1, s.cacheDpath.ctrl_bit_dty_rd_M1,
-      s.cacheCtrl.ctrl_bit_dty_wr_M1, s.cacheDpath.ctrl_bit_dty_wr_M1,
+      # s.cacheCtrl.ctrl_bit_dty_rd_M1, s.cacheDpath.ctrl_bit_dty_rd_M1,
+      # s.cacheCtrl.ctrl_bit_dty_wr_M1, s.cacheDpath.ctrl_bit_dty_wr_M1,
       s.cacheCtrl.tag_match_M1, s.cacheDpath.tag_match_M1,
       s.cacheCtrl.offset_M1, s.cacheDpath.offset_M1,
       s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1,

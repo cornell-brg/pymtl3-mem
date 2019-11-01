@@ -31,9 +31,9 @@ class BlockingCacheDpathPRTL (Component):
                 BitsRdDataMux = "inv",  # Read data mux M2 
   ):
 	
-  	#---------------------------------------------------------------------
-		# Interface
-		#--------------------------------------------------------------------- 
+    #---------------------------------------------------------------------
+    # Interface
+    #--------------------------------------------------------------------- 
 		
     # Proc -> Cache
     s.cachereq_opaque_M0  = InPort(BitsOpaque)
@@ -41,16 +41,16 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_addr_M0    = InPort(BitsAddr)
     s.cachereq_data_M0    = InPort(BitsData)
 		# Mem -> Cache
-    s.memresp_opaque_Y   = InPort(BitsOpaque)
-    s.memresp_data_Y     = InPort(BitsCacheline)
+    s.memresp_opaque_Y    = InPort(BitsOpaque)
+    s.memresp_data_Y      = InPort(BitsCacheline)
     # Cache -> Proc
-    s.cacheresp_opaque_M2   = OutPort(BitsOpaque)
-    s.cacheresp_type_M2     = OutPort(BitsType) 
-    s.cacheresp_data_M2	   = OutPort(BitsData)	
+    s.cacheresp_opaque_M2 = OutPort(BitsOpaque)
+    s.cacheresp_type_M2   = OutPort(BitsType) 
+    s.cacheresp_data_M2	  = OutPort(BitsData)	
     # Cache -> Mem  
-    s.memreq_opaque_M2      = OutPort(BitsOpaque)
-    s.memreq_addr_M2        = OutPort(BitsAddr)
-    s.memreq_data_M2			   = OutPort(BitsCacheline)
+    s.memreq_opaque_M2    = OutPort(BitsOpaque)
+    s.memreq_addr_M2      = OutPort(BitsAddr)
+    s.memreq_data_M2			= OutPort(BitsCacheline)
 
     #-------------------------------------------------------------------
     # Control Signals (ctrl -> dpath)
@@ -69,8 +69,8 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(BitsDataWben)
-    s.ctrl_bit_dty_wr_M1    = InPort(Bits1)
-    s.ctrl_bit_dty_rd_M1    = OutPort(Bits1)
+    # s.ctrl_bit_dty_wr_M1    = InPort(Bits1)
+    # s.ctrl_bit_dty_rd_M1    = OutPort(Bits1)
     s.ctrl_bit_val_rd_M1    = OutPort(Bits1)
     s.tag_match_M1          = OutPort(Bits1)
     s.cachereq_type_M1      = OutPort(BitsType)
@@ -176,13 +176,13 @@ class BlockingCacheDpathPRTL (Component):
     # M1 Stage 
     #--------------------------------------------------------------------
     
-    s.RegFile_M1 = RegisterFile(Bits1,nbl)(
-      raddr = s.tag_array_idx_M0,
-      rdata = s.ctrl_bit_dty_rd_M1,
-      waddr = s.tag_array_idx_M0,
-      wdata = s.ctrl_bit_dty_wr_M1,
-      wen   = b1(1)
-    )
+    # s.RegFile_M1 = RegisterFile(Bits1,nbl)(
+    #   raddr = s.tag_array_idx_M0,
+    #   rdata = s.ctrl_bit_dty_rd_M1,
+    #   waddr = s.tag_array_idx_M0,
+    #   wdata = s.ctrl_bit_dty_wr_M1,
+    #   wen   = b1(1)
+    # )
 
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
     s.cachereq_addr_M1    = Wire(BitsAddr)

@@ -73,11 +73,11 @@ class BlockingCacheCtrlPRTL ( Component ):
     
     s.cachereq_type_M1   = InPort(BitsType)
     s.ctrl_bit_val_rd_M1 = InPort(Bits1)
-    s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
+    # s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
     s.tag_match_M1       = InPort(Bits1)
     s.offset_M1          = InPort(BitsOffset)
     
-    s.ctrl_bit_dty_wr_M1 = OutPort(Bits1)
+    # s.ctrl_bit_dty_wr_M1 = OutPort(Bits1)
     s.reg_en_M1          = OutPort(Bits1)
     s.data_array_val_M1  = OutPort(Bits1)
     s.data_array_type_M1 = OutPort(Bits1)
@@ -126,8 +126,10 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def next_state_block():
       if s.curr_state == STATE_GO:
-        if ~ s.hit_M1 and s.ctrl_bit_dty_rd_M0:     s.next_state = STATE_EVICT
-        elif ~ s.hit_M1 and ~ s.ctrl_bit_dty_rd_M0: s.next_state = STATE_REFILL
+        if ~ s.hit_M1: #and s.ctrl_bit_dty_rd_M0:     
+          s.next_state = STATE_EVICT
+        elif ~ s.hit_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
+          s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL:
         if s.is_refill_M0:                          s.next_state = STATE_GO
         else:                                       s.next_state = STATE_REFILL
@@ -140,7 +142,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     #--------------------------------------------------------------------
     s.is_refill_reg_M0 = RegRst(Bits1)( #NO STALLS should occur while refilling
       in_ = s.memresp_en,
-      out = s.is_refill_M1
+      out = s.is_refill_M0
     )
     # Valid
     s.val_M0 = Wire(Bits1)
