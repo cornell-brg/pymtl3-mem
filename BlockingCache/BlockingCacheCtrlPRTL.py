@@ -158,7 +158,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M0():
-      s.stall = s.ostall_M0 || s.ostall_M1 || s.ostall_M2 # Check stall for all stages
+      s.stall = s.ostall_M0 or s.ostall_M1 or s.ostall_M2 # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
       s.cachereq_rdy = ~ s.stall # No more request if we are stalling
       
