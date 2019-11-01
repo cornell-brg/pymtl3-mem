@@ -39,7 +39,7 @@ class SramGenericPRTL( Component ):
 
     s.dout = Wire( dtype )
     s.dout_next = Wire( dtype )
-    
+
 
     @s.update
     def read_logic():
@@ -52,21 +52,21 @@ class SramGenericPRTL( Component ):
     @s.update
     def write_logic():
       for i in range( nbytes ):
-        if not s.CSB1 and not s.WEB1 and s.WBM1[i]:   
-          s.ram_next[s.A1][ i*8 : i*8+8 ] = dtype(s.I1)[ i*8 : i*8+8 ]
-          
+        if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
+          s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
+
     @s.update
     def comb_logic():
       if not s.OEB1:
         s.O1 = s.dout
       else:
         s.O1 = dtype(0)
-    
+
     @s.update_ff
     def update_sram():
-      s.dout <<= dtype( s.dout_next )
+      s.dout <<= s.dout_next
       for i in range( num_words ):
-        s.ram[i] <<= dtype( s.ram_next[i] )
+        s.ram[i] <<= s.ram_next[i]
 
     # s.add_constraints( U(write_logic)<U(update_sram) )
 

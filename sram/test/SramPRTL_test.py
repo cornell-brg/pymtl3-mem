@@ -4,13 +4,10 @@
 
 import pytest
 import random
-import sys
-
-sys.path.append("../")
 
 from pymtl3 import *
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
+from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -23,10 +20,10 @@ class memWrapper(Component):
   def construct(s,abw,nbl):
     idw         = clog2(nbl)         # index width; clog2(512) = 9
     twb_b       = int(abw+7)//8      # Tag array write byte bitwidth
-    
+
     ab          = mk_bits(abw)
     ix          = mk_bits(idw)
-    
+
     s.sramreq    = RecvIfcRTL(MemReqMsg4B)
     s.sramresp   = SendIfcRTL(MemRespMsg4B)
     s.sram_val   = Wire(b1)
@@ -60,14 +57,14 @@ class memWrapper(Component):
       in_ = s.sramreq.msg.opaque,
       out = s.sramresp.msg.opaque
     )
-    
+
     @s.update
     def comb_logic():
       s.sramreq.rdy = b1(1)
-      if s.sramreq.msg.type_ == MemMsgType.WRITE_INIT: 
+      if s.sramreq.msg.type_ == MemMsgType.WRITE_INIT:
         s.sram_type = b1(1)
         s.sram_wben  = b4(0xf)
-      else:                                           
+      else:
         s.sram_type = b1(0)
         s.sram_wben  = b4(0x0)
       s.sram_val   = s.sramreq.en
@@ -75,7 +72,7 @@ class memWrapper(Component):
       s.sram_wdata = ab(s.sramreq.msg.data)
       s.sramresp.msg.data = s.sram_rdata
       s.sramresp.en = s.done
-      
+
 
   def line_trace(s):
     return s.SRAM.line_trace() + ""
@@ -86,7 +83,7 @@ class TestHarness(Component):
     # Instantiate models
     s.src   = TestSrcCL(MemReqMsg4B, src_msgs, src_delay)
     s.mem   = memModel(32,1024)
-    s.sink  = TestSinkRTL(MemRespMsg4B, sink_msgs, sink_delay)
+    s.sink  = TestSinkCL(MemRespMsg4B, sink_msgs, sink_delay)
     s.src2mem  = RecvCL2SendRTL(MemReqMsg4B)
     s.mem2sink = RecvRTL2SendCL(MemRespMsg4B)
 
@@ -106,31 +103,16 @@ class TestHarness(Component):
 #-------------------------------------------------------------------------
 
 def req( type_, opaque, addr, len, data ):
-  msg = MemReqMsg4B()
-
-  if   type_ == 'rd': msg.type_ = MemMsgType.READ
-  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
-  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
-
-  msg.addr   = addr
-  msg.opaque = opaque
-  msg.len    = len
-  msg.data   = data
-  return msg
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return MemReqMsg4B(type_, opaque, addr, len, data)
 
 def resp( type_, opaque, test, len, data ):
-  msg = MemRespMsg4B()
-
-  if   type_ == 'rd': msg.type_ = MemMsgType.READ
-  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
-  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
-
-  msg.opaque = opaque
-  msg.len    = len
-  msg.test   = test
-  msg.data   = data
-
-  return msg
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return MemRespMsg4B(type_, opaque, len, test, data)
 
 #----------------------------------------------------------------
 # Run the simulation
@@ -171,7 +153,7 @@ def random_test( base_addr=100 ):
   random.seed(0)
   test_amount = 100
   addr = [ i for i in range(test_amount)]
-  data = [random.randint(0,0xfffff) for i in range(test_amount)] 
+  data = [random.randint(0,0xfffff) for i in range(test_amount)]
   for i in range(test_amount):
     #                  type  opq  addr  len data
     array.append(req(  'in', i, addr[i], 0, data[i] ))
