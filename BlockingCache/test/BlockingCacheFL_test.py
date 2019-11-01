@@ -9,14 +9,12 @@ import random
 from pymtl3 import *
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL  
+from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
-
-# from BlockingCache.test.CacheMemory import MemoryCL
 
 from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
 
@@ -39,16 +37,17 @@ class ReqRespMsgTypes():
     s.abw = addr
     s.dbw = data
 
+CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+
 #-------------------------------------------------------------------------
 # TestHarness
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
-  
+
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, CacheModel, test_verilog=False ):
-    
-    CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+
     MemMsg = ReqRespMsgTypes(obw, abw, clw)
     cacheSize = 8196 # size in bytes
     # Instantiate models
@@ -60,7 +59,7 @@ class TestHarness(Component):
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
     # s.cache.yosys_translate_import = True
-    
+
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
 
@@ -92,7 +91,6 @@ class TestHarness(Component):
 def translate():
   # Translate the checksum unit and import it back in using the yosys
   # backend
-  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
   MemMsg = ReqRespMsgTypes(obw, abw, clw)
   cacheSize = 8196 # size in bytes
   dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
@@ -107,34 +105,16 @@ def translate():
 #-------------------------------------------------------------------------
 
 def req( type_, opaque, addr, len, data ):
-  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-  msg = CacheMsg.Req()
-
-  if   type_ == 'rd': msg.type_ = MemMsgType.READ
-  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
-  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
-
-  msg.addr   = addr
-  msg.opaque = opaque
-  msg.len    = len
-  msg.data   = data
-  return msg
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return CacheMsg.Req( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
-  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-  msg = CacheMsg.Resp()
-  # print ("msg = " + str( msg))
-
-  if   type_ == 'rd': msg.type_ = MemMsgType.READ
-  elif type_ == 'wr': msg.type_ = MemMsgType.WRITE
-  elif type_ == 'in': msg.type_ = MemMsgType.WRITE_INIT
-
-  msg.opaque = opaque
-  msg.len    = len
-  msg.test   = test
-  msg.data   = data
-
-  return msg
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return CacheMsg.Resp( type_, opaque, test, len, data )
 
 #----------------------------------------------------------------------
 # Run the simulation
@@ -188,7 +168,7 @@ def read_hit_random_clean( base_addr=100 ):
   test_amount = 4
   random.seed(0)
   addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(test_amount)]
-  data = [random.randint(0,0xfffff) for i in range(test_amount)] 
+  data = [random.randint(0,0xfffff) for i in range(test_amount)]
   for i in range(test_amount):
     #                  type  opq  addr     len data
     array.append(req(  'in', i,   addr[i], 0,  data[i]))
@@ -247,13 +227,13 @@ def read_miss_1word_mem( base_addr=0 ):
 
 test_case_table_generic = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
-  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                0.0,  0,  0,  0    ],
-  [ "read_hit_many_clean",   read_hit_many_clean,   None,                0.0,  0,  0,  0    ],
-  [ "read_hit_random_clean", read_hit_random_clean, None,                0.0,  0,  0,  0    ],
-  [ "write_hit_1word_clean", write_hit_1word_clean, None,                0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  0,  0,  0    ],
-  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.5,  1,  0,  0    ],
-  [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  0,  0,  0    ],
+  [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                0.0,  1,  0,  0    ],
+  [ "read_hit_many_clean",   read_hit_many_clean,   None,                0.0,  1,  0,  0    ],
+  [ "read_hit_random_clean", read_hit_random_clean, None,                0.0,  1,  0,  0    ],
+  [ "write_hit_1word_clean", write_hit_1word_clean, None,                0.0,  1,  0,  0    ],
+  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  1,  0,  0    ],
+  [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.5,  2,  0,  0    ],
+  [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  1,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )
@@ -265,7 +245,7 @@ def test_generic( test_params):
   th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
-                         BlockingCacheFL, False)
+                         BlockingCacheFL, 0)
   th.elaborate()
   # translate()
   # Load memory before the test

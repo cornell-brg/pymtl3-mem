@@ -1,8 +1,9 @@
 #=========================================================================
 # BlockingCacheRTL_test.py
 #=========================================================================
+import pytest
 from pymtl3      import *
-from BlockingCache.test.BlockingCacheFL_test import *
+from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, TestHarness, run_sim
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
 #-------------------------------------------------------------------------
@@ -19,6 +20,7 @@ def test_generic( test_params ):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL)
+  harness.elaborate()
   # translate()
   # Load memory before the test
   if test_params.mem_data_func != None:

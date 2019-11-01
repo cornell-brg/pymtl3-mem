@@ -12,7 +12,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 class BlockingCacheFL( Component ):
 
-  def construct( s, 
+  def construct( s,
                  nbytes        = 4096, # cache size in bytes, nbytes
                  CacheMsg      = "",   # Cache req/resp msg type
                  MemMsg        = "",   # Memory req/resp msg type
@@ -22,12 +22,12 @@ class BlockingCacheFL( Component ):
     #-------------------------------------------------------------------------
     # Bitwidths
     #-------------------------------------------------------------------------
-    
+
     assert MemMsg.abw == CacheMsg.abw, "abw not the same"
     clw = MemMsg.dbw
     abw = MemMsg.abw
     dbw = CacheMsg.dbw
-    BitsData      = mk_bits(dbw)   # data 
+    BitsData      = mk_bits(dbw)   # data
 
     #---------------------------------------------------------------------
     # Interface
