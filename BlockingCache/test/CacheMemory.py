@@ -80,24 +80,18 @@ class CacheMemoryCL( Component ):
 
     @s.update
     def up_mem():
-
       for i in range(s.nports):
-
         if s.req_qs[i].deq.rdy() and s.resp_qs[i].enq.rdy():
-
           # Dequeue memory request message
-
           req = s.req_qs[i].deq()
           len_ = int(req.len)
           if not len_: len_ = req_classes[i].data_nbits >> 3
 
           if   req.type_ == MemMsgType.READ:
-            # print ("READING")
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
                                     s.mem.read( req.addr, len_ ) )
 
           elif req.type_ == MemMsgType.WRITE:
-            # print ("WRITING")
             s.mem.write( req.addr, len_, req.data )
             # FIXME do we really set len=0 in response when doing subword wr?
             # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
@@ -108,12 +102,10 @@ class CacheMemoryCL( Component ):
                s.mem.amo( req.type_, req.addr, len_, req.data ) )
 
           s.resp_qs[i].enq( resp )
-          # print(req, resp)
 
   #-----------------------------------------------------------------------
   # line_trace
   #-----------------------------------------------------------------------
-  # TODO: better line trace.
 
   def line_trace( s ):
     msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )

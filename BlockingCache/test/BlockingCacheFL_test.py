@@ -140,7 +140,7 @@ def run_sim(th, max_cycles):
 # Test Case: read hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_1word_clean( base_addr=0 ):
+def read_hit_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr+0x000ab000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -151,7 +151,7 @@ def read_hit_1word_clean( base_addr=0 ):
 # Test Case: read hit path, many requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_many_clean( base_addr=100 ):
+def read_hit_many_clean( base_addr=0x0 ):
   array = []
   for i in range(4):
     #                  type  opq  addr          len data
@@ -166,7 +166,7 @@ def read_hit_many_clean( base_addr=100 ):
 # Test Case: read hit/miss path,random requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_random_clean( base_addr=100 ):
+def read_hit_random_clean( base_addr=0x0 ):
   array = []
   test_amount = 4
   random.seed(1)
@@ -186,7 +186,7 @@ def read_hit_random_clean( base_addr=100 ):
 # Test Case: write hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def write_hit_1word_clean( base_addr=0 ):
+def write_hit_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -197,7 +197,7 @@ def write_hit_1word_clean( base_addr=0 ):
 # Test Case: write hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def write_hits_read_hits( base_addr=0x54 ):
+def write_hits_read_hits( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -210,7 +210,7 @@ def write_hits_read_hits( base_addr=0x54 ):
 # Test Case: read miss path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_miss_1word_clean( base_addr=0 ):
+def read_miss_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'rd', 0x0, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x0, 0,   0,  0xdeadbeef ),

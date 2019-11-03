@@ -136,8 +136,6 @@ class BlockingCachePRTL ( Component ):
       
       s.cacheCtrl.cachereq_type_M1, s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.ctrl_bit_val_rd_M1, s.cacheDpath.ctrl_bit_val_rd_M1,
-      # s.cacheCtrl.ctrl_bit_dty_rd_M1, s.cacheDpath.ctrl_bit_dty_rd_M1,
-      # s.cacheCtrl.ctrl_bit_dty_wr_M1, s.cacheDpath.ctrl_bit_dty_wr_M1,
       s.cacheCtrl.tag_match_M1, s.cacheDpath.tag_match_M1,
       s.cacheCtrl.offset_M1, s.cacheDpath.offset_M1,
       s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1,

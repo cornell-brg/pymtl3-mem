@@ -111,7 +111,9 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Stall and Ostall Signals
     #------------------------------------------------------------------
     
-    s.stall = Wire(Bits1)    
+    s.stall_M0  = Wire(Bits1)    
+    s.stall_M1  = Wire(Bits1)    
+    s.stall_M2  = Wire(Bits1)    
     s.ostall_M0 = Wire(Bits1)
     s.ostall_M1 = Wire(Bits1)
     s.ostall_M2 = Wire(Bits1)
@@ -176,9 +178,9 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M0():
-      s.stall = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
+      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
-      s.cachereq_rdy = (~s.stall and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
+      s.cachereq_rdy = (~s.stall_M1 and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
       
     @s.update
     def comb_block_M0(): # logic block for setting output ports
@@ -241,7 +243,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def en_M1():
-      s.reg_en_M1 = ~s.stall
+      s.reg_en_M1 = ~s.stall_M1
 
     @s.update
     def comb_block_M1(): 
@@ -264,6 +266,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M1():
+      s.stall_M1 = b1(0)
       s.ostall_M1 = b1(0)
       # if not s.hit_M1 and s.val_M1:
       #   s.ostall_M1 = b1(1)
@@ -304,7 +307,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
       s.msel = BitsRdDataMux(s.offset_M2) + BitsRdDataMux(1)  
-      s.reg_en_M2 = ~s.stall
+      s.reg_en_M2 = ~s.stall_M2
       if s.val_M2:                                     #  word_mux|rdata_mux|memreq|cacheresp  
         if s.is_refill_M2:                   s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
         else:
