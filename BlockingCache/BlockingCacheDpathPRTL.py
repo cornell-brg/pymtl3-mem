@@ -47,7 +47,8 @@ class BlockingCacheDpathPRTL (Component):
     s.cacheresp_opaque_M2 = OutPort(BitsOpaque)
     s.cacheresp_type_M2   = OutPort(BitsType) 
     s.cacheresp_data_M2	  = OutPort(BitsData)	
-    # Cache -> Mem  
+    # Cache -> Mem 
+    s.memreq_type_M2      = OutPort(BitsType)
     s.memreq_opaque_M2    = OutPort(BitsOpaque)
     s.memreq_addr_M2      = OutPort(BitsAddr)
     s.memreq_data_M2			= OutPort(BitsCacheline)
@@ -317,10 +318,11 @@ class BlockingCacheDpathPRTL (Component):
     s.memreq_opaque_M2 //= s.cacheresp_opaque_M2
     s.memreq_addr_M2   //= s.cachereq_addr_M2
     s.memreq_data_M2   //= s.data_array_rdata_M2
-      
+    s.memreq_type_M2   //= s.cachereq_type_M2 
+
       
   def line_trace( s ):
-    return ""
+    return "mem resp:{}".format(s.memresp_data_Y)
     # return (
     #   "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={}".format(\
     #   s.tag_array_rdata_M1,

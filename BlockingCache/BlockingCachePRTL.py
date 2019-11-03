@@ -108,6 +108,7 @@ class BlockingCachePRTL ( Component ):
       cacheresp_data_M2        = s.cacheresp.msg.data,
 
       memreq_opaque_M2         = s.memreq.msg.opaque,
+      memreq_type_M2           = s.memreq.msg.type_,
       memreq_addr_M2           = s.memreq.msg.addr,
       memreq_data_M2           = s.memreq.msg.data,
       

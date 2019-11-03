@@ -93,6 +93,7 @@ venv.bak/
 # Vim files
 *.swp
 *.swo
+*.swn
 
 # Spyder project settings
 .spyderproject
