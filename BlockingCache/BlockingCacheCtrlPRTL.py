@@ -13,7 +13,7 @@ STATE_EVICT  = b2(2)
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
-                 dbw           = 32,       # offset bitwidth
+                 dbw           = 32,       # 
                  ofw           = 4,        # offset bitwidth
                  BitsAddr      = "inv",    # address bitstruct
                  BitsOpaque    = "inv",    # opaque 

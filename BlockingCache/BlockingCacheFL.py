@@ -10,8 +10,9 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.rtl.registers import RegRst
 
 
-
 class BlockingCacheFL( Component ):
+
+  cache_dict = {}
 
   def construct( s,
                  nbytes        = 4096, # cache size in bytes, nbytes
@@ -30,18 +31,22 @@ class BlockingCacheFL( Component ):
     dbw = CacheMsg.dbw
     BitsData      = mk_bits(dbw)   # data
 
+    nbl = nbytes//clw 
+    idw = clog2(nbl)         # index width; clog2(512) = 9
+    ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
+
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
 
     # Proc -> Cache
-    s.cachereq  = RecvIfcRTL ( CacheMsg.Req )
+    s.cachereq  = RecvIfcRTL ( CacheMsg.Req  )
     # Cache -> Proc
-    s.cacheresp = SendIfcRTL( CacheMsg.Resp )
+    s.cacheresp = SendIfcRTL ( CacheMsg.Resp )
     # Mem -> Cache
-    s.memresp   = RecvIfcRTL ( MemMsg.Resp )
+    s.memresp   = RecvIfcRTL ( MemMsg.Resp   )
     # Cache -> Mem
-    s.memreq    = SendIfcRTL( MemMsg.Req )
+    s.memreq    = SendIfcRTL ( MemMsg.Req    )
 
     #---------------------------------------------------------------------
     # Control
@@ -94,10 +99,44 @@ class BlockingCacheFL( Component ):
 
       s.cacheresp.msg.type_  = s.cacheresp_type_out
       s.cacheresp.msg.opaque = s.memresp.msg.opaque
-      s.cacheresp.msg.test   = b1(0) if s.cacheresp_type_out == \
-        MemMsgType.WRITE_INIT else b1(1)
+      # if s.cachereq.msg.addr in cache_dict:
+      #   s.cacheresp.msg.test = b1(1)
+      # else:
+      #   s.cacheresp.msg.test = b1(0)
+      #   begin_line = s.cachereq.msg.addr//16 * 16
+      #   cache_dict[begin_line] = True
+      #   cache_dict[begin_line+4] = True
+      #   cache_dict[begin_line+8] = True
+      #   cache_dict[begin_line+12] = True
+      #s.cacheresp.msg.test   = b1(0) if s.cacheresp_type_out == \
+      #  MemMsgType.WRITE_INIT else b1(1)
       s.cacheresp.msg.len    = len_
       s.cacheresp.msg.data   = s.memresp.msg.data[0:abw]
 
+    @s.update_ff
+    def hit_logic():
+      # print(s.cache_dict) 
+      if s.cachereq.msg.type_ == MemMsgType.WRITE_INIT:
+        s.cacheresp.msg.test <<= b2(0)
+        begin_line = s.cachereq.msg.addr//16 * 16
+        s.cache_dict[begin_line] = True
+        s.cache_dict[begin_line+4] = True
+        s.cache_dict[begin_line+8] = True
+        s.cache_dict[begin_line+12] = True
+      elif s.cachereq.msg.addr in s.cache_dict:
+        s.cacheresp.msg.test <<= b2(1)
+      else:
+        s.cacheresp.msg.test <<= b2(0)
+        begin_line = s.cachereq.msg.addr//16 * 16
+        s.cache_dict[begin_line] = True
+        s.cache_dict[begin_line+4] = True
+        s.cache_dict[begin_line+8] = True
+        s.cache_dict[begin_line+12] = True
+
+      if s.reset:
+        s.cache_dict = {}
+
+     
   def line_trace(s):
-    return "(forw)"
+    return "resp_rdy:{} resp_en:{}".format(s.cacheresp.rdy,s.cacheresp.en)
+

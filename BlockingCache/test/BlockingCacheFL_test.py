@@ -148,7 +148,7 @@ def read_hit_1word_clean( base_addr=0 ):
   ]
 
 #----------------------------------------------------------------------
-# Test Case: read hit/miss path, many requests
+# Test Case: read hit path, many requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
 def read_hit_many_clean( base_addr=100 ):
