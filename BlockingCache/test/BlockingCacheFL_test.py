@@ -82,7 +82,7 @@ class TestHarness(Component):
 
   def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
-         + s.mem.line_trace() + " " + s.sink.line_trace()
+           + s.mem.line_trace()  + " " + s.sink.line_trace()
 
 #-------------------------------------------------------------------------
 # Translate Function for the cache
@@ -211,7 +211,7 @@ def read_miss_1word_clean( base_addr=0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'rd', 0x0, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x0, 0,   0,  0xdeadbeef ),
-    req( 'rd', 0x1, base_addr+0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee ),
+    req( 'rd', 0x1, base_addr+0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee )
   ]
 
 def read_miss_1word_mem( base_addr=0 ):

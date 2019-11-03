@@ -175,14 +175,14 @@ class BlockingCacheCtrlPRTL ( Component ):
     def stall_logic_M0():
       s.stall = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
-      s.cachereq_rdy = ~s.stall and s.curr_state == STATE_GO # No more request if we are stalling
+      s.cachereq_rdy = (~s.stall and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
       
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or s.is_refill_M0
       s.reg_en_M0 = s.memresp_en
       if s.val_M0:#                                          tag_wben        |mr_mux|tg_ty|tg_v|val
-        if s.is_refill_M0:                     s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, y)    
+        if s.is_refill_M0:                   s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, y)    
         else:
           if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf), b1(0),   wr,   y, y)
           elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n)
@@ -238,9 +238,6 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def en_M1():
-      if s.curr_state == STATE_REFILL:
-        s.reg_en_M1 = n
-      else:
         s.reg_en_M1 = y
 
     @s.update
@@ -274,13 +271,15 @@ class BlockingCacheCtrlPRTL ( Component ):
     #-----------------------------------------------------
     s.val_M2 = Wire(Bits1)
 
-    s.val_reg_M2 = RegEnRst(Bits1)(
+    s.val_reg_M2 = RegEnRst(Bits1)\
+    (
       en  = s.reg_en_M2,
       in_ = s.val_M1,
       out = s.val_M2,
     )
 
-    s.hit_reg_M2 = RegEnRst(Bits1)(
+    s.hit_reg_M2 = RegEnRst(Bits1)\
+    (
       en  = s.reg_en_M2,
       in_ = s.hit_M1,
       out = s.hit_M2[0]
@@ -288,7 +287,6 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     s.is_refill_reg_M2 = RegRst(Bits1)\
     (
-      # en  = s.reg_en_M2,
       in_ = s.is_refill_M1,
       out = s.is_refill_M2
     )
@@ -331,4 +329,4 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     states = ["Go    ","Refill"]
     msg_state = states[s.curr_state]  
-    return "{}|{}|{}|{}|{}".format(msg_memresp,msg_M0,msg_M1,msg_M2,msg_memreq) 
+    return "{}|{}|{}|{}|{} rdy:{}".format(msg_memresp,msg_M0,msg_M1,msg_M2,msg_memreq,s.cachereq_rdy) 
