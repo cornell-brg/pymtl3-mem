@@ -350,6 +350,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     pipeline = stage1 + stage2 + stage3 + state
     # additional_msg = "CRqrdy:{} MRqprdy:{}".format(\
     #   s.cachereq_rdy,s.memreq_rdy)
-    additional_msg = "sel:{}".format(s.msel)
+    additional_msg = "H1:{}".format(s.hit_M1)
 
     return pipeline + additional_msg
