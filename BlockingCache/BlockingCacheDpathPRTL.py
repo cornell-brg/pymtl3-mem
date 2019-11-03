@@ -316,23 +316,28 @@ class BlockingCacheDpathPRTL (Component):
 
     s.offset_M2     //= s.cachereq_addr_M2[2:ofw]
     s.memreq_opaque_M2 //= s.cacheresp_opaque_M2
-    s.memreq_addr_M2   //= s.cachereq_addr_M2
+    s.memreq_addr_M2[ofw:abw]   //= s.cachereq_addr_M2[ofw:abw]
     s.memreq_data_M2   //= s.data_array_rdata_M2
     s.memreq_type_M2   //= s.cachereq_type_M2 
 
       
   def line_trace( s ):
-    return "mem resp:{}".format(s.memresp_data_Y)
-    # return (
-    #   "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={}".format(\
-    #   s.tag_array_rdata_M1,
-    #   s.cachereq_addr_M1,
-    #   s.tag_array_wben_M0,
-    #   s.data_array_rdata_M2,
-    #   s.cacheresp_data_M2,
-    #   s.data_array_wben_M1
-    #   )
-    # )
+    # "mem resp:{}".format(s.memresp_data_Y)
+    # msg = ""
+    
+    msg = (
+      "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={} MSHR:{} {}".format(\
+      s.tag_array_rdata_M1,
+      s.cachereq_addr_M1,
+      s.tag_array_wben_M0,
+      s.data_array_rdata_M2,
+      s.cacheresp_data_M2,
+      s.data_array_wben_M1,
+      s.MSHR_addr_M0,
+      s.memresp_data_Y
+      )
+    )
+    return msg
     # return "tag_array_rdata = {}, cachereq_addr = {} ".format(\
     #   s.tag_array_rdata_M1[0:tgw],s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
     # return "t->{} ".format(s.tag_array_M1.line_trace())

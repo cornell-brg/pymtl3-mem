@@ -12,9 +12,11 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params ):
-  msgs = test_params.msg_func( 100 )
+  base_addr = 0x74
+  max_cycles = 100
+  msgs = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( 0 )
+    mem = test_params.mem_data_func( base_addr )
   # Instantiate testharness
   harness = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
@@ -26,7 +28,7 @@ def test_generic( test_params ):
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )
   # Run the test
-  run_sim( harness, max_cycles=20 )
+  run_sim( harness, max_cycles )
 
 # @pytest.mark.parametrize( **test_case_table_dir_mapped )
 # def test_dir_mapped( test_params, dump_vcd, test_verilog ):

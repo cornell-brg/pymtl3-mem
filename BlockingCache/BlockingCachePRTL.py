@@ -8,18 +8,9 @@ from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.connects import connect_pairs
 
-
 from BlockingCache.BlockingCacheCtrlPRTL import BlockingCacheCtrlPRTL
 from BlockingCache.BlockingCacheDpathPRTL import BlockingCacheDpathPRTL
 
-# MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,32,32)
-# MemReqMsg16B, MemRespMsg16B = mk_mem_msg(8,32,128)
-
-# obw  = 8   # Short name for opaque bitwidth
-# abw  = 32  # Short name for addr bitwidth
-# dbw  = 32  # Short name for data bitwidth
-
-# PARAMETRIZED BY TYPE OF CACHEREQ RESPONSE MEMREQ RESPONSE
 class BlockingCachePRTL ( Component ):
   def construct( s,                
                  nbytes        = 4096, # cache size in bytes, nbytes
@@ -164,6 +155,10 @@ class BlockingCachePRTL ( Component ):
 
   # Line tracing
   def line_trace( s ):
-    return s.cacheCtrl.line_trace() + "  " + s.cacheDpath.line_trace()
+    
+    msg = s.cacheCtrl.line_trace() + "  " + s.cacheDpath.line_trace()
+    msg = "{}".format(msg)
+    
+    return msg
 
 
