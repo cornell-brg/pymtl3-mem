@@ -169,7 +169,7 @@ def read_hit_many_clean( base_addr=100 ):
 def read_hit_random_clean( base_addr=100 ):
   array = []
   test_amount = 4
-  random.seed(0)
+  random.seed(1)
   addr = [(base_addr + random.randint(0,0x00fff)) << 2 for i in range(test_amount)]
   data = [random.randint(0,0xfffff) for i in range(test_amount)]
   for i in range(test_amount):
