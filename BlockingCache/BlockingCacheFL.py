@@ -7,6 +7,7 @@
 from pymtl3      import *
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.rtl.registers import RegRst
 
 
 
@@ -57,6 +58,11 @@ class BlockingCacheFL( Component ):
     #---------------------------------------------------------------------
     # Datapath
     #---------------------------------------------------------------------
+    s.cacheresp_type_out = Wire(b4)
+    s.type_reg = RegRst(b4)(
+      in_ = s.cachereq.msg.type_,
+      out = s.cacheresp_type_out
+    )
 
     @s.update
     def logic():
@@ -86,9 +92,10 @@ class BlockingCacheFL( Component ):
       if len_ == 4:
         len_ = 0
 
-      s.cacheresp.msg.type_  =  s.cachereq.msg.type_
+      s.cacheresp.msg.type_  = s.cacheresp_type_out
       s.cacheresp.msg.opaque = s.memresp.msg.opaque
-      s.cacheresp.msg.test   = 0                        # "miss"
+      s.cacheresp.msg.test   = b1(0) if s.cacheresp_type_out == \
+        MemMsgType.WRITE_INIT else b1(1)
       s.cacheresp.msg.len    = len_
       s.cacheresp.msg.data   = s.memresp.msg.data[0:abw]
 

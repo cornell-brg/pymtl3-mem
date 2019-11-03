@@ -9,6 +9,7 @@ in the interface.
 
 Author : Shunning Jiang
 Date   : Mar 12, 2018
+Modified by: Xiaoyu and Eric 
 """
 
 from pymtl3 import *
@@ -16,7 +17,7 @@ from pymtl3.stdlib.fl import MemoryFL
 from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.mem_ifcs import MemMinionIfcCL
 
-from .DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
+from pymtl3.stdlib.cl.DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
 
 # BRGTC2 custom MemMsg modified for RISC-V 32
 
@@ -44,7 +45,7 @@ from .DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
 #-------------------------------------------------------------------------
 #- - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - -
 
-class MemoryCL( Component ):
+class CacheMemoryCL( Component ):
 
   # Magical methods
 
@@ -67,7 +68,8 @@ class MemoryCL( Component ):
 
     # Interface
 
-    s.ifc = [ MemMinionIfcCL( req_classes[i], resp_classes[i] ) for i in range(nports) ]
+    s.ifc = [ MemMinionIfcCL( req_classes[i], resp_classes[i] )\
+       for i in range(nports) ]
 
     # Queues
     req_latency = min(1, latency)
@@ -90,10 +92,12 @@ class MemoryCL( Component ):
           if not len_: len_ = req_classes[i].data_nbits >> 3
 
           if   req.type_ == MemMsgType.READ:
+            # print ("READING")
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
                                     s.mem.read( req.addr, len_ ) )
 
           elif req.type_ == MemMsgType.WRITE:
+            # print ("WRITING")
             s.mem.write( req.addr, len_, req.data )
             # FIXME do we really set len=0 in response when doing subword wr?
             # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
@@ -104,6 +108,7 @@ class MemoryCL( Component ):
                s.mem.amo( req.type_, req.addr, len_, req.data ) )
 
           s.resp_qs[i].enq( resp )
+          # print(req, resp)
 
   #-----------------------------------------------------------------------
   # line_trace
@@ -111,4 +116,6 @@ class MemoryCL( Component ):
   # TODO: better line trace.
 
   def line_trace( s ):
-    return "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    msg = msg + "{}".format(s.mem.line_trace())
+    return msg
