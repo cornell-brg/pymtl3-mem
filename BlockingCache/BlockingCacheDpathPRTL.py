@@ -311,12 +311,14 @@ class BlockingCacheDpathPRTL (Component):
     for i in range(1, clw//dbw+1):
       s.read_word_mux_M2.in_[i] //= s.read_data_M2[(i-1)*dbw:i*dbw]
 
-
     s.cacheresp_type_M2     //= s.cachereq_type_M2
 
-    s.offset_M2     //= s.cachereq_addr_M2[2:ofw]
+    s.offset_M2        //= s.cachereq_addr_M2[2:ofw]
+    
     s.memreq_opaque_M2 //= s.cacheresp_opaque_M2
     s.memreq_addr_M2[ofw:abw]   //= s.cachereq_addr_M2[ofw:abw]
+    # TODO fix this
+    # s.memreq_addr_M2   //= s.cachereq_addr_M2
     s.memreq_data_M2   //= s.data_array_rdata_M2
     s.memreq_type_M2   //= s.cachereq_type_M2 
 
