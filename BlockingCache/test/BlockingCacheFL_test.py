@@ -224,6 +224,26 @@ def read_miss_1word_mem( base_addr=0x0 ):
     base_addr+0x00000004, 0x00c0ffee
   ]
 
+#----------------------------------------------------------------------
+# Test Case: read miss path
+#----------------------------------------------------------------------
+# The test field in the response message: 0 == MISS, 1 == HIT
+def write_miss_1word_clean( base_addr=0x0 ):
+  return [
+    #    type  opq  addr                 len data                type  opq test len data
+    req( 'wr', 0x0, base_addr+0x00000000, 0, 0x00c0ffee ), resp( 'wr', 0x0, 0,   0, 0          ),
+    req( 'rd', 0x1, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x1, 1,   0, 0x00c0ffee ),
+    req( 'rd', 0x2, base_addr+0x00000008, 0, 0          ), resp( 'rd', 0x2, 1,   0, 0xeeeeeeee )
+  ]
+
+def write_miss_1word_mem( base_addr=0x0 ):
+  return [
+    # addr                data
+    base_addr+0x00000000, 0xdeadbeef,
+    base_addr+0x00000004, 0x00c0ffee,
+    base_addr+0x00000008, 0xeeeeeeee
+  ]
+
 #---------------------------------------------------------------------------------------------
 # Test table for generic test
 #---------------------------------------------------------------------------------------------
@@ -237,6 +257,7 @@ test_case_table_generic = mk_test_case_table([
   [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  1,  0,  0    ],
   [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.5,  2,  0,  0    ],
   [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  1,  0,  0    ],
+  [ "write_miss_1word_clean",write_miss_1word_clean,write_miss_1word_mem,0.0,  1,  0,  0    ],
 ])
 
 @pytest.mark.parametrize( **test_case_table_generic )
