@@ -15,6 +15,7 @@ from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
+from BlockingCache.test.CacheMemory import CacheMemoryCL
 
 from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
 
@@ -53,7 +54,8 @@ class TestHarness(Component):
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
     s.cache = CacheModel(cacheSize, CacheMsg, MemMsg)
-    s.mem   = MemoryCL( 1, mem_ifc_dtypes=[(MemMsg.Req, MemMsg.Resp)], latency=latency)
+    s.mem   = CacheMemoryCL( 1, [mk_mem_msg(obw,abw,clw), \
+        ], latency=latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
@@ -75,6 +77,7 @@ class TestHarness(Component):
     for addr, data_int in zip( addrs, data_ints ):
       data_bytes_a = bytearray()
       data_bytes_a.extend( struct.pack("<I",data_int) )
+      print (addr, data_bytes_a)
       s.mem.write_mem( addr, data_bytes_a )
 
   def done( s ):
@@ -127,7 +130,7 @@ def run_sim(th, max_cycles):
   print("")
   while not th.done():
     th.tick()
-    print ("{:4d}: {}".format(curr_cyc, th.line_trace()))
+    print ("{:3d}: {}".format(curr_cyc, th.line_trace()))
     curr_cyc += 1
     assert curr_cyc < max_cycles
   th.tick()
@@ -137,7 +140,7 @@ def run_sim(th, max_cycles):
 # Test Case: read hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_1word_clean( base_addr=0 ):
+def read_hit_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr+0x000ab000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -145,10 +148,10 @@ def read_hit_1word_clean( base_addr=0 ):
   ]
 
 #----------------------------------------------------------------------
-# Test Case: read hit/miss path, many requests
+# Test Case: read hit path, many requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_many_clean( base_addr=100 ):
+def read_hit_many_clean( base_addr=0x0 ):
   array = []
   for i in range(4):
     #                  type  opq  addr          len data
@@ -163,11 +166,11 @@ def read_hit_many_clean( base_addr=100 ):
 # Test Case: read hit/miss path,random requests
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_hit_random_clean( base_addr=100 ):
+def read_hit_random_clean( base_addr=0x0 ):
   array = []
   test_amount = 4
-  random.seed(0)
-  addr = [(base_addr + random.randint(0,0xfffff)) << 2 for i in range(test_amount)]
+  random.seed(1)
+  addr = [(base_addr + random.randint(0,0x00fff)) << 2 for i in range(test_amount)]
   data = [random.randint(0,0xfffff) for i in range(test_amount)]
   for i in range(test_amount):
     #                  type  opq  addr     len data
@@ -183,7 +186,7 @@ def read_hit_random_clean( base_addr=100 ):
 # Test Case: write hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def write_hit_1word_clean( base_addr=0 ):
+def write_hit_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -194,7 +197,7 @@ def write_hit_1word_clean( base_addr=0 ):
 # Test Case: write hit path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def write_hits_read_hits( base_addr=0 ):
+def write_hits_read_hits( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'in', 0x0, base_addr, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -207,14 +210,14 @@ def write_hits_read_hits( base_addr=0 ):
 # Test Case: read miss path
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
-def read_miss_1word_clean( base_addr=0 ):
+def read_miss_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq  test len data
     req( 'rd', 0x0, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x0, 0,   0,  0xdeadbeef ),
     req( 'rd', 0x1, base_addr+0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee )
   ]
 
-def read_miss_1word_mem( base_addr=0 ):
+def read_miss_1word_mem( base_addr=0x0 ):
   return [
     # addr                data
     base_addr+0x00000000, 0xdeadbeef,
@@ -238,9 +241,10 @@ test_case_table_generic = mk_test_case_table([
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
-  msgs = test_params.msg_func( 100 )
+  base_addr = 0x70
+  msgs = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( 100 )
+    mem = test_params.mem_data_func( base_addr )
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,

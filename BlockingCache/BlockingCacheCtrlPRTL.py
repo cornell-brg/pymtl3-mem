@@ -7,9 +7,13 @@ from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 
+STATE_GO     = b2(0)
+STATE_REFILL = b2(1)
+STATE_EVICT  = b2(2)
+
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
-                 dbw           = 32,       # offset bitwidth
+                 dbw           = 32,       # 
                  ofw           = 4,        # offset bitwidth
                  BitsAddr      = "inv",    # address bitstruct
                  BitsOpaque    = "inv",    # opaque 
@@ -29,15 +33,14 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Constants
     wr = y = b1(1)
     rd = n = b1(0)
-    READ  = BitsType(0)
-    WRITE = BitsType(1)
-    INIT  = BitsType(2)
+    READ  = MemMsgType.READ
+    WRITE = MemMsgType.WRITE
+    INIT  = MemMsgType.WRITE_INIT
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
+    wbenf = BitsDataWben(-1)
     data_array_wb_mask = 2**(dbw//8)-1
-    STATE_GO     = b2(0)
-    STATE_REFILL = b2(1)
-    STATE_EVICT  = b2(2)
+    
 
     #-------------------------------------------------------------------
     # Interface
@@ -108,7 +111,9 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Stall and Ostall Signals
     #------------------------------------------------------------------
     
-    s.stall = Wire(Bits1)    
+    s.stall_M0  = Wire(Bits1)    
+    s.stall_M1  = Wire(Bits1)    
+    s.stall_M2  = Wire(Bits1)    
     s.ostall_M0 = Wire(Bits1)
     s.ostall_M1 = Wire(Bits1)
     s.ostall_M2 = Wire(Bits1)
@@ -128,7 +133,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       if s.curr_state == STATE_GO:
         # if ~s.hit_M1: #and s.ctrl_bit_dty_rd_M0:     
           # s.next_state = STATE_EVICT
-        if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
+        if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.is_refill_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
           s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL:
         if s.is_refill_M0:                          s.next_state = STATE_GO
@@ -166,22 +171,22 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.cs0 = Wire( mk_bits( 5 + twb ) ) # Bits for CS parameterized
     @s.update 
     def en_MSHR(): # TEMPORARY; NOT SURE WHAT TO DO WITH THAT SIGNAL YET
-      if not s.hit_M1:
+      if not s.hit_M1 and not s.curr_state == STATE_REFILL:
         s.reg_en_MSHR = b1(1)
       else:
         s.reg_en_MSHR = b1(0)
 
     @s.update
     def stall_logic_M0():
-      s.stall = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
+      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
-      s.cachereq_rdy = (~s.stall and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
+      s.cachereq_rdy = (~s.stall_M1 and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
       
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or s.is_refill_M0
       s.reg_en_M0 = s.memresp_en
-      if s.val_M0:#                                          tag_wben        |mr_mux|tg_ty|tg_v|val
+      if s.val_M0:#                                          tag_wben         |mr_mux|tg_ty|tg_v|val
         if s.is_refill_M0:                   s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, y)    
         else:
           if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf), b1(0),   wr,   y, y)
@@ -238,14 +243,14 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def en_M1():
-        s.reg_en_M1 = y
+      s.reg_en_M1 = ~s.stall_M1
 
     @s.update
     def comb_block_M1(): 
       s.wben_in = BitsDataWben(data_array_wb_mask)
       wben = s.wben_out
       if s.val_M1: #                                          wben| ty|val
-        if s.is_refill_M1:                    s.cs1 = concat( wben, wr, y )
+        if s.is_refill_M1:                    s.cs1 = concat(wbenf, wr, y )
         else:      
           if s.cachereq_type_M1 == INIT:      s.cs1 = concat( wben, wr, y )
           elif s.hit_M1 == y:
@@ -261,6 +266,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M1():
+      s.stall_M1 = b1(0)
       s.ostall_M1 = b1(0)
       # if not s.hit_M1 and s.val_M1:
       #   s.ostall_M1 = b1(1)
@@ -301,7 +307,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
       s.msel = BitsRdDataMux(s.offset_M2) + BitsRdDataMux(1)  
-      s.reg_en_M2 = y
+      s.reg_en_M2 = ~s.stall_M2
       if s.val_M2:                                     #  word_mux|rdata_mux|memreq|cacheresp  
         if s.is_refill_M2:                   s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
         else:
@@ -318,15 +324,35 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.read_word_mux_sel_M2      = s.cs2[ CS_read_word_mux_sel_M2 ]
       s.read_data_mux_sel_M2      = s.cs2[ CS_read_data_mux_sel_M2 ]
 
+    @s.update
+    def stall_logic_M2():
+      s.ostall_M2 = ~s.memreq_rdy or ~s.cacheresp_rdy
 
   def line_trace( s ):
     types = ["rd","wr","in"]
-    msg_M0 = "rf" if s.is_refill_M0 and s.val_M0 else types[s.cachereq_type_M0] if s.val_M0 else "  "
+    if s.is_refill_M0 and s.val_M0: msg_M0 = "rf" 
+    else:
+      if s.val_M0:
+        msg_M0 = types[s.cachereq_type_M0]  
+      elif s.cachereq_en:
+        msg_M0 = "# "
+      else: 
+        msg_M0 = "  "
     msg_M1 = "rf" if s.is_refill_M1 and s.val_M1 else types[s.cachereq_type_M1] if s.val_M1 else "  "
     msg_M2 = "rf" if s.is_refill_M2 and s.val_M2 else types[s.cachereq_type_M2] if s.val_M2 else "  "
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "    
 
-    states = ["Go    ","Refill"]
+    states = ["G","R"]
     msg_state = states[s.curr_state]  
-    return "{}|{}|{}|{}|{} rdy:{}".format(msg_memresp,msg_M0,msg_M1,msg_M2,msg_memreq,s.cachereq_rdy) 
+    stage1 = "{}|{}".format(msg_memresp,msg_M0) if s.curr_state == STATE_REFILL and \
+      s.memresp_en else "  {}".format(msg_M0)
+    stage2 = "|{}".format(msg_M1)
+    stage3 = "|{}{}".format(msg_M2,msg_memreq)
+    state    = " [{}] ".format(msg_state)
+    pipeline = stage1 + stage2 + stage3 + state
+    # additional_msg = "CRqrdy:{} MRqprdy:{}".format(\
+    #   s.cachereq_rdy,s.memreq_rdy)
+    additional_msg = "H1:{}".format(s.hit_M1)
+
+    return pipeline + additional_msg

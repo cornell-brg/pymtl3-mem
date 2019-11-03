@@ -9,6 +9,7 @@ in the interface.
 
 Author : Shunning Jiang
 Date   : Mar 12, 2018
+Modified by: Xiaoyu and Eric 
 """
 
 from pymtl3 import *
@@ -16,7 +17,7 @@ from pymtl3.stdlib.fl import MemoryFL
 from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.mem_ifcs import MemMinionIfcCL
 
-from .DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
+from pymtl3.stdlib.cl.DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
 
 # BRGTC2 custom MemMsg modified for RISC-V 32
 
@@ -44,7 +45,7 @@ from .DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
 #-------------------------------------------------------------------------
 #- - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - -
 
-class MemoryCL( Component ):
+class CacheMemoryCL( Component ):
 
   # Magical methods
 
@@ -67,7 +68,8 @@ class MemoryCL( Component ):
 
     # Interface
 
-    s.ifc = [ MemMinionIfcCL( req_classes[i], resp_classes[i] ) for i in range(nports) ]
+    s.ifc = [ MemMinionIfcCL( req_classes[i], resp_classes[i] )\
+       for i in range(nports) ]
 
     # Queues
     req_latency = min(1, latency)
@@ -78,13 +80,9 @@ class MemoryCL( Component ):
 
     @s.update
     def up_mem():
-
       for i in range(s.nports):
-
         if s.req_qs[i].deq.rdy() and s.resp_qs[i].enq.rdy():
-
           # Dequeue memory request message
-
           req = s.req_qs[i].deq()
           len_ = int(req.len)
           if not len_: len_ = req_classes[i].data_nbits >> 3
@@ -108,7 +106,8 @@ class MemoryCL( Component ):
   #-----------------------------------------------------------------------
   # line_trace
   #-----------------------------------------------------------------------
-  # TODO: better line trace.
 
   def line_trace( s ):
-    return "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    msg = msg + "{}".format(s.mem.line_trace())
+    return msg
