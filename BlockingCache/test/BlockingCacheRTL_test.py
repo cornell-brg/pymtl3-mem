@@ -13,7 +13,7 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params ):
   base_addr = 0x74
-  max_cycles = 100
+  max_cycles = 20
   msgs = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( base_addr )
