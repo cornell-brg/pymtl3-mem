@@ -51,13 +51,11 @@ clw|             dbw|         0|
 We have three possible cases each for read and write.
 
 ### Init 
-#### Init Stages
-##### `M0`: 
-- Tag array write using index; sets valid bit
-##### `M1`: 
-- Write data to data array
-##### `M2`: 
-- Data mux select 0 and cache response valid
+| `M0`        | `M1`        | `M2`          |
+| :---:        | :----:   |          :---: |
+| Tag array write | Data array write| Data mux select 0   |
+| Set valid bit   |         | Cache response valid    |
+
 ### Hit (read/write)
 ```
              1  2  3  4  5  6
@@ -67,23 +65,37 @@ Hit       :       M0 M1 M2
 Hit       :          M0 M1 M2                     <- 6 cycles for 4 transactions
 ```
 #### Read Hit Stages
-##### `M0`: 
-- Tag array read using index
-##### `M1`: 
-- Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). HIT 
-- Read from data array
-##### `M2`: 
-- Data mux select correct word and cache response valid
+| `M0`           | `M1`           | `M2`          |
+| :---:          | :----:         |          :---: |
+| Cache request select | Data array read| Data mux select    |
+| Tag array read | Tag match/Hit  | Cache response valid|
+|                |                |                     |
 
 #### Write Hit Stages
-##### `M0`: 
-- Tag array read using index
+##### Write Hit Clean: 
+TODO
+
+| `M0`           | `M1`           | `M2`          |
+| :---:          | :----:         |          :---: |
+| Cache request select | Data array write| Data mux select 0|
+| Tag array read | Tag match/Hit  | Cache response valid|
+|                | Dirty bit = 0  |                     |
+|                | Stall to write dirty bit     |                     |
+|                | `M0`           |  `M1`           | `M2`          |
+|                | :----:         |    :----:       |:----:|
+
 ##### `M1`: 
 - Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). HIT 
 - Write data to data array
 - _Set the dirty bit at index_
-##### `M2`: 
-- Data mux select 0 and cache response valid
+
+TODO
+
+##### Write Hit Dirty: 
+| `M0`           | `M1`           | `M2`          |
+| :---:          | :----:         |          :---: |
+| Cache request select | Data array write| Data mux select 0|
+| Tag array read | Tag match/Hit  | Cache response valid|
 
 ### Miss Clean (read/write)
 ```
@@ -91,34 +103,23 @@ Miss      : M0 M1 M2 .......... M0 M1 M2          <- Refill path
 Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path 
 ```
 #### Read Miss Clean Stages
-##### `M0`: 
-- Tag array read using index
-##### `M1`: 
-- Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). MISS
-- Allocate address and type in MSHR
-- Stall signal to prevent new cache request from coming in
-##### `M2`: 
-- Send memory request for refill
-- Cache response invalid
-##### `M0`: Refill Response
-- Deallocate from MSHR and select mux for type, opaque, address, and data
-- Write new valid tag to tag array 
-##### `M1`: Refill Response
-- New cacherequest can come in
-- Write refilled cacheline data to data array 
-##### `M2`: Refill Response
-- Data mux select correct word and cache response valid
+| `M0`           | `M1`           | `M2`          |  `M0`: Refill Response|`M1`: Refill Response|`M2`: Refill Response
+| :---:          | :----:         |          :---: |:---: |:---: |:---: |
+| Cache request select | Data array read| Send memory request for refill|Mem Response select|New cacherequest can come in|Data mux select
+| Tag array read | Tag match/Hit  | Cache response invalid|Deallocate from MSHR|Write refilled cacheline data to data array|cache response valid
+|                |Allocate address and type in MSHR| Tag array write  |
+|                |Ostall          |                |                  |
 
-#### Write Stages
-##### `M0`: 
-- Tag array read using index
-##### `M1`: 
-- Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). MISS
-- Allocate address and type in MSHR
-- Stall signal to prevent new cache request from coming in
-##### `M2`: 
-- Send memory request for refill
-- Cache response invalid
+#### Write Miss Clean Stages
+| `M0`           | `M1`           | `M2`          |  `M0`: Refill Response|`M1`: Refill Response|`M2`: Refill Response
+| :---:          | :----:         |          :---: |:---: |:---: |:---: |
+|Cache request select| Data array read|Send memory request for refill|Mem Response select|New cacherequest can come in|Data mux select 0
+|Tag array read | Tag match/Hit  | Cache response invalid|Deallocate from MSHR|Write refilled cacheline data to data array|cache response valid
+|                |Allocate address and type in MSHR| Tag array write  |
+|                |Ostall          |                |                  |
+
+TODO
+
 ##### `M0`: Refill Response/Write
 - Deallocate from MSHR and select mux for type, opaque, address, and data
 - Write new valid tag to tag array 
@@ -127,8 +128,8 @@ Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path
 - New cacherequest can come in
 - Write refilled cacheline data to data array 
 - Set dirty bit
-##### `M2`: Refill Response
-- Data mux select 0 and cache response valid
+
+TODO
 
 ### Miss and dirty (read/write)
 ```
@@ -137,14 +138,13 @@ Miss Dirty: M0 M1 M2 .......... M0 M1 M2          <- Evict path
 Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 ```
 #### Read Miss Dirty Stages
-##### `M0`: 
-- Tag array read using index
-##### `M1`: Evict
-- Hit check; tag match and valid bit from tag array. Dirty bit from regfile(?). MISS
-- Stall signal to prevent new cache request from coming in
-- Generate new write memory transaction; with FSM?
-##### `M2`: Evict Request
-- Send memory write request for the evicted cacheline
+| `M0`           | `M1`: Evict | `M2`: Evict Request|  `M0`: Refill Response|`M1`: Refill Response|`M2`: Refill Response
+| :---:          | :----:         |          :---: |:---: |:---: |:---: |
+|Cache request select|Tag match/Hit |Send memory write request|Mem Response select|New cacherequest can come in|Data mux select 0
+|Tag array read | New write memory transaction| Cache response invalid|Deallocate from MSHR|Write refilled cacheline data to data array|cache response valid
+|                |Allocate address and type in MSHR| Tag array write  |
+|                |Ostall          |                |                  |
+|                |                | `M1`: Refill Request |                  |
 ##### `M1`: Refill Request
 - Allocate address and type in MSHR
 ##### `M2`: Refill Request
