@@ -1,11 +1,11 @@
 """
-#=========================================================================
-# BlockingCacheRTL_test.py
-#=========================================================================
-Test for Pipelined Blocking Cache RTL model 
+=========================================================================
+ BlockingCacheRTL_test.py
+=========================================================================
+Tests for Pipelined Blocking Cache RTL model 
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Date   : 04 November 2019
 """
 
 import pytest

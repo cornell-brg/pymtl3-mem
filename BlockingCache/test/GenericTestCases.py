@@ -5,7 +5,7 @@
 Cache type independent test cases for cache of any associativity
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Date   : 04 November 2019
 """
 
 import pytest
@@ -150,8 +150,8 @@ def write_miss_1word_clean( base_addr=0x0 ):
   return [
     #    type  opq  addr                 len data                type  opq test len data
     req( 'wr', 0x0, base_addr+0x00000000, 0, 0x00c0ffee ), resp( 'wr', 0x0, 0,   0, 0          ),
-    req( 'rd', 0x1, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x1, 1,   0, 0x00c0ffee ),
-    req( 'rd', 0x2, base_addr+0x00000008, 0, 0          ), resp( 'rd', 0x2, 1,   0, 0xeeeeeeee )
+    req( 'rd', 0x1, base_addr+0x00000008, 0, 0          ), resp( 'rd', 0x1, 1,   0, 0xeeeeeeee ),
+    req( 'rd', 0x2, base_addr+0x00000000, 0, 0          ), resp( 'rd', 0x2, 1,   0, 0x00c0ffee )
   ]
 
 def write_miss_1word_mem( base_addr=0x0 ):
