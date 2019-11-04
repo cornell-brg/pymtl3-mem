@@ -73,6 +73,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.tag_array_type_M0   = OutPort(Bits1)
     s.tag_array_wben_M0   = OutPort(BitsTagWben) 
     s.ctrl_bit_val_wr_M0  = OutPort(Bits1)
+    s.ctrl_bit_dty_wr_M0  = OutPort(Bits1)
     s.reg_en_M0           = OutPort(Bits1)
     
     #-------------------------------------------------------------------
@@ -81,11 +82,9 @@ class BlockingCacheCtrlPRTL ( Component ):
     
     s.cachereq_type_M1   = InPort(BitsType)
     s.ctrl_bit_val_rd_M1 = InPort(Bits1)
-    # s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
+    s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
     s.tag_match_M1       = InPort(Bits1)
     s.offset_M1          = InPort(BitsOffset)
-    
-    # s.ctrl_bit_dty_wr_M1 = OutPort(Bits1)
     s.reg_en_M1          = OutPort(Bits1)
     s.data_array_val_M1  = OutPort(Bits1)
     s.data_array_type_M1 = OutPort(Bits1)
@@ -342,11 +341,14 @@ class BlockingCacheCtrlPRTL ( Component ):
 
   def line_trace( s ):
     types = ["rd","wr","in"]
-    if s.is_refill_M0 and s.val_M0: msg_M0 = "rf" 
+    if s.is_refill_M0 and s.val_M0 and s.cachereq_rdy: 
+      msg_M0 = "rf" 
+    elif s.is_refill_M0 and s.val_M0 and not s.cachereq_rdy:
+      msg_M0 = "#r" 
     else:
       if s.val_M0:
         msg_M0 = types[s.cachereq_type_M0]  
-      elif s.cachereq_en:
+      elif not s.cachereq_rdy:
         msg_M0 = "# "
       else: 
         msg_M0 = "  "

@@ -67,6 +67,7 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_array_type_M0     = InPort(Bits1)
     s.tag_array_wben_M0     = InPort(BitsTagWben)
     s.ctrl_bit_val_wr_M0    = InPort(Bits1)
+    s.ctrl_bit_dty_wr_M0    = InPort(Bits1)
     s.reg_en_M0             = InPort(Bits1)
     s.memresp_mux_sel_M0    = InPort(Bits1)
 
@@ -75,9 +76,8 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(BitsDataWben)
-    # s.ctrl_bit_dty_wr_M1    = InPort(Bits1)
-    # s.ctrl_bit_dty_rd_M1    = OutPort(Bits1)
     s.ctrl_bit_val_rd_M1    = OutPort(Bits1)
+    s.ctrl_bit_dty_rd_M1    = OutPort(Bits1)
     s.tag_match_M1          = OutPort(Bits1)
     s.cachereq_type_M1      = OutPort(BitsType)
     s.offset_M1             = OutPort(BitsOffset)
@@ -165,9 +165,10 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_array_wdata_M0    = Wire(BitsAddr)
     s.tag_array_rdata_M1    = Wire(BitsAddr)
 
-    s.tag_array_idx_M0              //= s.addr_M0[ofw:idw+ofw]
-    s.tag_array_wdata_M0[0:tgw]     //= s.addr_M0[ofw+idw:idw+ofw+tgw]
-    s.tag_array_wdata_M0[abw-1:abw] //= s.ctrl_bit_val_wr_M0
+    s.tag_array_idx_M0               //= s.addr_M0[ofw:idw+ofw]
+    s.tag_array_wdata_M0[0:tgw]      //= s.addr_M0[ofw+idw:idw+ofw+tgw]
+    s.tag_array_wdata_M0[abw-1:abw]  //= s.ctrl_bit_val_wr_M0
+    s.tag_array_wdata_M0[abw-2:abw-1]//= s.ctrl_bit_dty_wr_M0
 
     s.tag_array_M1 = SramPRTL(abw, nbl)(
       port0_val   = s.tag_array_val_M0,
@@ -182,14 +183,6 @@ class BlockingCacheDpathPRTL (Component):
     # M1 Stage 
     #--------------------------------------------------------------------
     
-    # s.RegFile_M1 = RegisterFile(Bits1,nbl)(
-    #   raddr = s.tag_array_idx_M0,
-    #   rdata = s.ctrl_bit_dty_rd_M1,
-    #   waddr = s.tag_array_idx_M0,
-    #   wdata = s.ctrl_bit_dty_wr_M1,
-    #   wen   = b1(1)
-    # )
-
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
     s.cachereq_addr_M1    = Wire(BitsAddr)
     s.cachereq_data_M1    = Wire(BitsCacheline)
@@ -218,6 +211,7 @@ class BlockingCacheDpathPRTL (Component):
 
     # Output the valid bit
     s.ctrl_bit_val_rd_M1 //= s.tag_array_rdata_M1[abw-1:abw] 
+    s.ctrl_bit_dty_rd_M1 //= s.tag_array_rdata_M1[abw-2:abw-1] 
     s.offset_M1 //= s.cachereq_addr_M1[2:ofw]
 
     # s.comp_in1 = Wire(BitsTag)

@@ -112,7 +112,6 @@ class BlockingCachePRTL ( Component ):
       memreq_data_M2           = s.memreq.msg.data,
       
     )
-    # TODO: AUTO CONNECT, GET RID OF TMP WIRES
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       dbw, ofw,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
@@ -141,10 +140,12 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.cachereq_type_M0, s.cachereq_type_M0,
       s.cacheDpath.cachereq_type_M0, s.cachereq_type_M0,
       s.cacheCtrl.ctrl_bit_val_wr_M0, s.cacheDpath.ctrl_bit_val_wr_M0,
+      s.cacheCtrl.ctrl_bit_dty_wr_M0, s.cacheDpath.ctrl_bit_dty_wr_M0,
       s.cacheCtrl.reg_en_M0, s.cacheDpath.reg_en_M0,
       
       s.cacheCtrl.cachereq_type_M1, s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.ctrl_bit_val_rd_M1, s.cacheDpath.ctrl_bit_val_rd_M1,
+      s.cacheCtrl.ctrl_bit_dty_rd_M1, s.cacheDpath.ctrl_bit_dty_rd_M1,
       s.cacheCtrl.tag_match_M1, s.cacheDpath.tag_match_M1,
       s.cacheCtrl.offset_M1, s.cacheDpath.offset_M1,
       s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1,
