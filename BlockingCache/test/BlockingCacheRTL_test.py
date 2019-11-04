@@ -1,10 +1,24 @@
+"""
 #=========================================================================
 # BlockingCacheRTL_test.py
 #=========================================================================
+Test for Pipelined Blocking Cache RTL model 
+
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
+
 import pytest
 from pymtl3      import *
-from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, TestHarness, run_sim
+from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, \
+  TestHarness, run_sim
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
+from BlockingCache.test.GenericTestCases import test_case_table_generic
+from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
+from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
+
+base_addr = 0x74
+max_cycles = 50
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
@@ -12,8 +26,6 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params ):
-  base_addr = 0x74
-  max_cycles = 100
   msgs = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( base_addr )
@@ -21,7 +33,8 @@ def test_generic( test_params ):
   harness = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
-                         BlockingCachePRTL)
+                         BlockingCachePRTL, GenericCacheMsg,
+                         GenericMemMsg)
   harness.elaborate()
   # translate()
   # Load memory before the test

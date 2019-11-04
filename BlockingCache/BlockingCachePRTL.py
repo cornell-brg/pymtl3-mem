@@ -1,6 +1,14 @@
+"""
 #=========================================================================
 # BlockingCachePRTL.py
 #=========================================================================
+Top level model of Pipelined Blocking Cache with instances of ctrl and 
+dpath
+
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
+
 
 from pymtl3      import *
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
@@ -99,7 +107,7 @@ class BlockingCachePRTL ( Component ):
       cacheresp_data_M2        = s.cacheresp.msg.data,
 
       memreq_opaque_M2         = s.memreq.msg.opaque,
-      memreq_type_M2           = s.memreq.msg.type_,
+      # memreq_type_M2           = s.memreq.msg.type_,
       memreq_addr_M2           = s.memreq.msg.addr,
       memreq_data_M2           = s.memreq.msg.data,
       
@@ -122,6 +130,7 @@ class BlockingCachePRTL ( Component ):
       memreq_rdy            = s.memreq.rdy,
 
       hit_M2                = s.cacheresp.msg.test,
+      memreq_type           = s.memreq.msg.type_
     )
    
     connect_pairs(

@@ -1,6 +1,11 @@
+"""
 #=========================================================================
 # BlockingCacheCtrlPRTL.py
 #=========================================================================
+
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
 
 from pymtl3      import *
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
@@ -98,6 +103,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.read_word_mux_sel_M2  = OutPort(BitsRdDataMux)
     # Output Signals
     s.hit_M2                = OutPort(Bits2)
+    s.memreq_type           = OutPort(BitsType)    
     
     #------------------------------------------------------------------
     # Connection Wires
@@ -315,7 +321,9 @@ class BlockingCacheCtrlPRTL ( Component ):
           elif (s.cachereq_type_M2 == READ):
             if s.hit_M2[0]:                  s.cs2 = concat(s.msel,   b1(0) ,    n ,     y   )
             else:                            s.cs2 = concat(mxsel0,   b1(0) ,    y ,     n   )
-          elif (s.cachereq_type_M2 == WRITE):s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
+          elif (s.cachereq_type_M2 == WRITE):
+            if s.hit_M2[0]:                  s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
+            else:                            s.cs2 = concat(s.msel,   b1(0) ,    y ,     n   )
           else:                              s.cs2 = concat(mxsel0,   b1(0) ,    n ,     n   )
       else:                                  s.cs2 = concat(mxsel0,   b1(0) ,    n ,     n   )
         
@@ -323,6 +331,10 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ] 
       s.read_word_mux_sel_M2      = s.cs2[ CS_read_word_mux_sel_M2 ]
       s.read_data_mux_sel_M2      = s.cs2[ CS_read_data_mux_sel_M2 ]
+
+    @s.update
+    def memreq_logic_M2():
+      s.memreq_type = READ
 
     @s.update
     def stall_logic_M2():
