@@ -36,6 +36,7 @@ class BlockingCacheFL( Component ):
     #-------------------------------------------------------------------------
 
     assert MemMsg.abw == CacheMsg.abw, "abw not the same"
+
     obw       = MemMsg.obw
     clw       = MemMsg.dbw
     abw       = MemMsg.abw
@@ -96,11 +97,13 @@ class BlockingCacheFL( Component ):
     #---------------------------------------------------------------------
     # Datapath
     #---------------------------------------------------------------------
+
     #REGISTERED INPUTS
     s.cacheresp_type_out = Wire(b4)
     s.type_reg = RegRst(b4)(
       in_ = s.cachereq.msg.type_,
       out = s.cacheresp_type_out
+
     ) # ASSUMING SINGLE CYCLE LATENCY 
     
     s.cacheresp_addr_out = Wire(BitsAddr)
@@ -176,4 +179,5 @@ class BlockingCacheFL( Component ):
      
   def line_trace(s):
     return "tag:{} crl:{}".format(s.tag_array[s.idx], s.ctrl[s.idx] )
+
 

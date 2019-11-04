@@ -66,6 +66,7 @@ class TestHarness(Component):
     for addr, data_int in zip( addrs, data_ints ):
       data_bytes_a = bytearray()
       data_bytes_a.extend( struct.pack("<I",data_int) )
+      print (addr, data_bytes_a)
       s.mem.write_mem( addr, data_bytes_a )
 
   def done( s ):
@@ -109,9 +110,9 @@ def run_sim(th, max_cycles):
   th.tick()
 
 
+
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
-  
   msgs = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( base_addr )
