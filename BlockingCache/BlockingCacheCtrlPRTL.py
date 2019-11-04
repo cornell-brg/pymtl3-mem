@@ -136,8 +136,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def next_state_block():
       if s.curr_state == STATE_GO:
-        # if ~s.hit_M1: #and s.ctrl_bit_dty_rd_M0:     
-          # s.next_state = STATE_EVICT
+        if ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:     
+          s.next_state = STATE_EVICT
         if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.is_refill_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
           s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL:
@@ -167,11 +167,12 @@ class BlockingCacheCtrlPRTL ( Component ):
     )
     # Valid
     s.val_M0 = Wire(Bits1)
-    CS_tag_array_wben_M0    = slice( 4,  4 + twb ) # last because variable
-    CS_memresp_mux_sel_M0   = slice( 3,  4 )
-    CS_tag_array_type_M0    = slice( 2,  3 )
-    CS_tag_array_val_M0     = slice( 1,  2 )
-    CS_ctrl_bit_val_wr_M0   = slice( 0,  1 )
+    CS_tag_array_wben_M0    = slice( 5,  5 + twb ) # last because variable
+    CS_memresp_mux_sel_M0   = slice( 4,  5 )
+    CS_tag_array_type_M0    = slice( 3,  4 )
+    CS_tag_array_val_M0     = slice( 2,  3 )
+    CS_ctrl_bit_val_wr_M0   = slice( 1,  2 )
+    CS_ctrl_bit_dty_wr_M0   = slice( 0,  1 )
 
     s.cs0 = Wire( mk_bits( 5 + twb ) ) # Bits for CS parameterized
     @s.update 
@@ -191,19 +192,20 @@ class BlockingCacheCtrlPRTL ( Component ):
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or s.is_refill_M0
       s.reg_en_M0 = s.memresp_en
-      if s.val_M0:#                                          tag_wben         |mr_mux|tg_ty|tg_v|val
-        if s.is_refill_M0:                   s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, y)    
+      if s.val_M0:#                                          tag_wben         |mr_mux|tg_ty|tg_v|dty|val
+        if s.is_refill_M0:                   s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, n,  y)    
         else:
-          if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf), b1(0),   wr,   y, y)
-          elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n)
-          elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n)
-          else:                              s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   n, n)
-      else:                                  s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   n, n)
+          if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf), b1(0),   wr,   y, n,  y)
+          elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n,  n)
+          elif (s.cachereq_type_M0 == WRITE):s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n,  n)
+          else:                              s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   n, n,  n)
+      else:                                  s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   n, n,  n)
 
       s.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
       s.tag_array_val_M0   = s.cs0[ CS_tag_array_val_M0   ]
       s.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
+      s.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
 
     #--------------------------------------------------------------------
