@@ -6,6 +6,7 @@
 Author : Xiaoyu Yan, Eric Tang
 Date   : 11/04/19
 """
+import random
 
 from pymtl3      import *
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
@@ -171,8 +172,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     CS_memresp_mux_sel_M0   = slice( 4,  5 )
     CS_tag_array_type_M0    = slice( 3,  4 )
     CS_tag_array_val_M0     = slice( 2,  3 )
-    CS_ctrl_bit_val_wr_M0   = slice( 1,  2 )
-    CS_ctrl_bit_dty_wr_M0   = slice( 0,  1 )
+    CS_ctrl_bit_dty_wr_M0   = slice( 1,  2 )
+    CS_ctrl_bit_val_wr_M0   = slice( 0,  1 )
 
     s.cs0 = Wire( mk_bits( 5 + twb ) ) # Bits for CS parameterized
     @s.update 
@@ -184,10 +185,11 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M0():
-      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2    # Check stall for all stages
+      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2 # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
       s.cachereq_rdy = (~s.stall_M1 and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
-      
+      # Stalling M1 means we don't have new req coming in
+
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or s.is_refill_M0
@@ -311,10 +313,14 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.cs2 = Wire( mk_bits( 3 + rmx2 ) )
 
     s.msel = Wire(BitsRdDataMux)
+
+    @s.update
+    def en_M2():
+      s.reg_en_M2 = ~s.stall_M2
+
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
       s.msel = BitsRdDataMux(s.offset_M2) + BitsRdDataMux(1)  
-      s.reg_en_M2 = ~s.stall_M2
       if s.val_M2:                                     #  word_mux|rdata_mux|memreq|cacheresp  
         if s.is_refill_M2:                   s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
         else:
@@ -342,6 +348,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.ostall_M2 = ~s.memreq_rdy or ~s.cacheresp_rdy
 
   def line_trace( s ):
+    colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
     types = ["rd","wr","in"]
     if s.is_refill_M0 and s.val_M0 and s.cachereq_rdy: 
       msg_M0 = "rf" 
@@ -354,7 +361,15 @@ class BlockingCacheCtrlPRTL ( Component ):
         msg_M0 = "# "
       else: 
         msg_M0 = "  "
-    msg_M1 = "rf" if s.is_refill_M1 and s.val_M1 else types[s.cachereq_type_M1] if s.val_M1 else "  "
+    if s.val_M1:
+      if s.is_refill_M1:
+        msg_M1 = "rf" 
+      elif ~s.hit_M1: 
+        msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
+      else: 
+        msg_M1 = types[s.cachereq_type_M1]
+    else:
+      msg_M1 = "  "
     msg_M2 = "rf" if s.is_refill_M2 and s.val_M2 else types[s.cachereq_type_M2] if s.val_M2 else "  "
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "    
