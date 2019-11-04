@@ -1,6 +1,14 @@
+"""
 #=========================================================================
 # BlockingCachePRTL.py
 #=========================================================================
+Top level model of Pipelined Blocking Cache with instances of ctrl and 
+dpath
+
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
+
 
 from pymtl3      import *
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst

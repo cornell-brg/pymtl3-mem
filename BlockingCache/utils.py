@@ -1,5 +1,15 @@
-from pymtl3 import *
+"""
+#=========================================================================
+# utils.py
+#=========================================================================
+Implement some general stdlib models so we can keep everything structural
 
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
+
+
+from pymtl3 import *
 
 class EComp ( Component ):
 

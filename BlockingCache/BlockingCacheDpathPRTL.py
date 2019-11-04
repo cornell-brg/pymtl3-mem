@@ -1,7 +1,12 @@
+"""
 #=========================================================================
 # BlockingCacheDpathPRTL.py
 #=========================================================================
+Datapath of Pipelined Blocking Cache
 
+Author : Xiaoyu Yan, Eric Tang
+Date   : 11/04/19
+"""
 from pymtl3            import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
