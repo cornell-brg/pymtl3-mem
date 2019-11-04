@@ -3,6 +3,7 @@ Project repo for cache/memory related components implemented in pymtl3
 
 
 ## PyMTL3 Installation
+On a Python3 virtual environment:
 ```
 % git clone git@github.com:cornell-brg/pymtl3.git
 % pip install --editable ./pymtl3
