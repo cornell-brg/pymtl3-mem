@@ -1,14 +1,15 @@
 
 """
-#=========================================================================
-# BlockingCacheFL.py
-#=========================================================================
+=========================================================================
+ BlockingCacheFL.py
+=========================================================================
 A function level cache model which only passes cache requests and
 responses to the memory
 
 Author : Xiaoyu Yan, Eric Tang
 Date   : 11/04/19
 """
+
 from pymtl3      import *
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -20,10 +21,11 @@ class BlockingCacheFL( Component ):
   FL Model/Golden Model used to model functionality of cache.
   A function level cache model which only passes cache requests and
   responses to the memory
-  - Can only model DMAP cache
+  - Models DMAP cache
   - 1 cycle latency
   - CANNOT handle random stalls/latencies (Not neccessary)
   """
+
   def construct( s,
                  nbytes        = 4096, # cache size in bytes, nbytes
                  CacheMsg      = "",   # Cache req/resp msg type

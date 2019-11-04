@@ -1,11 +1,11 @@
 """
-#=========================================================================
-# BlockingCacheFL_test.py
-#=========================================================================
+=========================================================================
+ BlockingCacheFL_test.py
+=========================================================================
 Test for Pipelined Blocking Cache FL model
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Date   : 04 November 2019
 """
 import pytest
 import struct
@@ -66,7 +66,6 @@ class TestHarness(Component):
     for addr, data_int in zip( addrs, data_ints ):
       data_bytes_a = bytearray()
       data_bytes_a.extend( struct.pack("<I",data_int) )
-      # print (addr, data_bytes_a)
       s.mem.write_mem( addr, data_bytes_a )
 
   def done( s ):
