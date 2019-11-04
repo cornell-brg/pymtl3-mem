@@ -12,9 +12,10 @@ from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 
-STATE_GO     = b2(0)
-STATE_REFILL = b2(1)
-STATE_EVICT  = b2(2)
+STATE_GO           = b2(0)
+STATE_REFILL       = b2(1)
+STATE_EVICT        = b2(2)
+STATE_REFILL_WRITE = b2(3)
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
@@ -35,6 +36,7 @@ class BlockingCacheCtrlPRTL ( Component ):
                  dwb           = 16,       # Data array write byte enable bitwidth
                  rmx2          = 3,        # Read word mux bitwidth
   ):
+    
     # Constants
     wr = y = b1(1)
     rd = n = b1(0)
@@ -46,7 +48,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     wbenf = BitsDataWben(-1)
     data_array_wb_mask = 2**(dbw//8)-1
     
-
     #-------------------------------------------------------------------
     # Interface
     #-------------------------------------------------------------------
@@ -67,14 +68,15 @@ class BlockingCacheCtrlPRTL ( Component ):
     # M0 Ctrl Signals 
     #--------------------------------------------------------------------
     
-    s.cachereq_type_M0    = InPort(BitsType)
+    s.cachereq_type_M0    = InPort (BitsType)
     s.memresp_mux_sel_M0  = OutPort(Bits1)
     s.tag_array_val_M0    = OutPort(Bits1)
     s.tag_array_type_M0   = OutPort(Bits1)
     s.tag_array_wben_M0   = OutPort(BitsTagWben) 
     s.ctrl_bit_val_wr_M0  = OutPort(Bits1)
     s.reg_en_M0           = OutPort(Bits1)
-    
+    s.MSHR_type           = InPort (BitsType)   
+ 
     #-------------------------------------------------------------------
     # M1 Ctrl Signals
     #-------------------------------------------------------------------
@@ -139,12 +141,14 @@ class BlockingCacheCtrlPRTL ( Component ):
       if s.curr_state == STATE_GO:
         # if ~s.hit_M1: #and s.ctrl_bit_dty_rd_M0:     
           # s.next_state = STATE_EVICT
-        if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.is_refill_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
+        if s.val_M1 and s.cachereq_type_M1 = INIT and ~s.hit_M1 and ~s.is_refill_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
           s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL:
-        if s.is_refill_M0:                          s.next_state = STATE_GO
+        if s.is_refill_M0 and s.MSHR_type == WRITE: s.next_state = STATE_REFILL_WRITE
+        elif s.is_refill_M0:                        s.next_state = STATE_GO
         else:                                       s.next_state = STATE_REFILL
       elif s.curr_state == STATE_EVICT:             s.next_state = STATE_REFILL
+      elif s.curr_state == STATE_REFILL_WRITE:      s.next_state = STATE_GO
       else:
         assert False, 'undefined state: next state block'
 
@@ -315,7 +319,9 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.msel = BitsRdDataMux(s.offset_M2) + BitsRdDataMux(1)  
       s.reg_en_M2 = ~s.stall_M2
       if s.val_M2:                                     #  word_mux|rdata_mux|memreq|cacheresp  
-        if s.is_refill_M2:                   s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
+        if s.is_refill_M2:                   
+          if s.cachereq_type_M2 == READ:     s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
+          elif s.cachereq_type_M2 == WRITE:  s.cs2 = concat(mxsel0,   b1(1) ,    n ,     y   )
         else:
           if (s.cachereq_type_M2 == INIT):   s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
           elif (s.cachereq_type_M2 == READ):
@@ -365,6 +371,6 @@ class BlockingCacheCtrlPRTL ( Component ):
     pipeline = stage1 + stage2 + stage3 + state
     # additional_msg = "CRqrdy:{} MRqprdy:{}".format(\
     #   s.cachereq_rdy,s.memreq_rdy)
-    additional_msg = "H1:{}".format(s.hit_M1)
+    # additional_msg = "H1:{}".format(s.hit_M1)
 
-    return pipeline + additional_msg
+    return pipeline # + additional_msg

@@ -2,10 +2,10 @@
 =========================================================================
  BlockingCacheDpathPRTL.py
 =========================================================================
-Datapath of Pipelined Blocking Cache
+Parameterizable Pipelined Blocking Cache Datapath
 
-Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Author : Xiaoyu Yan, Eric Tang (et396)
+Date   : 4 November 2019
 """
 from pymtl3            import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
@@ -195,22 +195,29 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_data_M1    = Wire(BitsCacheline)
     
     # Pipeline registers
-    s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)(
+    s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)\
+    (
       en  = s.reg_en_M1,
       in_ = s.opaque_M0,
       out = s.cachereq_opaque_M1,
     )
-    s.cachereq_type_reg_M1 = RegEnRst(BitsType)(
+
+    s.cachereq_type_reg_M1 = RegEnRst(BitsType)\
+    (
       en  = s.reg_en_M1,
       in_ = s.type_M0,
       out = s.cachereq_type_M1,
     )
-    s.cachereq_address_reg_M1 = RegEnRst(BitsAddr)(
+
+    s.cachereq_address_reg_M1 = RegEnRst(BitsAddr)\
+    (
       en  = s.reg_en_M1,
       in_ = s.addr_M0,
       out = s.cachereq_addr_M1,
     )
-    s.cachereq_data_reg_M1 = RegEnRst(BitsCacheline)(
+
+    s.cachereq_data_reg_M1 = RegEnRst(BitsCacheline)\
+    (
       en  = s.reg_en_M1,
       in_ = s.data_array_wdata_M0,
       out = s.cachereq_data_M1,
@@ -330,20 +337,20 @@ class BlockingCacheDpathPRTL (Component):
       
   def line_trace( s ):
     # "mem resp:{}".format(s.memresp_data_Y)
-    # msg = ""
+    msg = "cache resp:{}".format(s.cacheresp_data_M2)
  
-    msg = (
-      "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={} ".format(\
-      s.tag_array_rdata_M1,
-      s.cachereq_addr_M1,
-      s.tag_array_wben_M0,
-      s.data_array_rdata_M2,
-      s.cacheresp_data_M2,
-      s.data_array_wben_M1,
-      # s.MSHR_addr_M0,
-      # s.memresp_data_Y
-      )
-    )
+    # msg = (
+    #   "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={} ".format(\
+    #   s.tag_array_rdata_M1,
+    #   s.cachereq_addr_M1,
+    #   s.tag_array_wben_M0,
+    #   s.data_array_rdata_M2,
+    #   s.cacheresp_data_M2,
+    #   s.data_array_wben_M1,
+    #   # s.MSHR_addr_M0,
+    #   # s.memresp_data_Y
+    #   )
+    # )
     return msg
     # return "tag_array_rdata = {}, cachereq_addr = {} ".format(\
     #   s.tag_array_rdata_M1[0:tgw],s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
