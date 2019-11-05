@@ -438,7 +438,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       elif s.is_write_hit_clean_M0 and not s.cachereq_rdy:
         msg_M0 = "#w"
       else:
-        if s.curr_state == STATE_REFILL_WRITE:
+        if s.is_write_refill_M0:
           msg_M0 = "wf"
         elif s.val_M0:
           msg_M0 = types[s.cachereq_type_M0]  
@@ -453,6 +453,10 @@ class BlockingCacheCtrlPRTL ( Component ):
         msg_M1 = "wc" 
       elif ~s.hit_M1 and s.cachereq_type_M1 != 2: 
         msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
+      elif s.is_write_refill_M1:
+        msg_M1 = "wf"
+      elif s.hit_M1 and s.cachereq_type_M1 != 2: 
+        msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
       else: 
         msg_M1 = types[s.cachereq_type_M1]
 
@@ -460,6 +464,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     if s.val_M2:
       if s.is_refill_M2:            msg_M2 = "rf"
       elif s.is_write_hit_clean_M2: msg_M2 = "wc" 
+      elif s.is_write_refill_M2:    msg_M2 = "wf"
       else:                         msg_M2 = types[s.cachereq_type_M2]
 
     msg_memresp = ">" if s.memresp_en else " "
