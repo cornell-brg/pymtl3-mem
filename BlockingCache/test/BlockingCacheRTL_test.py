@@ -18,7 +18,7 @@ from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
 from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
 
 base_addr = 0x74
-max_cycles = 50
+max_cycles = 500
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
