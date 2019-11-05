@@ -104,6 +104,173 @@ def dir_mapped_long0_mem( base_addr ):
     0x00002074, 0x75ca1ded,
   ]
 
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+# Generate random data and addresses
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+def generate_data(n):
+	data = []
+	for i in range(n):
+		data.append(random.randint(0, 0xffffffff))
+	return data
+
+def generate_type(n):
+	requestTypes = ['rd', 'wr']
+	idx = [random.randint(0, 1) for p in range(n)]
+	requestSequence = []
+	for i in range(n):
+		requestSequence.append(requestTypes[idx[i]])	
+	return requestSequence
+
+def generate_address(n):
+	randAddr = []
+	tagArray = []
+	tag = (random.sample(range(4095),n))
+	for i in range(n):
+		#tag = random.randint(0, 4095)*256
+		idx = random.randint(0,15)*16 + random.randint(0, 3)*4
+		randAddr.append(tag[i]*256+idx)
+
+	return randAddr
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+# RANDOM TEST: Simple address patterns, read request, random data --dmap
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+rand_data1 = generate_data(64)
+
+def read_rand_data_dmap( base_addr ):
+	read_random_data_msgs = []
+	addr = [x*16 for x in range(16)]
+	for i in range(16):
+		test = 0 
+		read_random_data_msgs.append(req('rd', i, addr[i], 0, 0))
+		read_random_data_msgs.append(resp('rd', i, test, 0, rand_data1[i*4]))
+	
+	return read_random_data_msgs	
+	
+# Data to be loaded into memory before running the test
+
+def read_rand_data_mem( base_addr ):
+	rand_data_mem = [];
+	addr = [x*4 for x in range(64)]
+	 
+	for i in range(64):
+		rand_data_mem.append(addr[i])
+		rand_data_mem.append(rand_data1[i])
+	 
+	return rand_data_mem		
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+# Simple address patterns, random request types and data --dmap
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+# Data to be loaded into memory before running the test
+rand_data3 = generate_data(64)
+
+def rand_requests_dmap( base_addr ):
+	rand_requests_msgs = []
+	addr = [x*16 for x in range(16)]
+	write_list = [] 
+	for i in range(16):
+		test = 0
+		idx = i*4
+		ref_memory[idx:idx+4] = rand_data3[idx:idx+4]
+
+		if(rand_requests[i] == 'wr'):
+			rand_requests_msgs.append(req('wr', i, addr[i], 0, rand_data4[i]))
+			rand_requests_msgs.append(resp('wr', i, test, 0, 0))
+			ref_memory[4*i] = rand_data4[i]
+			write_list.append(i)
+		else: #read request
+			rand_requests_msgs.append(req('rd', i, addr[i], 0, 0))
+			rand_requests_msgs.append(resp('rd', i, test, 0, ref_memory[4*i]))
+	
+	for i in range(len(write_list)):
+		rand_requests_msgs.append(req('rd', 16+i, addr[write_list[i]], 0, 0))
+		rand_requests_msgs.append(resp('rd', 16+i, 1, 0, ref_memory[4*write_list[i]]))	
+			
+	return rand_requests_msgs
+
+def rand_requests_mem( base_addr ):
+	rand_data_mem = []
+	addr = [x*4 for x in range(64)]
+	 
+	for i in range(64):
+		rand_data_mem.append(addr[i])
+		rand_data_mem.append(rand_data3[i])
+	 
+	return rand_data_mem			
+
+rand_requests = generate_type(64)
+ref_memory = [None]*64;
+rand_data4 = generate_data(64) #random data to write
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+# Unit stride with random data --dmap
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+ref_memory_unit = [None]*64;
+
+def unit_stride_dmap( base_addr ):
+	unit_stride_msgs = []
+	addr = [x*4 for x in range(64)]
+	write_list = [] 
+	for i in range(64):
+		if i % 4 == 0:
+			test = 0
+			idx = i - (i % 4);
+			ref_memory_unit[idx:idx+4] = rand_data3[idx:idx+4]
+		else:
+			test = 1
+		
+		if(rand_requests[i] == 'wr'):
+			unit_stride_msgs.append(req('wr', i, addr[i], 0, rand_data4[i]))
+			unit_stride_msgs.append(resp('wr', i, test, 0, 0))
+			ref_memory_unit[i] = rand_data4[i]
+			write_list.append(i)
+		else: #read request
+			unit_stride_msgs.append(req('rd', i, addr[i], 0, 0))
+			unit_stride_msgs.append(resp('rd', i, test, 0, ref_memory_unit[i]))
+	
+	for i in range(len(write_list)):
+		unit_stride_msgs.append(req('rd', 64+i, addr[write_list[i]], 0, 0))
+		unit_stride_msgs.append(resp('rd', 64+i, 1, 0, ref_memory_unit[write_list[i]]))	
+			
+	return unit_stride_msgs
+
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+# Stride with random data --dmap
+#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+# Data to be loaded into memory before running the test
+rand_data5 = generate_data(50)
+ref_memory_stride = [None]*64;
+
+def stride_dmap( base_addr ):
+	stride_msgs = []
+	addr = [x*16**3 for x in range(50)]
+	for i in range(50):
+		test = 0
+		ref_memory_stride[0] = rand_data5[i]
+				
+		if(rand_requests[i] == 'wr'):
+			stride_msgs.append(req('wr', i, addr[i], 0, rand_data5[i]))
+			stride_msgs.append(resp('wr', i, test, 0, 0))
+			ref_memory_stride[0] = rand_data5[i]
+		else: #read request
+			stride_msgs.append(req('rd', i, addr[i], 0, 0))
+			stride_msgs.append(resp('rd', i, test, 0, ref_memory_stride[0]))
+			
+	return stride_msgs	
+
+def stride_mem( base_addr ):
+	rand_data_mem = []
+	addr = [x*16**3 for x in range(50)]
+	 
+	for i in range(50):
+		rand_data_mem.append(addr[i])
+		rand_data_mem.append(rand_data5[i])
+	 
+	return rand_data_mem
+
 #---------------------------------------------------------------------------------------------
 # Test table for dmapped test
 #---------------------------------------------------------------------------------------------
@@ -111,4 +278,9 @@ def dir_mapped_long0_mem( base_addr ):
 test_case_table_dmap = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
   [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem,0.0,  1,  0,  0    ],
+  [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,  0,  0    ],
+  [ "rand_requests_mem",     rand_requests_dmap,    rand_requests_mem,   0.0,  1,  0,  0    ],
+  [ "unit_stride_dmap",      unit_stride_dmap,      rand_requests_mem,   0.0,  1,  0,  0    ],
+  [ "stride_dmap",           stride_dmap,           stride_mem,          0.0,  1,  0,  0    ],
+
 ])
