@@ -2,7 +2,21 @@
 Project repo for cache/memory related components implemented in pymtl3
 
 
-## PyMTL3 Installation
+## PyMTL3 
+### Create virtual environment
+
+While not strictly necessary, we strongly recommend using [virtualenv][5]
+to install PyMTL3 and the Python packages that PyMTL3 depends on.
+virtualenv enables creating isolated Python environments. The following
+commands will create and activate the virtual environment:
+
+```
+ % python3 -m venv ${HOME}/venv
+ % source ${HOME}/venv/bin/activate
+```
+
+ [5]: https://virtualenv.pypa.io/en/latest/
+### Install PyMTL3
 On a Python3 virtual environment:
 ```
 % git clone git@github.com:cornell-brg/pymtl3.git
