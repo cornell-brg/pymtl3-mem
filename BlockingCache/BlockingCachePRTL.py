@@ -112,7 +112,6 @@ class BlockingCachePRTL ( Component ):
       memreq_data_M2           = s.memreq.msg.data,
       
     )
-    # TODO: AUTO CONNECT, GET RID OF TMP WIRES
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       dbw, ofw,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
@@ -134,30 +133,34 @@ class BlockingCachePRTL ( Component ):
     )
    
     connect_pairs(
-      s.cacheCtrl.memresp_mux_sel_M0, s.cacheDpath.memresp_mux_sel_M0,
-      s.cacheCtrl.tag_array_val_M0, s.cacheDpath.tag_array_val_M0,
-      s.cacheCtrl.tag_array_type_M0, s.cacheDpath.tag_array_type_M0,
-      s.cacheCtrl.tag_array_wben_M0, s.cacheDpath.tag_array_wben_M0,
-      s.cacheCtrl.cachereq_type_M0, s.cachereq_type_M0,
-      s.cacheDpath.cachereq_type_M0, s.cachereq_type_M0,
-      s.cacheCtrl.ctrl_bit_val_wr_M0, s.cacheDpath.ctrl_bit_val_wr_M0,
-      s.cacheCtrl.reg_en_M0, s.cacheDpath.reg_en_M0,
+      s.cacheCtrl.memresp_mux_sel_M0,   s.cacheDpath.memresp_mux_sel_M0,
+      s.cacheCtrl.wdata_mux_sel_M0,     s.cacheDpath.wdata_mux_sel_M0,
+      s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
+      s.cacheCtrl.tag_array_type_M0,    s.cacheDpath.tag_array_type_M0,
+      s.cacheCtrl.tag_array_wben_M0,    s.cacheDpath.tag_array_wben_M0,
+      s.cacheCtrl.cachereq_type_M0,     s.cachereq_type_M0,
+      s.cacheDpath.cachereq_type_M0,    s.cachereq_type_M0,
+      s.cacheCtrl.ctrl_bit_val_wr_M0,   s.cacheDpath.ctrl_bit_val_wr_M0,
+      s.cacheCtrl.ctrl_bit_dty_wr_M0,   s.cacheDpath.ctrl_bit_dty_wr_M0,
+      s.cacheCtrl.reg_en_M0,            s.cacheDpath.reg_en_M0,
       
-      s.cacheCtrl.cachereq_type_M1, s.cacheDpath.cachereq_type_M1,
-      s.cacheCtrl.ctrl_bit_val_rd_M1, s.cacheDpath.ctrl_bit_val_rd_M1,
-      s.cacheCtrl.tag_match_M1, s.cacheDpath.tag_match_M1,
-      s.cacheCtrl.offset_M1, s.cacheDpath.offset_M1,
-      s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1,
-      s.cacheCtrl.reg_en_MSHR, s.cacheDpath.reg_en_MSHR,
-      s.cacheCtrl.data_array_val_M1, s.cacheDpath.data_array_val_M1,
-      s.cacheCtrl.data_array_type_M1, s.cacheDpath.data_array_type_M1,
-      s.cacheCtrl.data_array_wben_M1, s.cacheDpath.data_array_wben_M1,
+      s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
+      s.cacheCtrl.ctrl_bit_val_rd_M1,   s.cacheDpath.ctrl_bit_val_rd_M1,
+      s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
+      s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
+      s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
+      s.cacheCtrl.reg_en_M1,            s.cacheDpath.reg_en_M1,
+      s.cacheCtrl.reg_en_MSHR,          s.cacheDpath.reg_en_MSHR,
+      s.cacheCtrl.MSHR_type,            s.cacheDpath.MSHR_type,
+      s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
+      s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
+      s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
       
-      s.cacheCtrl.reg_en_M2, s.cacheDpath.reg_en_M2,
+      s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
       s.cacheCtrl.read_data_mux_sel_M2, s.cacheDpath.read_data_mux_sel_M2,
-      s.cacheCtrl.offset_M2, s.cacheDpath.offset_M2,
-      s.cacheCtrl.cachereq_type_M2, s.cacheDpath.cachereq_type_M2,
+      s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
+      s.cacheCtrl.cachereq_type_M2,     s.cacheDpath.cachereq_type_M2,
     )
 
   # Line tracing

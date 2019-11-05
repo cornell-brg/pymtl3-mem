@@ -1,11 +1,11 @@
 """
-#=========================================================================
-# GenericTestCases.py
-#=========================================================================
+=========================================================================
+ GenericTestCases.py
+=========================================================================
 Cache type independent test cases for cache of any associativity
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Date   : 04 November 2019
 """
 
 import pytest
@@ -408,7 +408,6 @@ def stride_dmap( base_addr ):
 	for i in range(50):
 		test = 0
 		ref_memory_stride[0] = rand_data5[i]
-		print(hex(addr[i]))
 				
 		if(rand_requests[i] == 'wr'):
 			stride_msgs.append(req('wr', i, addr[i], 0, rand_data5[i]))
