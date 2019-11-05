@@ -147,7 +147,8 @@ class BlockingCacheDpathPRTL (Component):
     s.addr_mux_M0 = Mux(BitsAddr, 2)\
     (
       in_ = {0: s.cachereq_addr_M0,
-             1: s.MSHR_addr_M0},
+             1: s.MSHR_addr_M0,
+             2: s.},
       sel = s.memresp_mux_sel_M0,
       out = s.addr_M0,
     )

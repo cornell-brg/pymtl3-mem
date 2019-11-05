@@ -13,9 +13,10 @@ from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 
-STATE_GO     = b2(0)
-STATE_REFILL = b2(1)
-STATE_EVICT  = b2(2)
+STATE_GO     = b3(0)
+STATE_REFILL = b3(1)
+STATE_EVICT  = b3(2)
+STATE_WRITE  = b3(3)
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
@@ -38,7 +39,7 @@ class BlockingCacheCtrlPRTL ( Component ):
   ):
     # Constants
     wr = y = b1(1)
-    rd = n = b1(0)
+    rd = n = x = b1(0)
     READ  = MemMsgType.READ
     WRITE = MemMsgType.WRITE
     INIT  = MemMsgType.WRITE_INIT
@@ -128,23 +129,30 @@ class BlockingCacheCtrlPRTL ( Component ):
     # Cache-wide FSM
     #------------------------------------------------------------------
     # FSM to control refill and evict tranaction conditions. 
-    s.curr_state = Wire(Bits2)
-    s.next_state = Wire(Bits2)
-    s.state_transition_block = RegRst(Bits2, STATE_GO)(
+    s.curr_state = Wire(Bits3)
+    s.next_state = Wire(Bits3)
+    s.state_transition_block = RegRst(Bits3, STATE_GO)(
       out = s.curr_state,
       in_ = s.next_state
     )
-    @s.update
+    # FSM STATGE TRANSITION LIVES IN M1 stage but affects behavior in other stage
+    # We should not change the FSM stage from any other stage
+    @s.update 
     def next_state_block():
       if s.curr_state == STATE_GO:
-        if ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:     
-          s.next_state = STATE_EVICT
-        if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.is_refill_M1: #and ~ s.ctrl_bit_dty_rd_M0: 
-          s.next_state = STATE_REFILL
+        if s.val_M1 and ~s.is_refill_M1:
+          if ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:    s.next_state = STATE_EVICT
+          elif s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: 
+                                                    s.next_state = STATE_REFILL
+          elif s.cachereq_type_M1 == WRITE and s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: 
+                                                    s.next_state = STATE_WRITE
+          else:                                     s.next_state = STATE_GO
+        else:                                       s.next_state = STATE_GO
       elif s.curr_state == STATE_REFILL:
         if s.is_refill_M0:                          s.next_state = STATE_GO
         else:                                       s.next_state = STATE_REFILL
       elif s.curr_state == STATE_EVICT:             s.next_state = STATE_REFILL
+      elif s.curr_state == STATE_WRITE:             s.next_state = STATE_GO
       else:
         assert False, 'undefined state: next state block'
 
@@ -185,17 +193,20 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M0():
-      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2 # Check stall for all stages
       s.ostall_M0 = b1(0)  # Not sure if neccessary but include for completeness
-      s.cachereq_rdy = (~s.stall_M1 and s.curr_state == STATE_GO) and s.next_state != STATE_REFILL # No more request if we are stalling
+      s.stall_M0 = s.ostall_M0 or s.ostall_M1 or s.ostall_M2 # Check stall for all stages
+      s.cachereq_rdy = (~s.stall_M1 ) \
+        and s.next_state != STATE_REFILL and s.next_state != STATE_WRITE
+      # No more request if we are stalling
       # Stalling M1 means we don't have new req coming in
 
     @s.update
     def comb_block_M0(): # logic block for setting output ports
-      s.val_M0 = s.cachereq_en or s.is_refill_M0
+      s.val_M0 = s.cachereq_en or s.is_refill_M0 or s.next_state == STATE_WRITE
       s.reg_en_M0 = s.memresp_en
       if s.val_M0:#                                          tag_wben         |mr_mux|tg_ty|tg_v|dty|val
         if s.is_refill_M0:                   s.cs0 = concat( BitsTagWben(0xf), b1(1),   wr,   y, n,  y)    
+        elif s.next_state == STATE_WRITE:    s.cs0 = concat( BitsTagWben(0xf),                        )
         else:
           if (s.cachereq_type_M0 == INIT):   s.cs0 = concat( BitsTagWben(0xf), b1(0),   wr,   y, n,  y)
           elif (s.cachereq_type_M0 == READ): s.cs0 = concat( BitsTagWben(0x0), b1(0),   rd,   y, n,  n)
@@ -264,10 +275,11 @@ class BlockingCacheCtrlPRTL ( Component ):
           if s.cachereq_type_M1 == INIT:      s.cs1 = concat( wben, wr, y )
           elif s.hit_M1 == y:
             if s.cachereq_type_M1 == READ:    s.cs1 = concat(wben0, rd, y )
-            elif s.cachereq_type_M1 == WRITE: s.cs1 = concat( wben, wr, y )
-            else:                             s.cs1 = concat(wben0, n, n )
-          else:                               s.cs1 = concat(wben0, n, n )
-      else:                                   s.cs1 = concat(wben0, n, n )
+            elif s.cachereq_type_M1 == WRITE and s.curr_state != STATE_WRITE:
+                                              s.cs1 = concat( wben, wr, y )
+            else:                             s.cs1 = concat(wben0, x, x )
+          else:                               s.cs1 = concat(wben0, x, x )
+      else:                                   s.cs1 = concat(wben0, x, x )
       s.data_array_type_M1        = s.cs1[ CS_data_array_type_M1 ]
       s.data_array_val_M1         = s.cs1[ CS_data_array_val_M1  ]
       s.data_array_wben_M1        = s.cs1[ CS_data_array_wben_M1 ]      
@@ -275,8 +287,8 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def stall_logic_M1():
-      s.stall_M1 = b1(0)
       s.ostall_M1 = b1(0)
+      s.stall_M1 = s.ostall_M1 or s.ostall_M1
       # if not s.hit_M1 and s.val_M1:
       #   s.ostall_M1 = b1(1)
       # else:
@@ -324,11 +336,11 @@ class BlockingCacheCtrlPRTL ( Component ):
       if s.val_M2:                                     #  word_mux|rdata_mux|memreq|cacheresp  
         if s.is_refill_M2:                   s.cs2 = concat(s.msel,   b1(1) ,    n ,     y   )
         else:
-          if (s.cachereq_type_M2 == INIT):   s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
-          elif (s.cachereq_type_M2 == READ):
+          if s.cachereq_type_M2 == INIT:     s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
+          elif s.cachereq_type_M2 == READ:
             if s.hit_M2[0]:                  s.cs2 = concat(s.msel,   b1(0) ,    n ,     y   )
             else:                            s.cs2 = concat(mxsel0,   b1(0) ,    y ,     n   )
-          elif (s.cachereq_type_M2 == WRITE):
+          elif s.cachereq_type_M2 == WRITE and s.curr_state != STATE_WRITE:
             if s.hit_M2[0]:                  s.cs2 = concat(mxsel0,   b1(0) ,    n ,     y   )
             else:                            s.cs2 = concat(s.msel,   b1(0) ,    y ,     n   )
           else:                              s.cs2 = concat(mxsel0,   b1(0) ,    n ,     n   )
@@ -346,6 +358,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def stall_logic_M2():
       s.ostall_M2 = ~s.memreq_rdy or ~s.cacheresp_rdy
+      s.stall_M2  = s.ostall_M2
 
   def line_trace( s ):
     colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
@@ -374,7 +387,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "    
 
-    states = ["G","R"]
+    states = ["Go","Rf","Ev","Wr"]
     msg_state = states[s.curr_state]  
     stage1 = "{}|{}".format(msg_memresp,msg_M0) if s.curr_state == STATE_REFILL and \
       s.memresp_en else "  {}".format(msg_M0)
