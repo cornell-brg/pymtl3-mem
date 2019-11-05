@@ -1,11 +1,11 @@
 """
-#=========================================================================
-# BlockingCacheDpathPRTL.py
-#=========================================================================
-Datapath of Pipelined Blocking Cache
+=========================================================================
+ BlockingCacheDpathPRTL.py
+=========================================================================
+Parameterizable Pipelined Blocking Cache Datapath
 
-Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Author : Xiaoyu Yan, Eric Tang (et396)
+Date   : 4 November 2019
 """
 from pymtl3            import *
 from pymtl3.stdlib.rtl.registers import RegEnRst
@@ -70,6 +70,7 @@ class BlockingCacheDpathPRTL (Component):
     s.ctrl_bit_dty_wr_M0    = InPort(Bits1)
     s.reg_en_M0             = InPort(Bits1)
     s.memresp_mux_sel_M0    = InPort(Bits1)
+    s.wdata_mux_sel_M0      = InPort(Bits2)
 
     # M1 Signals
     s.reg_en_M1             = InPort(Bits1)
@@ -83,7 +84,8 @@ class BlockingCacheDpathPRTL (Component):
     s.offset_M1             = OutPort(BitsOffset)
 
     # MSHR Signals
-    s.reg_en_MSHR           = InPort(Bits1)
+    s.reg_en_MSHR           = InPort (Bits1)
+    s.MSHR_type             = OutPort(BitsType)
 
     # M2 Signals
     s.reg_en_M2             = InPort(Bits1)
@@ -103,6 +105,7 @@ class BlockingCacheDpathPRTL (Component):
     s.type_M0             = Wire(BitsType)
     s.MSHR_addr_M0        = Wire(BitsAddr)
     s.addr_M0             = Wire(BitsAddr)
+    s.MSHR_data_M0        = Wire(BitsCacheline)
 
     # Duplicator
     s.rep_out_M0 = Wire(BitsCacheline)
@@ -147,17 +150,17 @@ class BlockingCacheDpathPRTL (Component):
     s.addr_mux_M0 = Mux(BitsAddr, 2)\
     (
       in_ = {0: s.cachereq_addr_M0,
-             1: s.MSHR_addr_M0,
-             2: s.},
+             1: s.MSHR_addr_M0},
       sel = s.memresp_mux_sel_M0,
       out = s.addr_M0,
     )
 
-    s.write_data_mux_M0 = Mux(BitsCacheline, 2)\
+    s.write_data_mux_M0 = Mux(BitsCacheline, 3)\
     (
       in_ = {0: s.rep_out_M0,
-             1: s.memresp_data_M0},
-      sel = s.memresp_mux_sel_M0,
+             1: s.memresp_data_M0,
+             2: s.MSHR_data_M0},
+      sel = s.wdata_mux_sel_M0,
       out = s.data_array_wdata_M0,
     )
 
@@ -189,22 +192,29 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_data_M1    = Wire(BitsCacheline)
     
     # Pipeline registers
-    s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)(
+    s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)\
+    (
       en  = s.reg_en_M1,
       in_ = s.opaque_M0,
       out = s.cachereq_opaque_M1,
     )
-    s.cachereq_type_reg_M1 = RegEnRst(BitsType)(
+
+    s.cachereq_type_reg_M1 = RegEnRst(BitsType)\
+    (
       en  = s.reg_en_M1,
       in_ = s.type_M0,
       out = s.cachereq_type_M1,
     )
-    s.cachereq_address_reg_M1 = RegEnRst(BitsAddr)(
+
+    s.cachereq_address_reg_M1 = RegEnRst(BitsAddr)\
+    (
       en  = s.reg_en_M1,
       in_ = s.addr_M0,
       out = s.cachereq_addr_M1,
     )
-    s.cachereq_data_reg_M1 = RegEnRst(BitsCacheline)(
+
+    s.cachereq_data_reg_M1 = RegEnRst(BitsCacheline)\
+    (
       en  = s.reg_en_M1,
       in_ = s.data_array_wdata_M0,
       out = s.cachereq_data_M1,
@@ -230,16 +240,28 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     # 1 Entry MSHR
-    s.MSHR_type = RegEnRst(BitsType)(
+    s.MSHR_type_reg = RegEnRst(BitsType)\
+    (
       en  = s.reg_en_MSHR,
       in_ = s.cachereq_type_M1,
       out = s.MSHR_type_M0,
     )
-    s.MSHR_addr = RegEnRst(BitsAddr)(
+
+    s.MSHR_addr_reg = RegEnRst(BitsAddr)\
+    (
       en  = s.reg_en_MSHR,
       in_ = s.cachereq_addr_M1,
-      out = s.MSHR_addr_M0,
+      out = s.MSHR_addr_M0
     )
+
+    s.MSHR_data_reg = RegEnRst(BitsCacheline)\
+    (
+      en  = s.reg_en_MSHR,
+      in_ = s.cachereq_data_M1,
+      out = s.MSHR_data_M0
+    )
+
+    s.MSHR_type //= s.MSHR_type_M0 
 
     # Data Array ( Btwn M1 and M2 )
     s.data_array_idx_M1   = Wire(BitsIdx)
@@ -328,7 +350,7 @@ class BlockingCacheDpathPRTL (Component):
     # msg = ""
  
     msg = (
-      "TAG:T={}|A={}|wben={}  DATA:D={}|R={}|wben={} ".format(\
+      "TAG:T={}|A={}|wben={} DATA:D={}|R={}|wben={} ".format(\
       s.tag_array_rdata_M1,
       s.cachereq_addr_M1,
       s.tag_array_wben_M0,
@@ -339,9 +361,9 @@ class BlockingCacheDpathPRTL (Component):
       # s.memresp_data_Y
       )
     )
-    return msg
     # return "tag_array_rdata = {}, cachereq_addr = {} ".format(\
     #   s.tag_array_rdata_M1[0:tgw],s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw])
     # return "t->{} ".format(s.tag_array_M1.line_trace())
     # return "{} {}".format(s.tag_array_M1.line_trace(),
     # s.data_array_M2.line_trace())
+    return msg
