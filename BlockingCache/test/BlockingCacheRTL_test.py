@@ -55,8 +55,8 @@ def test_dmap( test_params ):
   harness = TestHarness( msgs[::2], msgs[1::2],
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
-                         BlockingCachePRTL, GenericCacheMsg,
-                         GenericMemMsg)
+                         BlockingCachePRTL, DmapCacheMsg,
+                         DmapMemMsg)
   harness.elaborate()
   # translate()
   # Load memory before the test

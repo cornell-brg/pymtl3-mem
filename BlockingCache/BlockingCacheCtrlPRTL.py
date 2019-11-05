@@ -19,7 +19,6 @@ STATE_GO           = b3(0)
 STATE_REFILL       = b3(1)
 STATE_EVICT        = b3(2)
 STATE_REFILL_WRITE = b3(3)
-STATE_WRITE        = b3(4)
 
 wr = y = b1(1)
 rd = n = x = b1(0)
@@ -149,28 +148,13 @@ class BlockingCacheCtrlPRTL ( Component ):
     def next_state_block():
       s.next_state = STATE_GO
       if s.curr_state == STATE_GO:
-        # if s.val_M1 and s.cachereq_type_M1 != INIT and ~s.hit_M1 and ~s.is_refill_M1: 
-        #   s.next_state = STATE_REFILL
-        # if s.val_M0 and ~s.is_refill_M0 and s.cachereq_type_M0 == WRITE:
-        #                                             s.next_state = STATE_WRITE  # M0 transition MUST BE SPECIFIC
         if s.val_M1 and ~s.is_refill_M1 and s.cachereq_type_M1 != INIT:
-          # if s.cachereq_type_M1 == WRITE:             s.next_state = STATE_WRITE
-          # if   ~s.hit_M1 and  s.ctrl_bit_dty_rd_M1: s.next_state = STATE_EVICT  # M1 transition
-          # if ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: s.next_state = STATE_REFILL # M1 transistion
-          if ~s.hit_M1:                               s.next_state = STATE_REFILL # M1 transistion
-      
+         if ~s.hit_M1:                               s.next_state = STATE_REFILL # M1 transistion
       elif s.curr_state == STATE_REFILL:
         if s.is_refill_M0 and s.MSHR_type == WRITE:   s.next_state = STATE_REFILL_WRITE
         elif s.is_refill_M0:                          s.next_state = STATE_GO
         else:                                         s.next_state = STATE_REFILL
-      
       elif s.curr_state == STATE_EVICT:               s.next_state = STATE_REFILL
-      
-      elif s.curr_state == STATE_WRITE:               s.next_state = STATE_GO
-      #   # if   ~s.hit_M1 and  s.ctrl_bit_dty_rd_M1:     s.next_state = STATE_EVICT  # M1 transition
-      #   if   ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1:     s.next_state = STATE_REFILL # M1 transition
-      #   elif  s.hit_M1 and ~s.ctrl_bit_dty_rd_M1:     s.next_state = STATE_GO     # M1 transition - return to normal 
-      
       elif s.curr_state == STATE_REFILL_WRITE:        s.next_state = STATE_GO
       
       else:
@@ -315,7 +299,9 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def is_write_hit_clean_M0_logic():
-      if s.cachereq_type_M1 and s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and ~s.is_write_hit_clean_M1:
+      if s.cachereq_type_M1 and \
+        s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and \
+          ~s.is_write_hit_clean_M1 and ~s.is_write_refill_M1:
         s.is_write_hit_clean_M0 = b1(1)
       else:
         s.is_write_hit_clean_M0 = b1(0)
@@ -339,7 +325,8 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.cs1 = concat(wben0, x , n , n)
       if s.val_M1: #                                                wben| ty|val|ostall
         if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n )
-        elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n )
+        elif s.is_write_hit_clean_M1:
+                                                    s.cs1 = concat(wbenf, x , n , n )
         else:      
           if s.cachereq_type_M1 == INIT:            s.cs1 = concat( wben, wr, y , n )
           elif ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: s.cs1 = concat(wben0, x , n , n )
