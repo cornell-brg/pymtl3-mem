@@ -70,6 +70,7 @@ class BlockingCacheDpathPRTL (Component):
     s.ctrl_bit_dty_wr_M0    = InPort(Bits1)
     s.reg_en_M0             = InPort(Bits1)
     s.memresp_mux_sel_M0    = InPort(Bits1)
+    s.addr_mux_sel_M0       = InPort(Bits2)
     s.wdata_mux_sel_M0      = InPort(Bits2)
 
     # M1 Signals
@@ -107,6 +108,7 @@ class BlockingCacheDpathPRTL (Component):
     s.addr_M0             = Wire(BitsAddr)
     s.MSHR_data_M0        = Wire(BitsCacheline)
 
+    s.cachereq_addr_M1    = Wire(BitsAddr)
     # Duplicator
     s.rep_out_M0 = Wire(BitsCacheline)
     # @s.update
@@ -147,11 +149,12 @@ class BlockingCacheDpathPRTL (Component):
       out = s.type_M0,
     )
 
-    s.addr_mux_M0 = Mux(BitsAddr, 2)\
+    s.addr_mux_M0 = Mux(BitsAddr, 3)\
     (
       in_ = {0: s.cachereq_addr_M0,
-             1: s.MSHR_addr_M0},
-      sel = s.memresp_mux_sel_M0,
+             1: s.MSHR_addr_M0    ,
+             2: s.cachereq_addr_M1},
+      sel = s.addr_mux_sel_M0,
       out = s.addr_M0,
     )
 
@@ -188,7 +191,7 @@ class BlockingCacheDpathPRTL (Component):
     #--------------------------------------------------------------------
     
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
-    s.cachereq_addr_M1    = Wire(BitsAddr)
+    # s.cachereq_addr_M1    = Wire(BitsAddr)
     s.cachereq_data_M1    = Wire(BitsCacheline)
     
     # Pipeline registers
@@ -350,14 +353,15 @@ class BlockingCacheDpathPRTL (Component):
     # msg = ""
  
     msg = (
-      "TAG:T={}|A={}|wben={} DATA:D={}|R={}|wben={} ".format(\
+      "TAG:T={}|A={}|wben={} DATA:R={}|wben={} MSHR:{}".format(\
       s.tag_array_rdata_M1,
       s.cachereq_addr_M1,
       s.tag_array_wben_M0,
-      s.data_array_rdata_M2,
-      s.cacheresp_data_M2,
+      s.read_data_M2,
+      # s.data_array_rdata_M2,
+      # s.cacheresp_data_M2,
       s.data_array_wben_M1,
-      # s.MSHR_addr_M0,
+      s.MSHR_addr_M0,
       # s.memresp_data_Y
       )
     )

@@ -26,6 +26,9 @@ from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
 from BlockingCache.test.GenericTestCases import test_case_table_generic
 from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
 from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
+from BlockingCache.test.DmappedTestCases import test_case_table_dmap
+from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
+from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
 
 base_addr = 0x70
 max_cycles = 1000
@@ -129,4 +132,21 @@ def test_generic( test_params):
   # Run the test
   run_sim( th, max_cycles )
 
-
+@pytest.mark.parametrize( **test_case_table_dmap )
+def test_dmap( test_params):
+  msgs = test_params.msg_func( base_addr )
+  if test_params.mem_data_func != None:
+    mem = test_params.mem_data_func( base_addr )
+  # Instantiate testharness
+  th = TestHarness( msgs[::2], msgs[1::2],
+                         test_params.stall, test_params.lat,
+                         test_params.src, test_params.sink,
+                         BlockingCacheFL, GenericCacheMsg,
+                         GenericMemMsg)
+  th.elaborate()
+  # translate()
+  # Load memory before the test
+  if test_params.mem_data_func != None:
+    th.load( mem[::2], mem[1::2] )
+  # Run the test
+  run_sim( th, max_cycles )

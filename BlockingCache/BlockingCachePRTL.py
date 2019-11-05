@@ -143,6 +143,7 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.ctrl_bit_val_wr_M0,   s.cacheDpath.ctrl_bit_val_wr_M0,
       s.cacheCtrl.ctrl_bit_dty_wr_M0,   s.cacheDpath.ctrl_bit_dty_wr_M0,
       s.cacheCtrl.reg_en_M0,            s.cacheDpath.reg_en_M0,
+      s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
       
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.ctrl_bit_val_rd_M1,   s.cacheDpath.ctrl_bit_val_rd_M1,
