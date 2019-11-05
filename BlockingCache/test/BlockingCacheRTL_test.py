@@ -16,9 +16,12 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.test.GenericTestCases import test_case_table_generic
 from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
 from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
+from BlockingCache.test.DmappedTestCases import test_case_table_dmap
+from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
+from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
 
 base_addr = 0x74
-max_cycles = 50
+max_cycles = 500
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
@@ -35,6 +38,25 @@ def test_generic( test_params ):
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, GenericCacheMsg,
                          GenericMemMsg)
+  harness.elaborate()
+  # translate()
+  # Load memory before the test
+  if test_params.mem_data_func != None:
+    harness.load( mem[::2], mem[1::2] )
+  # Run the test
+  run_sim( harness, max_cycles )
+
+@pytest.mark.parametrize( **test_case_table_dmap )
+def test_dmap( test_params ):
+  msgs = test_params.msg_func( base_addr )
+  if test_params.mem_data_func != None:
+    mem = test_params.mem_data_func( base_addr )
+  # Instantiate testharness
+  harness = TestHarness( msgs[::2], msgs[1::2],
+                         test_params.stall, test_params.lat,
+                         test_params.src, test_params.sink,
+                         BlockingCachePRTL, DmapCacheMsg,
+                         DmapMemMsg)
   harness.elaborate()
   # translate()
   # Load memory before the test
