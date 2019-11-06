@@ -24,15 +24,16 @@ class BlockingCachePRTL ( Component ):
                  nbytes        = 4096, # cache size in bytes, nbytes
                  CacheMsg      = "",   # Cache req/resp msg type
                  MemMsg        = "",   # Memory req/resp msg type
-                 associativity = 1     # associativity, name: associativity
+                 associativity = 1,    # associativity, name: associativity
+                 translate     = 0,    # Translation pass 
   ):
     s.explicit_modulename = 'PipelinedBlockingCache'
 
     #-------------------------------------------------------------------------
     # Bitwidths
     #-------------------------------------------------------------------------
-    
-    assert MemMsg.abw == CacheMsg.abw, "abw not the same" 
+
+    # assert MemMsg.abw == CacheMsg.abw, "abw not the same" 
     clw = MemMsg.dbw
     abw = MemMsg.abw
     obw = MemMsg.obw
