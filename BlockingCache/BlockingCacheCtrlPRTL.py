@@ -5,7 +5,7 @@
 Parameterizable Pipelined Blocking Cache Control 
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
-Date   : 04 November 2019
+Date   : 08 November 2019
 """
 import random
 
@@ -451,8 +451,12 @@ class BlockingCacheCtrlPRTL ( Component ):
         msg_M1 = "rf" 
       elif s.is_write_hit_clean_M1:
         msg_M1 = "wc" 
+      elif s.is_write_refill_M1:
+        msg_M1 = "wf"
       elif ~s.hit_M1 and s.cachereq_type_M1 != 2: 
         msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
+      elif s.hit_M1 and s.cachereq_type_M1 != 2: 
+        msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
       else: 
         msg_M1 = types[s.cachereq_type_M1]
 
@@ -460,6 +464,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     if s.val_M2:
       if s.is_refill_M2:            msg_M2 = "rf"
       elif s.is_write_hit_clean_M2: msg_M2 = "wc" 
+      elif s.is_write_refill_M2:    msg_M2 = "wf"
       else:                         msg_M2 = types[s.cachereq_type_M2]
 
     msg_memresp = ">" if s.memresp_en else " "
@@ -476,4 +481,4 @@ class BlockingCacheCtrlPRTL ( Component ):
     additional_msg = "wc:{}".format(s.is_write_hit_clean_M0)
     # additional_msg = "H1:{}".format(s.hit_M1)
 
-    return pipeline + additional_msg
+    return pipeline # + additional_msg

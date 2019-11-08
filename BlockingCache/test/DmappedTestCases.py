@@ -316,7 +316,7 @@ def stride_mem( base_addr ):
 test_case_table_dmap = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
   [ "read_evict",            read_evict,            evict_mem,           0.0,  1,  0,  0    ],
-  [ "write_evict",           write_evict,           evict_mem,           0.0,  1,  0,  0    ],
+#  [ "write_evict",           write_evict,           evict_mem,           0.0,  1,  0,  0    ],
   [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem,0.0,  1,  0,  0    ],
   [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,  0,  0    ],
   [ "rand_requests_mem",     rand_requests_dmap,    rand_requests_mem,   0.0,  1,  0,  0    ],
