@@ -213,7 +213,23 @@ def write_hit_1word_dirty( base_addr ):
     req( 'rd', 0x03, base_addr, 0, 0          ), resp('rd', 0x03, 1,   0,  0xc0ffeebb ), # read  word  0x00000000
   ]
 
+#-------------------------------------------------------------------------
+# Test cases: Write Dirty:
+#-------------------------------------------------------------------------
 
+def read_miss_dirty( base_addr=0x0 ):
+  return [
+    #    type  opq   addr                 len data               type  opq   test len data
+    req( 'wr', 0x0, base_addr+0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ), 
+    req( 'rd', 0x1, base_addr+0x00010000,  0, 0          ), resp('rd', 0x1,   0,   0, 0x00c0ffee ), 
+    req( 'rd', 0x2, base_addr+0x00000000,  0, 0          ), resp('rd', 0x2,   0,   0, 0xbeefbeeb ) 
+  ]
+
+def read_miss_dirty_mem( base_addr=0x0 ):
+  return [
+    # addr                data
+    base_addr+0x00010000, 0x00c0ffee
+  ]
 
 #---------------------------------------------------------------------------------------------
 # Test table for generic test
@@ -233,5 +249,6 @@ test_case_table_generic = mk_test_case_table([
   [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  1,  0,  0    ],
   [ "write_miss_1word_clean",write_miss_1word_clean,write_miss_1word_mem,0.0,  1,  0,  0    ],
   [ "write_miss_offset",     write_miss_offset,     None,                0.0,  1,  0,  0    ],
-  # RANDOM TESTS
+  [ "read_miss_dirty",       read_miss_dirty,       read_miss_dirty_mem, 0.0,  1,  0,  0    ],
  ])
+

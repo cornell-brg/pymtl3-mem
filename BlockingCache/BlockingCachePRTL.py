@@ -94,22 +94,22 @@ class BlockingCachePRTL ( Component ):
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux,
     )(
-      cachereq_opaque_M0     = s.cachereq_opaque_M0,
-      cachereq_type_M0       = s.cachereq_type_M0,
-      cachereq_addr_M0       = s.cachereq_addr_M0,
-      cachereq_data_M0       = s.cachereq_data_M0,
+      cachereq_opaque_M0  = s.cachereq_opaque_M0,
+      cachereq_type_M0    = s.cachereq_type_M0,
+      cachereq_addr_M0    = s.cachereq_addr_M0,
+      cachereq_data_M0    = s.cachereq_data_M0,
 
-      memresp_opaque_Y      = s.memresp.msg.opaque,
-      memresp_data_Y        = s.memresp.msg.data,
+      memresp_opaque_Y    = s.memresp.msg.opaque,
+      memresp_type_Y      = s.memresp.msg.type_, 
+      memresp_data_Y      = s.memresp.msg.data,
 
-      cacheresp_opaque_M2      = s.cacheresp.msg.opaque,
-      cacheresp_type_M2        = s.cacheresp.msg.type_,
-      cacheresp_data_M2        = s.cacheresp.msg.data,
+      cacheresp_opaque_M2 = s.cacheresp.msg.opaque,
+      cacheresp_type_M2   = s.cacheresp.msg.type_,
+      cacheresp_data_M2   = s.cacheresp.msg.data,
 
-      memreq_opaque_M2         = s.memreq.msg.opaque,
-      # memreq_type_M2           = s.memreq.msg.type_,
-      memreq_addr_M2           = s.memreq.msg.addr,
-      memreq_data_M2           = s.memreq.msg.data,
+      memreq_opaque_M2    = s.memreq.msg.opaque,
+      memreq_addr_M2      = s.memreq.msg.addr,
+      memreq_data_M2      = s.memreq.msg.data,
       
     )
     s.cacheCtrl = BlockingCacheCtrlPRTL(
@@ -144,7 +144,8 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.ctrl_bit_dty_wr_M0,   s.cacheDpath.ctrl_bit_dty_wr_M0,
       s.cacheCtrl.reg_en_M0,            s.cacheDpath.reg_en_M0,
       s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
-      
+      s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
+ 
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.ctrl_bit_val_rd_M1,   s.cacheDpath.ctrl_bit_val_rd_M1,
       s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,

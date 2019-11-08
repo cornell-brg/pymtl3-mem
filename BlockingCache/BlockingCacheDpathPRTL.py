@@ -47,6 +47,7 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_data_M0    = InPort(BitsData)
     # Mem -> Cache
     s.memresp_opaque_Y    = InPort(BitsOpaque)
+    s.memresp_type_Y      = InPort(BitsType)
     s.memresp_data_Y      = InPort(BitsCacheline)
     # Cache -> Proc
     s.cacheresp_opaque_M2 = OutPort(BitsOpaque)
@@ -57,7 +58,7 @@ class BlockingCacheDpathPRTL (Component):
     s.memreq_opaque_M2    = OutPort(BitsOpaque)
     s.memreq_addr_M2      = OutPort(BitsAddr)
     s.memreq_data_M2      = OutPort(BitsCacheline)
-
+   
     #-------------------------------------------------------------------
     # Control Signals (ctrl -> dpath)
     #-------------------------------------------------------------------
@@ -72,6 +73,7 @@ class BlockingCacheDpathPRTL (Component):
     s.memresp_mux_sel_M0    = InPort(Bits1)
     s.addr_mux_sel_M0       = InPort(Bits2)
     s.wdata_mux_sel_M0      = InPort(Bits2)
+    s.memresp_type_M0       = OutPort(BitsType)
 
     # M1 Signals
     s.reg_en_M1             = InPort(Bits1)
@@ -130,6 +132,13 @@ class BlockingCacheDpathPRTL (Component):
       en  = s.reg_en_M0,
       in_ = s.memresp_opaque_Y,
       out = s.memresp_opaque_M0,
+    )
+
+    s.memresp_type_reg_M0 = RegEnRst(BitsType)\
+    (
+      en  = s.reg_en_M0,
+      in_ = s.memresp_type_Y,
+      out = s.memresp_type_M0
     )
 
     # Cachereq or Memresp select muxes
@@ -266,6 +275,14 @@ class BlockingCacheDpathPRTL (Component):
 
     s.MSHR_type //= s.MSHR_type_M0 
 
+    s.cache_addr_mux_M1 = Mux(BitsAddr, 2)\
+    (
+      in_ = {0: s.cachereq_addr_M1,
+             1: s.evict_addr_M1},
+      sel = s.cache_addr_mux_sel_M1,
+      out = s.cache_addr_M1
+    )
+
     # Data Array ( Btwn M1 and M2 )
     s.data_array_idx_M1   = Wire(BitsIdx)
     s.data_array_wdata_M1 = Wire(BitsCacheline)
@@ -301,7 +318,7 @@ class BlockingCacheDpathPRTL (Component):
     s.cachereq_addr_M2    = Wire(BitsAddr)
     s.cachereq_address_reg_M2 = RegEnRst(BitsAddr)(
       en  = s.reg_en_M2,
-      in_ = s.cachereq_addr_M1,
+      in_ = s.cache_addr_M1,
       out = s.cachereq_addr_M2,
     )
 
@@ -349,9 +366,7 @@ class BlockingCacheDpathPRTL (Component):
 
       
   def line_trace( s ):
-    # "mem resp:{}".format(s.memresp_data_Y)
-    msg = ""
- 
+    msg = "mem resp:{}".format(s.memresp_data_Y) 
     #  msg = (
     #    "TAG:T={}|A={}|wben={} DATA:R={}|wben={} MSHR:{}".format(\
     #    s.tag_array_rdata_M1,
