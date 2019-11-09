@@ -72,33 +72,34 @@ class BlockingCacheCtrlPRTL ( Component ):
     # M0 Ctrl Signals 
     #--------------------------------------------------------------------
 
-    s.cachereq_type_M0    = InPort (BitsType)
-    s.memresp_type_M0     = InPort (BitsType)
-    s.MSHR_type           = InPort (BitsType)
-    s.memresp_mux_sel_M0  = OutPort(Bits1)
-    s.addr_mux_sel_M0     = OutPort(Bits2)
-    s.wdata_mux_sel_M0    = OutPort(Bits2)
-    s.tag_array_val_M0    = OutPort(Bits1)
-    s.tag_array_type_M0   = OutPort(Bits1)
-    s.tag_array_wben_M0   = OutPort(BitsTagWben)
-    s.ctrl_bit_val_wr_M0  = OutPort(Bits1)
-    s.ctrl_bit_dty_wr_M0  = OutPort(Bits1)
-    s.reg_en_M0           = OutPort(Bits1)
+    s.cachereq_type_M0      = InPort (BitsType)
+    s.memresp_type_M0       = InPort (BitsType)
+    s.MSHR_type             = InPort (BitsType)
+    s.memresp_mux_sel_M0    = OutPort(Bits1)
+    s.addr_mux_sel_M0       = OutPort(Bits2)
+    s.wdata_mux_sel_M0      = OutPort(Bits2)
+    s.tag_array_val_M0      = OutPort(Bits1)
+    s.tag_array_type_M0     = OutPort(Bits1)
+    s.tag_array_wben_M0     = OutPort(BitsTagWben)
+    s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
+    s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
+    s.reg_en_M0             = OutPort(Bits1)
 
     #-------------------------------------------------------------------
     # M1 Ctrl Signals
     #-------------------------------------------------------------------
 
-    s.cachereq_type_M1   = InPort(BitsType)
-    s.ctrl_bit_val_rd_M1 = InPort(Bits1)
-    s.ctrl_bit_dty_rd_M1 = InPort(Bits1)
-    s.tag_match_M1       = InPort(Bits1)
-    s.offset_M1          = InPort(BitsOffset)
-    s.reg_en_M1          = OutPort(Bits1)
-    s.data_array_val_M1  = OutPort(Bits1)
-    s.data_array_type_M1 = OutPort(Bits1)
-    s.data_array_wben_M1 = OutPort(BitsDataWben)
-    s.reg_en_MSHR        = OutPort(Bits1)
+    s.cachereq_type_M1      = InPort(BitsType)
+    s.ctrl_bit_val_rd_M1    = InPort(Bits1)
+    s.ctrl_bit_dty_rd_M1    = InPort(Bits1)
+    s.tag_match_M1          = InPort(Bits1)
+    s.offset_M1             = InPort(BitsOffset)
+    s.reg_en_M1             = OutPort(Bits1)
+    s.data_array_val_M1     = OutPort(Bits1)
+    s.data_array_type_M1    = OutPort(Bits1)
+    s.data_array_wben_M1    = OutPort(BitsDataWben)
+    s.reg_en_MSHR           = OutPort(Bits1)
+    s.evict_mux_sel_M1 = OutPort(Bits1)
 
     #------------------------------------------------------------------
     # M2 Ctrl Signals
@@ -191,6 +192,8 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def cachereq_logic():
+      # s.cachereq_rdy = ~s.stall_M1 and ~s.is_refill_M0 \
+      #                              and ~s.is_write_refill_M0
       s.cachereq_rdy = ~s.stall_M1 and s.curr_state == STATE_GO \
                                    and s.next_state != STATE_REFILL \
                                    and s.next_state != STATE_EVICT \
@@ -285,14 +288,14 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
-    s.shamt          = Wire(mk_bits(clog2(dwb)))
-    s.shamt[0:2]   //= b2(0)
-    s.shamt[2:ofw] //= s.offset_M1
+    # s.shamt          = Wire(mk_bits(clog2(dwb)))
+    # s.shamt[0:2]   //= b2(0)
+    # s.shamt[2:ofw] //= 
     s.wben_out = Wire(BitsDataWben)
     s.wben_in  = Wire(BitsDataWben)
     s.WbenGen = LShifter( BitsDataWben, clog2(dwb) )(
       in_ = s.wben_in,
-      shamt = s.shamt,
+      shamt = s.offset_M1,
       out = s.wben_out
     )
 
@@ -313,7 +316,7 @@ class BlockingCacheCtrlPRTL ( Component ):
         s.is_write_hit_clean_M0 = b1(0)
 
     @s.update
-    def need_evict():
+    def need_evict_M1():
       if s.val_M1 and ~s.is_write_refill_M1 and ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:
         s.is_evict_M1 = b1(1)
       else:
@@ -323,38 +326,41 @@ class BlockingCacheCtrlPRTL ( Component ):
     def en_M1():
       s.reg_en_M1 = ~s.stall_M1 and ~s.is_evict_M1
 
-    CS_data_array_wben_M1   = slice( 3,  3 + dwb )
-    CS_data_array_type_M1   = slice( 2,  3 )
-    CS_data_array_val_M1    = slice( 1,  2 )
-    CS_ostall_M1            = slice( 0,  1 )
+    CS_data_array_wben_M1   = slice( 4,  4 + dwb )
+    CS_data_array_type_M1   = slice( 3,  4 )
+    CS_data_array_val_M1    = slice( 2,  3 )
+    CS_ostall_M1            = slice( 1,  2 )
+    CS_evict_mux_sel_M1     = slice( 0,  1 )
 
-    s.cs1 = Wire( mk_bits( 3 + dwb ) )
+    s.cs1 = Wire( mk_bits( 4 + dwb ) )
 
     @s.update
     def comb_block_M1():
       s.wben_in = BitsDataWben(data_array_wb_mask)
       wben = s.wben_out
-      if s.val_M1: #                                                wben| ty|val|ostall
-        if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n )
-        elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , n )
-        elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n )
+      if s.val_M1: #                                                wben| ty|val|ostall|addr
+                   #                                                                    mux  
+        if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n    , b1(0) )
+        elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1) )
+        elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n    , b1(0))
         else:
-          if s.cachereq_type_M1 == INIT:            s.cs1 = concat( wben, wr, y , n )
-          elif ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: s.cs1 = concat(wben0, x , n , n )
-          elif ~s.hit_M1 and  s.ctrl_bit_dty_rd_M1: s.cs1 = concat(wben0, x , n , n )
+          if s.cachereq_type_M1 == INIT:            s.cs1 = concat( wben, wr, y , n    , b1(0))
+          elif ~s.hit_M1 and ~s.ctrl_bit_dty_rd_M1: s.cs1 = concat(wben0, x , n , n    , b1(0))
+          elif ~s.hit_M1 and  s.ctrl_bit_dty_rd_M1: s.cs1 = concat(wben0, x , n , n    , b1(0))
           elif  s.hit_M1 and ~s.ctrl_bit_dty_rd_M1:
-            if   s.cachereq_type_M1 == READ:        s.cs1 = concat(wben0, rd, y , n )
-            elif s.cachereq_type_M1 == WRITE:       s.cs1 = concat( wben, wr, y , n )
-            else:                                   s.cs1 = concat(wben0, x , n , n )
+            if   s.cachereq_type_M1 == READ:        s.cs1 = concat(wben0, rd, y , n    , b1(0))
+            elif s.cachereq_type_M1 == WRITE:       s.cs1 = concat( wben, wr, y , n    , b1(0))
+            else:                                   s.cs1 = concat(wben0, x , n , n    , b1(0))
           elif  s.hit_M1 and  s.ctrl_bit_dty_rd_M1:
-            if   s.cachereq_type_M1 == READ:        s.cs1 = concat(wben0, rd, y , n )
-            elif s.cachereq_type_M1 == WRITE:       s.cs1 = concat( wben, wr, y , n )
-      else:                                         s.cs1 = concat(wben0, x , n , n)
+            if   s.cachereq_type_M1 == READ:        s.cs1 = concat(wben0, rd, y , n    , b1(0))
+            elif s.cachereq_type_M1 == WRITE:       s.cs1 = concat( wben, wr, y , n    , b1(0))
+      else:                                         s.cs1 = concat(wben0, x , n , n    , b1(0))
 
       s.data_array_type_M1        = s.cs1[ CS_data_array_type_M1 ]
       s.data_array_val_M1         = s.cs1[ CS_data_array_val_M1  ]
       s.data_array_wben_M1        = s.cs1[ CS_data_array_wben_M1 ]
       s.ostall_M1                 = s.cs1[ CS_ostall_M1          ]
+      s.evict_mux_sel_M1          = s.cs1[ CS_evict_mux_sel_M1   ]
       s.stall_M1 = s.ostall_M1 or s.ostall_M2
 
     #-----------------------------------------------------
@@ -418,7 +424,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.msel = Wire(BitsRdDataMux)
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = BitsRdDataMux(s.offset_M2) + BitsRdDataMux(1)  
+      s.msel = BitsRdDataMux(s.offset_M2[2:ofw]) + BitsRdDataMux(1)  
       if s.val_M2:                                     #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
         if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(mxsel0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
         elif s.is_evict_M2:                  s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   WRITE   ,    y ,     n   )

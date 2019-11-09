@@ -45,11 +45,10 @@ def resp( type_, opaque, test, len, data ):
 def read_evict( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
-    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
-    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ),
-    req( 'rd', 0x02, 0x000a2000, 0, 0         ), resp( 'rd', 0x02, 0, 0, 0x70facade ),
-    req( 'rd', 0x03, 0x000a2004, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x75ca1ded ),
-    req( 'rd', 0x03, 0x00002000, 0, 0         ), resp( 'rd', 0x03, 0, 0, 0xffffff00 ),
+    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), #write something
+    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ), #read to make sure write happens
+    req( 'rd', 0x02, 0x000a2000, 0, 0         ), resp( 'rd', 0x02, 0, 0, 0x70facade ), #Evict the write
+    req( 'rd', 0x03, 0x00002000, 0, 0         ), resp( 'rd', 0x03, 0, 0, 0xffffff00 ), #Read to make sure evict happens
   ]
 
 def evict_mem( base_addr ):
@@ -68,13 +67,11 @@ def evict_mem( base_addr ):
 def write_evict( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
-    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
-    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ),
-    req( 'wr', 0x02, 0x000a2000, 0, 0x8932    ), resp( 'wr', 0x02, 0, 0, 0 ),
-    req( 'rd', 0x03, 0x000a2000, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x8932 ),
-    req( 'wr', 0x04, 0x00002004, 0, 0x458     ), resp( 'wr', 0x04, 0, 0, 0 ),
-    req( 'wr', 0x05, 0x00002000, 0, 0xa89e0   ), resp( 'wr', 0x05, 0, 0, 0 ),
-    req( 'rd', 0x06, 0x00002004, 0, 0         ), resp( 'rd', 0x06, 1, 0, 0x458 ),
+    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), #refill-write
+    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ), #read written data
+    req( 'wr', 0x02, 0x000a2000, 0, 0x8932    ), resp( 'wr', 0x02, 0, 0, 0 ),          #evict
+    req( 'rd', 0x03, 0x000a2000, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x8932 ),     #read new written data
+    req( 'rd', 0x04, 0x00002000, 0, 0         ), resp( 'rd', 0x04, 0, 0, 0xffffff00 ), #read-evicted data
   ]
 
 #-------------------------------------------------------------------------

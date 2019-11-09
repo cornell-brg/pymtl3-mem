@@ -57,7 +57,7 @@ class BlockingCachePRTL ( Component ):
     BitsCacheline = mk_bits(clw)   # cacheline 
     BitsIdx       = mk_bits(idw)   # index 
     BitsTag       = mk_bits(tgw)   # tag 
-    BitsOffset    = mk_bits(ofw-2) # offset 
+    BitsOffset    = mk_bits(ofw) # offset 
     BitsTagWben   = mk_bits(twb) # Tag array write byte enable
     BitsDataWben  = mk_bits(dwb) # Data array write byte enable
     BitsRdDataMux = mk_bits(rmx2) # Read data mux M2 
@@ -157,6 +157,7 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
       s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
+      s.cacheCtrl.evict_mux_sel_M1,     s.cacheDpath.evict_mux_sel_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
@@ -167,9 +168,19 @@ class BlockingCachePRTL ( Component ):
 
   # Line tracing
   def line_trace( s ):
+    memory_msg = memreq_msg = memresp_msg = ""
     
-    msg = s.cacheCtrl.line_trace() + "  " + s.cacheDpath.line_trace()
-    msg = "{}".format(msg)
+    if s.memresp.en:
+      memresp_msg = "<{}<".format(s.memresp.msg.data)
+      memory_msg = memresp_msg
+    elif s.memreq.en:
+      memreq_msg  = ">{}>".format(s.memreq.msg.data)
+      memory_msg = memreq_msg
+    if s.memreq.en and s.memresp.en:
+      memory_msg = "{}{}".format(memresp_msg,memreq_msg)
+
+    msg = "{} {} {}".format(s.cacheCtrl.line_trace(),
+     s.cacheDpath.line_trace(), memory_msg)
     
     return msg
 
