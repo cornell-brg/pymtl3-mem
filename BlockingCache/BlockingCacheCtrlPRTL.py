@@ -5,23 +5,23 @@
 Parameterizable Pipelined Blocking Cache Control
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
-Date   : 05 November 2019
+Date   : 15 November 2019
 """
+
 import random
 
 from pymtl3      import *
-from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
-# Constants
+from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 
+# Constants
 STATE_GO           = b3(0)
 STATE_REFILL       = b3(1)
 STATE_EVICT        = b3(2)
 STATE_REFILL_WRITE = b3(3)
-
-wr = y = b1(1)
-rd = n = x = b1(0)
+wr = y             = b1(1)
+rd = n = x         = b1(0)
 
 class BlockingCacheCtrlPRTL ( Component ):
   def construct( s,
@@ -52,9 +52,9 @@ class BlockingCacheCtrlPRTL ( Component ):
     WRITE = BitsType(MemMsgType.WRITE)
     INIT  = BitsType(MemMsgType.WRITE_INIT)
 
-    #-------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Interface
-    #-------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     s.cachereq_en   = InPort(Bits1)
     s.cachereq_rdy  = OutPort(Bits1)
@@ -68,13 +68,14 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.memresp_en    = InPort(Bits1)
     s.memresp_rdy   = OutPort(Bits1)
 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # M0 Ctrl Signals 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     s.cachereq_type_M0      = InPort (BitsType)
     s.memresp_type_M0       = InPort (BitsType)
     s.MSHR_type             = InPort (BitsType)
+
     s.memresp_mux_sel_M0    = OutPort(Bits1)
     s.addr_mux_sel_M0       = OutPort(Bits2)
     s.wdata_mux_sel_M0      = OutPort(Bits2)
@@ -85,46 +86,49 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
     s.reg_en_M0             = OutPort(Bits1)
 
-    #-------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # M1 Ctrl Signals
-    #-------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     s.cachereq_type_M1      = InPort(BitsType)
     s.ctrl_bit_val_rd_M1    = InPort(Bits1)
     s.ctrl_bit_dty_rd_M1    = InPort(Bits1)
     s.tag_match_M1          = InPort(Bits1)
     s.offset_M1             = InPort(BitsOffset)
+
     s.reg_en_M1             = OutPort(Bits1)
     s.data_array_val_M1     = OutPort(Bits1)
     s.data_array_type_M1    = OutPort(Bits1)
     s.data_array_wben_M1    = OutPort(BitsDataWben)
     s.reg_en_MSHR           = OutPort(Bits1)
-    s.evict_mux_sel_M1 = OutPort(Bits1)
+    s.evict_mux_sel_M1      = OutPort(Bits1)
 
-    #------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # M2 Ctrl Signals
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     s.cachereq_type_M2      = InPort(BitsType)
     s.offset_M2             = InPort(BitsOffset)
     s.reg_en_M2             = OutPort(Bits1)
     s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
     s.read_word_mux_sel_M2  = OutPort(BitsRdDataMux)
+
     # Output Signals
     s.hit_M2                = OutPort(Bits2)
     s.memreq_type           = OutPort(BitsType)
 
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Connection Wires
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+
     s.is_refill_M0 = Wire(Bits1)
     s.is_refill_M1 = Wire(Bits1)
     s.is_refill_M2 = Wire(Bits1)
     s.hit_M1 = Wire(Bits1)
 
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Stall and Ostall Signals
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     s.stall_M0  = Wire(Bits1)
     s.stall_M1  = Wire(Bits1)
@@ -133,9 +137,10 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.ostall_M1 = Wire(Bits1)
     s.ostall_M2 = Wire(Bits1)
 
-    #------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Cache-wide FSM
-    #------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+
     # FSM to control refill and evict tranaction conditions. 
     s.curr_state = Wire(Bits3)
     s.next_state = Wire(Bits3)
@@ -167,33 +172,31 @@ class BlockingCacheCtrlPRTL ( Component ):
       else:
         assert False, 'undefined state: next state block'
 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Y Stage 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     @s.update
     def mem_resp_rdy():
       if s.curr_state == STATE_REFILL: s.memresp_rdy = b1(1)
       else:                            s.memresp_rdy = b1(0)
 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # M0 Stage 
-    #--------------------------------------------------------------------
+    #---------------------------------------------------------------------------
 
     s.val_M0 = Wire(Bits1)
     s.is_write_hit_clean_M0 = Wire(Bits1)
     s.is_write_refill_M0 = Wire(Bits1)
 
     s.is_refill_reg_M0 = RegRst(Bits1)\
-    ( #NO STALLS should occur while refilling
+    ( # NO STALLS should occur while refilling
       in_ = s.memresp_en,
       out = s.is_refill_M0
     )
 
     @s.update
     def cachereq_logic():
-      # s.cachereq_rdy = ~s.stall_M1 and ~s.is_refill_M0 \
-      #                              and ~s.is_write_refill_M0
       s.cachereq_rdy = ~s.stall_M1 and s.curr_state == STATE_GO \
                                    and s.next_state != STATE_REFILL \
                                    and s.next_state != STATE_EVICT \
@@ -246,9 +249,10 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
 
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # M1 Stage
-    #--------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    
     s.val_M1 = Wire(Bits1)
     s.is_write_refill_M1 = Wire(Bits1)
     s.is_write_hit_clean_M1 = Wire(Bits1)
@@ -273,10 +277,10 @@ class BlockingCacheCtrlPRTL ( Component ):
     )
 
     s.is_write_hit_clean_reg_M1 = RegRst(Bits1)\
-      (
+    (
         in_ = s.is_write_hit_clean_M0,
         out = s.is_write_hit_clean_M1
-      )
+    )
 
     @s.update
     def hit_logic_M1():
@@ -288,9 +292,6 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
-    # s.shamt          = Wire(mk_bits(clog2(dwb)))
-    # s.shamt[0:2]   //= b2(0)
-    # s.shamt[2:ofw] //= 
     s.wben_out = Wire(BitsDataWben)
     s.wben_in  = Wire(BitsDataWben)
     s.WbenGen = LShifter( BitsDataWben, clog2(dwb) )(
@@ -340,8 +341,8 @@ class BlockingCacheCtrlPRTL ( Component ):
       wben = s.wben_out
       if s.val_M1: #                                                wben| ty|val|ostall|addr
                    #                                                                    mux  
-        if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n    , b1(0) )
-        elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1) )
+        if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n    , b1(0))
+        elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1))
         elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n    , b1(0))
         else:
           if s.cachereq_type_M1 == INIT:            s.cs1 = concat( wben, wr, y , n    , b1(0))
@@ -363,9 +364,10 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.evict_mux_sel_M1          = s.cs1[ CS_evict_mux_sel_M1   ]
       s.stall_M1 = s.ostall_M1 or s.ostall_M2
 
-    #-----------------------------------------------------
+    #--------------------------------------------------------------------------
     # M2 Stage
-    #-----------------------------------------------------
+    #--------------------------------------------------------------------------
+
     s.val_M2                = Wire(Bits1)
     s.is_evict_M2           = Wire(Bits1)
     s.is_write_refill_M2    = Wire(Bits1)
@@ -437,7 +439,7 @@ class BlockingCacheCtrlPRTL ( Component ):
           elif s.cachereq_type_M2 == READ:
             if    s.hit_M2[0]:               s.cs2 = concat(s.msel,   b1(0) ,  n   ,   READ    ,    n ,     y   )
             elif ~s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
-          elif s.cachereq_type_M2 == WRITE:# and s.curr_state != STATE_WRITE
+          elif s.cachereq_type_M2 == WRITE:
             if s.is_write_refill_M2:         s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
             elif  s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
             elif ~s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
@@ -507,7 +509,5 @@ class BlockingCacheCtrlPRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     state    = " [{}]".format(msg_state)
     pipeline = stage1 + stage2 + stage3 + state
-    # additional_msg = "wc:{}".format(s.is_write_hit_clean_M0)
-    # additional_msg = "evict:{}".format(s.is_evict_M1)
 
     return pipeline #  + additional_msg

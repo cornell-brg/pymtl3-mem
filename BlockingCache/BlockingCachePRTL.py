@@ -1,36 +1,33 @@
 """
-#=========================================================================
-# BlockingCachePRTL.py
-#=========================================================================
+=========================================================================
+BlockingCachePRTL.py
+=========================================================================
 Top level model of Pipelined Blocking Cache with instances of ctrl and 
 dpath
 
-Author : Xiaoyu Yan, Eric Tang
-Date   : 11/04/19
+Author : Xiaoyu Yan, Eric Tang (et396)
+Date   : 15 November 2019
 """
 
-
-from pymtl3      import *
-# from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.connects import connect_pairs
-
-from BlockingCache.BlockingCacheCtrlPRTL import BlockingCacheCtrlPRTL
+from BlockingCache.BlockingCacheCtrlPRTL  import BlockingCacheCtrlPRTL
 from BlockingCache.BlockingCacheDpathPRTL import BlockingCacheDpathPRTL
+from pymtl3                               import *
+from pymtl3.stdlib.connects               import connect_pairs
+from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 
 class BlockingCachePRTL ( Component ):
   def construct( s,                
                  nbytes        = 4096, # cache size in bytes, nbytes
                  CacheMsg      = "",   # Cache req/resp msg type
                  MemMsg        = "",   # Memory req/resp msg type
-                 associativity = 1     # associativity, name: associativity
+                 associativity = 1     # Associativity
   ):
     s.explicit_modulename = 'PipelinedBlockingCache'
 
-    #-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Bitwidths
-    #-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     
     assert MemMsg.abw == CacheMsg.abw, "abw not the same" 
     clw = MemMsg.dbw
@@ -42,13 +39,13 @@ class BlockingCachePRTL ( Component ):
     idw = clog2(nbl)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
-    twb = int(abw+7)//8    # Tag array write byte bitwidth
-    dwb = int(clw+7)//8    # Data array write byte bitwidth 
-    rmx2 = clog2(clw//dbw+1)# Read word mux bitwidth
+    twb = int(abw+7)//8      # Tag array write byte bitwidth
+    dwb = int(clw+7)//8      # Data array write byte bitwidth 
+    rmx2 = clog2(clw//dbw+1) # Read word mux bitwidth
     
-    #-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Make bits
-    #-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     
     BitsOpaque    = mk_bits(obw)   # opaque
     BitsType      = mk_bits(4)     # type, always 4 bits
@@ -57,14 +54,14 @@ class BlockingCachePRTL ( Component ):
     BitsCacheline = mk_bits(clw)   # cacheline 
     BitsIdx       = mk_bits(idw)   # index 
     BitsTag       = mk_bits(tgw)   # tag 
-    BitsOffset    = mk_bits(ofw) # offset 
-    BitsTagWben   = mk_bits(twb) # Tag array write byte enable
-    BitsDataWben  = mk_bits(dwb) # Data array write byte enable
-    BitsRdDataMux = mk_bits(rmx2) # Read data mux M2 
+    BitsOffset    = mk_bits(ofw)   # offset 
+    BitsTagWben   = mk_bits(twb)   # Tag array write byte enable
+    BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
+    BitsRdDataMux = mk_bits(rmx2)  # Read data mux M2 
     
-    #---------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Interface
-    #---------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     
     # Proc -> Cache
     s.cachereq  = RecvIfcRTL ( CacheMsg.Req )
