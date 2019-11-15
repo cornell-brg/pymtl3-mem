@@ -510,4 +510,4 @@ class BlockingCacheCtrlPRTL ( Component ):
     state    = " [{}]".format(msg_state)
     pipeline = stage1 + stage2 + stage3 + state
 
-    return pipeline #  + additional_msg
+    return pipeline
