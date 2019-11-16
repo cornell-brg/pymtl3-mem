@@ -5,6 +5,12 @@
 3. SRAM tag array and data array 
 
 ## TODO
+- ~~Read/write hit and init transactions~~
+- ~~Valid bit in SRAM~~
+- ~~Parametrizable by cache size, cache line size,~~ associativity, and replacement policy 
+- Read/write miss clean
+- Figure out where to store the dirty bit
+- Read/write miss dirty
 - Translate to Verilog
 - Push through flow
 - Associativity
@@ -15,7 +21,7 @@
 
 `M0`: Tag array SRAM access. Refill response comes to M0 as well.
 
-`M1`: Data returns from tag array SRAM. Cache performs tag check and sets signals for the data array.
+`M1`: Data returns from tag array SRAM. Cache performs tag check and set signals for the data array.
 
 `M2`: Cache response and memory request stage.   
 
