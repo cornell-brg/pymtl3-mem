@@ -2,10 +2,10 @@
 =========================================================================
  DmappedTestCases.py
 =========================================================================
-Direct mapped test cases
+Direct mapped cache test cases
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 04 November 2019
+Date   : 11 November 2019
 """
 
 import pytest
@@ -39,17 +39,16 @@ def resp( type_, opaque, test, len, data ):
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
 #-------------------------------------------------------------------------
-# Test Case: DMAP READ EVICT: 
+# Test Case: Direct Mapped Read Evict 
 #-------------------------------------------------------------------------
-# Test cases designed for direct-mapped cache where we evict a cache line
+# Test case designed for direct-mapped cache where a cache line must be evicted
 def read_evict( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
-    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
-    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ),
-    req( 'rd', 0x02, 0x000a2000, 0, 0         ), resp( 'rd', 0x02, 0, 0, 0x70facade ),
-    req( 'rd', 0x03, 0x000a2004, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x75ca1ded ),
-    req( 'rd', 0x03, 0x00002000, 0, 0         ), resp( 'rd', 0x03, 0, 0, 0xffffff00 ),
+    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), # write something
+    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ), # read to make sure write happened
+    req( 'rd', 0x02, 0x000a2000, 0, 0         ), resp( 'rd', 0x02, 0, 0, 0x70facade ), # read miss on dirty line
+    req( 'rd', 0x03, 0x00002000, 0, 0         ), resp( 'rd', 0x03, 0, 0, 0xffffff00 ), # read evicted address
   ]
 
 def evict_mem( base_addr ):
@@ -62,75 +61,55 @@ def evict_mem( base_addr ):
   ]
 
 #-------------------------------------------------------------------------
-# Test Case: DMAP WRITE EVICT: 
+# Test Case: Direct Mapped Write Evict 
 #-------------------------------------------------------------------------
 # Test cases designed for direct-mapped cache where we evict a cache line
 def write_evict( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
-    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
-    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ),
-    req( 'wr', 0x02, 0x000a2000, 0, 0x8932    ), resp( 'wr', 0x02, 0, 0, 0 ),
-    req( 'rd', 0x03, 0x000a2000, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x8932 ),
-    req( 'wr', 0x04, 0x00002004, 0, 0x458     ), resp( 'wr', 0x04, 0, 0, 0 ),
-    req( 'wr', 0x05, 0x00002000, 0, 0xa89e0   ), resp( 'wr', 0x05, 0, 0, 0 ),
-    req( 'rd', 0x06, 0x00002004, 0, 0         ), resp( 'rd', 0x06, 1, 0, 0x458 ),
+    req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), #refill-write
+    req( 'rd', 0x01, 0x00002000, 0, 0         ), resp( 'rd', 0x01, 1, 0, 0xffffff00 ), #read written data
+    req( 'wr', 0x02, 0x000a2000, 0, 0x8932    ), resp( 'wr', 0x02, 0, 0, 0 ),          #evict
+    req( 'rd', 0x03, 0x000a2000, 0, 0         ), resp( 'rd', 0x03, 1, 0, 0x8932 ),     #read new written data
+    req( 'rd', 0x04, 0x00002000, 0, 0         ), resp( 'rd', 0x04, 0, 0, 0xffffff00 ), #read-evicted data
   ]
 
 #-------------------------------------------------------------------------
 # Test Case: test direct-mapped
 #-------------------------------------------------------------------------
-# Test cases designed for direct-mapped cache. We should set check_test
-# to False if we use it to test set-associative cache.
+# Test cases designed for direct-mapped cache
 
 def dir_mapped_long0_msg( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
-    # Write to cacheline 0
-    req( 'wr', 0x00, 0x00000000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
+    req( 'wr', 0x00, 0x00000000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), # Write to cacheline 0
     req( 'wr', 0x01, 0x00000004, 0, 0xffffff01), resp( 'wr', 0x01, 1, 0, 0          ),
     req( 'wr', 0x02, 0x00000008, 0, 0xffffff02), resp( 'wr', 0x02, 1, 0, 0          ),
     req( 'wr', 0x03, 0x0000000c, 0, 0xffffff03), resp( 'wr', 0x03, 1, 0, 0          ),
-    # Write to cacheline 0
-    req( 'wr', 0x04, 0x00001000, 0, 0xffffff04), resp( 'wr', 0x04, 0, 0, 0          ),
+    req( 'wr', 0x04, 0x00001000, 0, 0xffffff04), resp( 'wr', 0x04, 0, 0, 0          ), # Write to cacheline 0
     req( 'wr', 0x05, 0x00001004, 0, 0xffffff05), resp( 'wr', 0x05, 1, 0, 0          ),
     req( 'wr', 0x06, 0x00001008, 0, 0xffffff06), resp( 'wr', 0x06, 1, 0, 0          ),
     req( 'wr', 0x07, 0x0000100c, 0, 0xffffff07), resp( 'wr', 0x07, 1, 0, 0          ),
-    # Evict cache 0
-    req( 'rd', 0x08, 0x00002000, 0, 0         ), resp( 'rd', 0x08, 0, 0, 0x00facade ),
-    # Read again from same cacheline
-    req( 'rd', 0x09, 0x00002004, 0, 0         ), resp( 'rd', 0x09, 1, 0, 0x05ca1ded ),
-    # Read from cacheline 0
-    req( 'rd', 0x0a, 0x00001004, 0, 0         ), resp( 'rd', 0x0a, 0, 0, 0xffffff05 ),
-    # Write to cacheline 0
-    req( 'wr', 0x0b, 0x0000100c, 0, 0xffffff09), resp( 'wr', 0x0b, 1, 0, 0          ),
-    # Read that back
-    req( 'rd', 0x0c, 0x0000100c, 0, 0         ), resp( 'rd', 0x0c, 1, 0, 0xffffff09 ),
-    # Evict cache 0 again
-    req( 'rd', 0x0d, 0x00000000, 0, 0         ), resp( 'rd', 0x0d, 0, 0, 0xffffff00 ),
-    # Testing cacheline 7 now
-    # Write to cacheline 7
-    req( 'wr', 0x10, 0x00000070, 0, 0xffffff00), resp( 'wr', 0x10, 0, 0, 0          ),
+    req( 'rd', 0x08, 0x00002000, 0, 0         ), resp( 'rd', 0x08, 0, 0, 0x00facade ), # Evict cache 0
+    req( 'rd', 0x09, 0x00002004, 0, 0         ), resp( 'rd', 0x09, 1, 0, 0x05ca1ded ), # Read again from same cacheline
+    req( 'rd', 0x0a, 0x00001004, 0, 0         ), resp( 'rd', 0x0a, 0, 0, 0xffffff05 ), # Read from cacheline 0
+    req( 'wr', 0x0b, 0x0000100c, 0, 0xffffff09), resp( 'wr', 0x0b, 1, 0, 0          ), # Write to cacheline 0
+    req( 'rd', 0x0c, 0x0000100c, 0, 0         ), resp( 'rd', 0x0c, 1, 0, 0xffffff09 ), # Read that back
+    req( 'rd', 0x0d, 0x00000000, 0, 0         ), resp( 'rd', 0x0d, 0, 0, 0xffffff00 ), # Evict cacheline 0
+    req( 'wr', 0x10, 0x00000070, 0, 0xffffff00), resp( 'wr', 0x10, 0, 0, 0          ), # Write to cacheline 7
     req( 'wr', 0x11, 0x00000074, 0, 0xffffff01), resp( 'wr', 0x11, 1, 0, 0          ),
     req( 'wr', 0x12, 0x00000078, 0, 0xffffff02), resp( 'wr', 0x12, 1, 0, 0          ),
     req( 'wr', 0x13, 0x0000007c, 0, 0xffffff03), resp( 'wr', 0x13, 1, 0, 0          ),
-    # Write to cacheline 7
-    req( 'wr', 0x14, 0x00001070, 0, 0xffffff04), resp( 'wr', 0x14, 0, 0, 0          ),
+    req( 'wr', 0x14, 0x00001070, 0, 0xffffff04), resp( 'wr', 0x14, 0, 0, 0          ), # Write to cacheline 7
     req( 'wr', 0x15, 0x00001074, 0, 0xffffff05), resp( 'wr', 0x15, 1, 0, 0          ),
     req( 'wr', 0x16, 0x00001078, 0, 0xffffff06), resp( 'wr', 0x16, 1, 0, 0          ),
     req( 'wr', 0x17, 0x0000107c, 0, 0xffffff07), resp( 'wr', 0x17, 1, 0, 0          ),
-    # Evict cacheline 7
-    req( 'rd', 0x18, 0x00002070, 0, 0         ), resp( 'rd', 0x18, 0, 0, 0x70facade ),
-    # Read again from same cacheline
-    req( 'rd', 0x19, 0x00002074, 0, 0         ), resp( 'rd', 0x19, 1, 0, 0x75ca1ded ),
-    # Read from cacheline 7
-    req( 'rd', 0x1a, 0x00001074, 0, 0         ), resp( 'rd', 0x1a, 0, 0, 0xffffff05 ),
-    # Write to cacheline 7 way 1 to see if cache hits properly
-    req( 'wr', 0x1b, 0x0000107c, 0, 0xffffff09), resp( 'wr', 0x1b, 1, 0, 0          ),
-    # Read that back
-    req( 'rd', 0x1c, 0x0000107c, 0, 0         ), resp( 'rd', 0x1c, 1, 0, 0xffffff09 ),
-    # Evict cacheline 0 again
-    req( 'rd', 0x1d, 0x00000070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ),
+    req( 'rd', 0x18, 0x00002070, 0, 0         ), resp( 'rd', 0x18, 0, 0, 0x70facade ), # Evict cacheline 7
+    req( 'rd', 0x19, 0x00002074, 0, 0         ), resp( 'rd', 0x19, 1, 0, 0x75ca1ded ), # Read again from same cacheline
+    req( 'rd', 0x1a, 0x00001074, 0, 0         ), resp( 'rd', 0x1a, 0, 0, 0xffffff05 ), # Read from cacheline 7
+    req( 'wr', 0x1b, 0x0000107c, 0, 0xffffff09), resp( 'wr', 0x1b, 1, 0, 0          ), # Write to cacheline 7
+    req( 'rd', 0x1c, 0x0000107c, 0, 0         ), resp( 'rd', 0x1c, 1, 0, 0xffffff09 ), # Read that back
+    req( 'rd', 0x1d, 0x00000070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # Evict cacheline 0 again
   ]
 
 def dir_mapped_long0_mem( base_addr ):
@@ -142,9 +121,10 @@ def dir_mapped_long0_mem( base_addr ):
     0x00002074, 0x75ca1ded,
   ]
 
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#--------------------------------------------------------------------------------
 # Generate random data and addresses
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#--------------------------------------------------------------------------------
+
 def generate_data(n):
 	data = []
 	for i in range(n):
@@ -170,11 +150,11 @@ def generate_address(n):
 
 	return randAddr
 
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-# RANDOM TEST: Simple address patterns, read request, random data --dmap
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-rand_data1 = generate_data(64)
+#------------------------------------------------------------------------------
+# Test Case: Read random data from simple address patterns 
+#------------------------------------------------------------------------------
 
+rand_data1 = generate_data(64)
 def read_rand_data_dmap( base_addr ):
 	read_random_data_msgs = []
 	addr = [x*16 for x in range(16)]
@@ -185,8 +165,6 @@ def read_rand_data_dmap( base_addr ):
 	
 	return read_random_data_msgs	
 	
-# Data to be loaded into memory before running the test
-
 def read_rand_data_mem( base_addr ):
 	rand_data_mem = [];
 	addr = [x*4 for x in range(64)]
@@ -197,13 +175,11 @@ def read_rand_data_mem( base_addr ):
 	 
 	return rand_data_mem		
 
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-# Simple address patterns, random request types and data --dmap
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#------------------------------------------------------------------------------
+# Test Case: Random data and request types w/ simple address patterns
+#------------------------------------------------------------------------------
 
-# Data to be loaded into memory before running the test
 rand_data3 = generate_data(64)
-
 def rand_requests_dmap( base_addr ):
 	rand_requests_msgs = []
 	addr = [x*16 for x in range(16)]
@@ -242,11 +218,11 @@ rand_requests = generate_type(64)
 ref_memory = [None]*64;
 rand_data4 = generate_data(64) #random data to write
 
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-# Unit stride with random data --dmap
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-ref_memory_unit = [None]*64;
+#------------------------------------------------------------------------------
+# Test Case: Unit stride with random data
+#------------------------------------------------------------------------------
 
+ref_memory_unit = [None]*64;
 def unit_stride_dmap( base_addr ):
 	unit_stride_msgs = []
 	addr = [x*4 for x in range(64)]
@@ -274,9 +250,9 @@ def unit_stride_dmap( base_addr ):
 			
 	return unit_stride_msgs
 
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-# Stride with random data --dmap
-#'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#------------------------------------------------------------------------------
+# Test Case: Stride with random data
+#------------------------------------------------------------------------------
 
 # Data to be loaded into memory before running the test
 rand_data5 = generate_data(50)
@@ -310,7 +286,7 @@ def stride_mem( base_addr ):
 	return rand_data_mem
 
 #---------------------------------------------------------------------------------------------
-# Test table for dmapped test
+# Test table for direct mapped cache tests
 #---------------------------------------------------------------------------------------------
 
 test_case_table_dmap = mk_test_case_table([
@@ -320,7 +296,6 @@ test_case_table_dmap = mk_test_case_table([
   [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem,0.0,  1,  0,  0    ],
   [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,  0,  0    ],
   [ "rand_requests_mem",     rand_requests_dmap,    rand_requests_mem,   0.0,  1,  0,  0    ],
-  [ "unit_stride_dmap",      unit_stride_dmap,      rand_requests_mem,   0.0,  1,  0,  0    ],
-  [ "stride_dmap",           stride_dmap,           stride_mem,          0.0,  1,  0,  0    ],
-
+  [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,  0,  0    ],
+  [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,  0,  0    ]
 ])
