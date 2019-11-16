@@ -38,23 +38,25 @@ class BlockingCacheFL( Component ):
     #-------------------------------------------------------------------------
 
     assert MemMsg.abw == CacheMsg.abw, "abw not the same"
-
     obw       = MemMsg.obw
     clw       = MemMsg.dbw
     abw       = MemMsg.abw
     dbw       = CacheMsg.dbw
     nbl       = nbytes//clw 
-    idw       = clog2(nbl)     # index width; clog2(512) = 9
+    nby       = nbl//associativity  # blocks per way; 1
+    idw       = clog2(nby)     # index width; clog2(512) = 9
     ofw       = clog2(clw//8)  # offset bitwidth; clog2(128/8) = 4
     tgw       = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
     
     BitsOpaque= mk_bits(obw)   # opaque
     BitsType  = mk_bits(4)     # type, always 4 bits
     BitsData  = mk_bits(dbw)   # data
+    BitsCacheline = mk_bits(clw)   # cacheline 
     BitsAddr  = mk_bits(abw)   # address 
     BitsIdx   = mk_bits(idw)   # index 
     BitsTag   = mk_bits(tgw)   # tag 
     BitsLen   = mk_bits( clog2(dbw>>3) )
+    BitsLRU   = mk_bits( clog2(associativity) )
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
@@ -80,9 +82,12 @@ class BlockingCacheFL( Component ):
     connect( s.memresp.en, s.cacheresp.en )
     connect( s.memresp.rdy, s.cacheresp.rdy )
     
-    s.tag_array         = [Wire(BitsAddr) for i in range(nbl)]
-    s.ctrl              = [Wire(b1) for i in range(nbl)]
-    
+    s.tag_arrays        = [[Wire(BitsTag) for i in range(nby)] for j in range(associativity)]
+    s.ctrls             = [[Wire(b1) for i in range(nby)] for j in range(associativity)]
+    s.LRU               = [Wire(BitsLRU) for i in range(nby)]
+    s.idx = Wire(BitsIdx)
+    s.tag = Wire(BitsTag)
+
     s.cachereq_len      = Wire(BitsLen)
     s.cachereq_opaque   = Wire(BitsOpaque)
     s.cachereq_type     = Wire(BitsType)
@@ -109,8 +114,6 @@ class BlockingCacheFL( Component ):
     ) # ASSUMING SINGLE CYCLE LATENCY 
     
     s.cacheresp_addr_out = Wire(BitsAddr)
-    s.idx = Wire(BitsIdx)
-    s.tag = Wire(BitsTag)
     s.addr_reg = RegRst(BitsAddr)(
       in_ = s.cachereq.msg.addr,
       out = s.cacheresp_addr_out
@@ -127,24 +130,27 @@ class BlockingCacheFL( Component ):
     @s.update
     def tag_check_logic():
       if s.reset:
-        for i in range(nbl):
-          s.tag_array[i] = BitsAddr(0)
-          s.ctrl[i]      = b1(0)
+        for i in range(associativity):
+          for j in range(nby):
+            s.tag_arrays[i][j] = BitsTag(0)
+            s.ctrls[i][j]      = b1(0)
+            s.LRU[j]        = BitsLRU(0)
       elif s.val:
-        if s.tag_array[s.idx] == s.tag and s.ctrl[s.idx]:
-          s.cacheresp.msg.test = b2(1) # Hit, GREAT
-        else: 
-          s.cacheresp.msg.test = b2(0)
-          s.tag_array[s.idx]   = s.tag # Miss, replace old tag with new tag
-          s.ctrl[s.idx]        = b1(1) # ctrl always becomes valid when we access it
-        
-        if s.cacheresp_type_out == MemMsgType.WRITE_INIT or \
-          s.cacheresp_type_out == MemMsgType.WRITE: 
-          s.tag_array[s.idx] = s.tag # Update tag array if we are writing
-        
+        for i in range(associativity):
+          if s.tag_arrays[i][s.idx] == s.tag and s.ctrls[i][s.idx]:
+            s.cacheresp.msg.test = b2(1) # Hit, GREAT
+            break
+          else: 
+            s.cacheresp.msg.test       = b2(0)
+            s.tag_arrays[s.LRU[s.idx]][s.idx] = s.tag # Miss, replace old tag with new tag
+            s.ctrls[s.LRU[s.idx]][s.idx]      = b1(1) # ctrl always becomes valid when we access it
+          
         if s.cacheresp_type_out == MemMsgType.WRITE_INIT: # INIT always miss
-          s.cacheresp.msg.test = b2(0) 
-        
+          s.cacheresp.msg.test = b2(0)   
+        if s.cacheresp_type_out == MemMsgType.WRITE_INIT or \
+        s.cacheresp_type_out == MemMsgType.WRITE: 
+          s.tag_arrays[s.LRU[s.idx]][s.idx] = s.tag # Update tag array if we are writing 
+        s.LRU[s.idx] += 1
 
     @s.update
     def test_mem_logic():
@@ -175,11 +181,9 @@ class BlockingCacheFL( Component ):
       s.cacheresp.msg.type_  = s.cacheresp_type_out
       s.cacheresp.msg.opaque = s.memresp.msg.opaque
       s.cacheresp.msg.len    = len_
-      s.cacheresp.msg.data   = s.memresp.msg.data[0:abw]
-
-
+    s.cacheresp.msg.data   //= s.memresp.msg.data[0:abw] if s.cacheresp_type_out==MemMsgType.READ else BitsData(0)
      
   def line_trace(s):
-    return "tag:{} crl:{}".format(s.tag_array[s.idx], s.ctrl[s.idx] )
+    return "idx:{} tag0:{} tag1:{} LRU:{}".format(s.idx, s.tag_arrays[0][s.idx], s.tag_arrays[1][s.idx], s.LRU[0] )
 
 
