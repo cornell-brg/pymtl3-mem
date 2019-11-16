@@ -1,11 +1,11 @@
 """
 =========================================================================
- BlockingCacheRTL_test.py
+BlockingCacheRTL_test.py
 =========================================================================
 Tests for Pipelined Blocking Cache RTL model 
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 04 November 2019
+Date   : 15 November 2019
 """
 
 import pytest
@@ -22,6 +22,21 @@ from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
 
 base_addr = 0x74
 max_cycles = 500
+
+#-------------------------------------------------------------------------
+# Translate Function for the cache
+#-------------------------------------------------------------------------
+
+def translate():
+  # Translate the checksum unit and import it back in using the yosys
+  # backend
+  cacheSize = 8196 # size in bytes
+  dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
+  dut.elaborate()
+  dut.yosys_translate_import = True
+  dut = TranslationImportPass(  )( dut )
+  dut.elaborate()
+  dut.apply( TranslationPass() )
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design

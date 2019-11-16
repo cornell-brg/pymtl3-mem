@@ -29,7 +29,7 @@ class BlockingCachePRTL ( Component ):
     # Bitwidths
     #--------------------------------------------------------------------------
     
-    assert MemMsg.abw == CacheMsg.abw, "abw not the same" 
+    # assert MemMsg.abw == CacheMsg.abw, "abw not the same"  # Translation not implemnted error
     clw = MemMsg.dbw
     abw = MemMsg.abw
     obw = MemMsg.obw

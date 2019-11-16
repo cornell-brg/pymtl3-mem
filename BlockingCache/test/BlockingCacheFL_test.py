@@ -22,7 +22,6 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
 from BlockingCache.test.CacheMemory import CacheMemoryCL
 
-from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
 from BlockingCache.test.GenericTestCases import test_case_table_generic
 from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
 from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
@@ -78,20 +77,7 @@ class TestHarness(Component):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
            + s.mem.line_trace()  + " " + s.sink.line_trace()
 
-#-------------------------------------------------------------------------
-# Translate Function for the cache
-#-------------------------------------------------------------------------
 
-# def translate():
-#   # Translate the checksum unit and import it back in using the yosys
-#   # backend
-#   cacheSize = 8196 # size in bytes
-#   dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
-#   dut.elaborate()
-#   dut.yosys_translate_import = True
-#   dut = TranslationImportPass(  )( dut )
-#   dut.elaborate()
-#   dut.apply( TranslationPass() )
 
 
 #----------------------------------------------------------------------

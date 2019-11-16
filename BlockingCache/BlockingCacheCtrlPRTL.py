@@ -168,9 +168,7 @@ class BlockingCacheCtrlPRTL ( Component ):
         else:                                  s.next_state = STATE_REFILL
       elif s.curr_state == STATE_EVICT:        s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL_WRITE: s.next_state = STATE_GO
-
-      else:
-        assert False, 'undefined state: next state block'
+      # assert False, 'undefined state: next state block' # NOT TRANSLATABLE
 
     #--------------------------------------------------------------------------
     # Y Stage 
