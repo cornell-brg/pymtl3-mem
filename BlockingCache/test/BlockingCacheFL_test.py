@@ -52,8 +52,6 @@ class TestHarness(Component):
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
-    # s.cache.yosys_translate_import = True
-
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
 
@@ -82,16 +80,15 @@ class TestHarness(Component):
 # Translate Function for the cache
 #-------------------------------------------------------------------------
 
-# def translate():
-#   # Translate the checksum unit and import it back in using the yosys
-#   # backend
-#   cacheSize = 8196 # size in bytes
-#   dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
-#   dut.elaborate()
-#   dut.yosys_translate_import = True
-#   dut = TranslationImportPass(  )( dut )
-#   dut.elaborate()
-#   dut.apply( TranslationPass() )
+def translate(cacheSize, CacheMsg, MemMsg):
+  # Translate the checksum unit and import it back in using the yosys
+  # backend
+  dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg,1,1)
+  dut.elaborate()
+  dut.yosys_translate_import = True
+  dut = TranslationImportPass(  )( dut )
+  # dut.elaborate()
+  dut.apply( TranslationPass() )
 
 
 #----------------------------------------------------------------------

@@ -35,6 +35,7 @@ class BlockingCacheDpathPRTL (Component):
                 BitsTagWben   = "inv",  # Tag array write byte enable
                 BitsDataWben  = "inv",  # Data array write byte enable
                 BitsRdDataMux = "inv",  # Read data mux M2 
+                translate = 0,          # if we are translate -> make sram blackbox
   ):
 	
     #---------------------------------------------------------------------
@@ -185,7 +186,7 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_array_wdata_M0[abw-1:abw]  //= s.ctrl_bit_val_wr_M0
     s.tag_array_wdata_M0[abw-2:abw-1]//= s.ctrl_bit_dty_wr_M0
 
-    s.tag_array_M1 = SramPRTL(abw, nbl)(
+    s.tag_array_M1 = SramPRTL(abw, nbl, translate)(
       port0_val   = s.tag_array_val_M0,
       port0_type  = s.tag_array_type_M0,
       port0_idx   = s.tag_array_idx_M0,

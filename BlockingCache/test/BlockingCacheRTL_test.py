@@ -11,7 +11,7 @@ Date   : 04 November 2019
 import pytest
 from pymtl3      import *
 from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, \
-  TestHarness, run_sim
+  TestHarness, run_sim, translate
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.test.GenericTestCases import test_case_table_generic
 from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
@@ -39,7 +39,7 @@ def test_generic( test_params ):
                          BlockingCachePRTL, GenericCacheMsg,
                          GenericMemMsg)
   harness.elaborate()
-  # translate()
+  translate(8196, GenericCacheMsg, GenericMemMsg)
   # Load memory before the test
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )
