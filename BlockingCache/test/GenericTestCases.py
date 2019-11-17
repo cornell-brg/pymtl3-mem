@@ -231,6 +231,39 @@ def read_miss_dirty_mem( base_addr=0x0 ):
     base_addr+0x00010000, 0x00c0ffee
   ]
 
+#------------------------------------------------------------------------------
+# Test case: Evict case 1
+#------------------------------------------------------------------------------
+# Write miss leads to evict, then immediately read hit to the cacheline
+
+def evict_test_1( base_addr=0x0 ):
+  return [
+    #    type  opq   addr                 len data               type  opq   test len data
+    req( 'wr', 0x0, base_addr+0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ), 
+    req( 'wr', 0x1, base_addr+0x00010000,  0, 0xc0ffee00 ), resp('wr', 0x1,   0,   0, 0          ), 
+    req( 'rd', 0x2, base_addr+0x00010000,  0, 0          ), resp('rd', 0x2,   1,   0, 0xc0ffee00 ) 
+  ]
+
+#------------------------------------------------------------------------------
+# Test case: Evict case 2
+#------------------------------------------------------------------------------
+# Read miss leads to evict, then immediately read hit to the cacheline
+
+def evict_test_2( base_addr=0x0 ):
+  return [
+    #    type  opq   addr                 len data               type  opq   test len data
+    req( 'wr', 0x0, base_addr+0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ), 
+    req( 'rd', 0x1, base_addr+0x00010000,  0, 0          ), resp('rd', 0x1,   0,   0, 0x00c0ffee ), 
+    req( 'rd', 0x2, base_addr+0x00010000,  0, 0          ), resp('rd', 0x2,   1,   0, 0x00c0ffee ) 
+  ]
+
+def evict_mem( base_addr=0x0 ):
+  return [
+    # addr                data
+    base_addr+0x00010000, 0x00c0ffee
+  ]
+
+
 #---------------------------------------------------------------------------------------------
 # Test table for generic test
 #---------------------------------------------------------------------------------------------
@@ -250,5 +283,7 @@ test_case_table_generic = mk_test_case_table([
   [ "write_miss_1word_clean",write_miss_1word_clean,write_miss_1word_mem,0.0,  1,  0,  0    ],
   [ "write_miss_offset",     write_miss_offset,     None,                0.0,  1,  0,  0    ],
   [ "read_miss_dirty",       read_miss_dirty,       read_miss_dirty_mem, 0.0,  1,  0,  0    ],
- ])
+  [ "evict_test_1",          evict_test_1,          None,                0.0,  1,  0,  0    ],
+  [ "evict_test_2",          evict_test_2,          evict_mem,           0.0,  1,  0,  0    ],
+])
 
