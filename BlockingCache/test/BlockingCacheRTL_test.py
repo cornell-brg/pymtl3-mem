@@ -31,13 +31,8 @@ max_cycles = 500
 def translate(model):
   # Translate the checksum unit and import it back in using the yosys
   # backend
-  # cacheSize = 8196 # size in bytes
-  # dut = BlockingCachePRTL(cacheSize, GenericCacheMsg, GenericMemMsg)
-  # dut.elaborate()
   model.cache.yosys_translate_import = True
   model = TranslationImportPass(  )( model )
-  # dut.elaborate()
-  # dut.apply( TranslationPass() )
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
