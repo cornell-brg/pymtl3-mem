@@ -59,11 +59,10 @@ def write_hit( base_addr ):
     #    type  opq  addr       len data                type  opq  test len data
     req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
     req( 'in', 0x1, 0x00001000, 0, 0x00c0ffee ), resp( 'in', 0x1, 0,   0,  0          ),
-    req( 'wr', 0x2, 0x00000000, 0, 0x8713450  ), resp( 'wr', 0x2, 1,   0,  0xdeadbeef ),
-    req( 'wr', 0x3, 0x00001000, 0, 0xabcde    ), resp( 'wr', 0x3, 1,   0,  0x00c0ffee ),
-    req( 'wr', 0x4, 0x00001000, 0, 0          ), resp( 'wr', 0x4, 1,   0,  0x00c0ffee ),
-    req( 'rd', 0x5, 0x00000000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0x8713450  ),
-    req( 'rd', 0x6, 0x00001000, 0, 0          ), resp( 'rd', 0x6, 1,   0,  0xabcde    ),
+    req( 'wr', 0x2, 0x00000000, 0, 0x8713450  ), resp( 'wr', 0x2, 1,   0,  0          ),
+    req( 'wr', 0x3, 0x00001000, 0, 0xabcde    ), resp( 'wr', 0x3, 1,   0,  0          ),
+    req( 'rd', 0x4, 0x00000000, 0, 0          ), resp( 'rd', 0x4, 1,   0,  0x8713450  ),
+    req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
   ]
 
 #-------------------------------------------------------------------------
@@ -76,10 +75,10 @@ def set_assoc_msg0( base_addr ):
   return [
     #    type  opq   addr      len  data               type  opq test len  data
     # Write to cacheline 0 way 0
-    req( 'wr', 0x00, 0x00000000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
-    req( 'wr', 0x01, 0x00000004, 0, 0xffffff01), resp( 'wr', 0x01, 1, 0, 0          ),
-    req( 'wr', 0x02, 0x00000008, 0, 0xffffff02), resp( 'wr', 0x02, 1, 0, 0          ),
-    req( 'wr', 0x03, 0x0000000c, 0, 0xffffff03), resp( 'wr', 0x03, 1, 0, 0          ), # LRU:1
+    req( 'wr', 0x00, 0x000a0000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ),
+    req( 'wr', 0x01, 0x000a0004, 0, 0xffffff01), resp( 'wr', 0x01, 1, 0, 0          ),
+    req( 'wr', 0x02, 0x000a0008, 0, 0xffffff02), resp( 'wr', 0x02, 1, 0, 0          ),
+    req( 'wr', 0x03, 0x000a000c, 0, 0xffffff03), resp( 'wr', 0x03, 1, 0, 0          ), # LRU:1
     # Write to cacheline 0 way 1
     req( 'wr', 0x04, 0x00001000, 0, 0xffffff04), resp( 'wr', 0x04, 0, 0, 0          ),
     req( 'wr', 0x05, 0x00001004, 0, 0xffffff05), resp( 'wr', 0x05, 1, 0, 0          ),
@@ -96,13 +95,13 @@ def set_assoc_msg0( base_addr ):
     # Read that back
     req( 'rd', 0x0c, 0x0000100c, 0, 0         ), resp( 'rd', 0x0c, 1, 0, 0xffffff09 ), # LRU:0
     # Evict way 0 again
-    req( 'rd', 0x0d, 0x00000000, 0, 0         ), resp( 'rd', 0x0d, 0, 0, 0xffffff00 ), # LRU:1
+    req( 'rd', 0x0d, 0x000a0000, 0, 0         ), resp( 'rd', 0x0d, 0, 0, 0xffffff00 ), # LRU:1
     # Testing cacheline 7 now
     # Write to cacheline 7 way 0
-    req( 'wr', 0x10, 0x00000070, 0, 0xffffff00), resp( 'wr', 0x10, 0, 0, 0          ),
-    req( 'wr', 0x11, 0x00000074, 0, 0xffffff01), resp( 'wr', 0x11, 1, 0, 0          ),
-    req( 'wr', 0x12, 0x00000078, 0, 0xffffff02), resp( 'wr', 0x12, 1, 0, 0          ),
-    req( 'wr', 0x13, 0x0000007c, 0, 0xffffff03), resp( 'wr', 0x13, 1, 0, 0          ), # LRU:1
+    req( 'wr', 0x10, 0x000a0070, 0, 0xffffff00), resp( 'wr', 0x10, 0, 0, 0          ),
+    req( 'wr', 0x11, 0x000a0074, 0, 0xffffff01), resp( 'wr', 0x11, 1, 0, 0          ),
+    req( 'wr', 0x12, 0x000a0078, 0, 0xffffff02), resp( 'wr', 0x12, 1, 0, 0          ),
+    req( 'wr', 0x13, 0x000a007c, 0, 0xffffff03), resp( 'wr', 0x13, 1, 0, 0          ), # LRU:1
     # Write to cacheline 7 way 1
     req( 'wr', 0x14, 0x00001070, 0, 0xffffff04), resp( 'wr', 0x14, 0, 0, 0          ),
     req( 'wr', 0x15, 0x00001074, 0, 0xffffff05), resp( 'wr', 0x15, 1, 0, 0          ),
@@ -119,8 +118,18 @@ def set_assoc_msg0( base_addr ):
     # Read that back
     req( 'rd', 0x1c, 0x0000107c, 0, 0         ), resp( 'rd', 0x1c, 1, 0, 0xffffff09 ), # LRU:0
     # Evict way 0 again
-    req( 'rd', 0x1d, 0x00000070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # LRU:1
+    req( 'rd', 0x1d, 0x000a0070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # LRU:1
   ]
+
+def set_assoc_mem0( base_addr ):
+  return [
+    # addr      # data (in int)
+    0x00002000, 0x00facade,
+    0x00002004, 0x05ca1ded,
+    0x00002070, 0x70facade,
+    0x00002074, 0x75ca1ded,
+  ]
+
 #---------------------------------------------------------------------------------------------
 # Test table for direct mapped cache tests
 #---------------------------------------------------------------------------------------------
@@ -129,5 +138,5 @@ test_case_table_asso_2way = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
   [ "read_hit",              read_hit,              None,                0.0,  1,  0,  0    ],
   [ "write_hit",             write_hit,             None,                0.0,  1,  0,  0    ],
-  [ "set_assoc_msg0",        set_assoc_msg0,        None,                0.0,  1,  0,  0    ],
+  [ "set_assoc_msg0",        set_assoc_msg0,        set_assoc_mem0,      0.0,  1,  0,  0    ],
   ])

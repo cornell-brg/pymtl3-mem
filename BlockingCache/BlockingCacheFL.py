@@ -56,7 +56,7 @@ class BlockingCacheFL( Component ):
     BitsIdx   = mk_bits(idw)   # index 
     BitsTag   = mk_bits(tgw)   # tag 
     BitsLen   = mk_bits( clog2(dbw>>3) )
-    BitsLRU   = mk_bits( clog2(associativity) )
+    BitsREP   = mk_bits( clog2(associativity) )
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------
@@ -84,7 +84,7 @@ class BlockingCacheFL( Component ):
     
     s.tag_arrays        = [[Wire(BitsTag) for i in range(nby)] for j in range(associativity)]
     s.ctrls             = [[Wire(b1) for i in range(nby)] for j in range(associativity)]
-    s.LRU               = [Wire(BitsLRU) for i in range(nby)]
+    s.REP               = [Wire(BitsREP) for i in range(nby)]
     s.idx = Wire(BitsIdx)
     s.tag = Wire(BitsTag)
 
@@ -134,24 +134,36 @@ class BlockingCacheFL( Component ):
           for j in range(nby):
             s.tag_arrays[i][j] = BitsTag(0)
             s.ctrls[i][j]      = b1(0)
-            s.LRU[j]        = BitsLRU(0)
+            s.REP[j]        = BitsREP(0)
       elif s.val:
+        hit = [b1(0) for _ in range(associativity)]
         for i in range(associativity):
           if s.tag_arrays[i][s.idx] == s.tag and s.ctrls[i][s.idx]:
-            s.cacheresp.msg.test = b2(1) # Hit, GREAT
-            break
+            hit[i] = b1(1) # Hit, GREAT
           else: 
-            s.cacheresp.msg.test       = b2(0)
-            s.tag_arrays[s.LRU[s.idx]][s.idx] = s.tag # Miss, replace old tag with new tag
-            s.ctrls[s.LRU[s.idx]][s.idx]      = b1(1) # ctrl always becomes valid when we access it
-          
+            hit[i] = b1(0)
+
+        if b1(1) in hit:
+          s.cacheresp.msg.test = b2(1)
+        else: 
+          s.cacheresp.msg.test = b2(0)
+          s.tag_arrays[s.REP[s.idx]][s.idx] = s.tag # Miss, replace old tag with new tag
+          s.ctrls[s.REP[s.idx]][s.idx]      = b1(1) # ctrl always becomes valid when we access it
+
         if s.cacheresp_type_out == MemMsgType.WRITE_INIT: # INIT always miss
           s.cacheresp.msg.test = b2(0)   
-        if s.cacheresp_type_out == MemMsgType.WRITE_INIT or \
-        s.cacheresp_type_out == MemMsgType.WRITE: 
-          s.tag_arrays[s.LRU[s.idx]][s.idx] = s.tag # Update tag array if we are writing 
-        s.LRU[s.idx] += 1
-
+          s.tag_arrays[s.REP[s.idx]][s.idx] = s.tag # Update tag array if we are writing 
+          
+        # Replacement logic 
+        if associativity == 2:
+          # LRU 
+          if   hit[0] and not hit[1]:
+            s.REP[s.idx] = BitsREP(1)
+          elif hit[1] and not hit[0]:
+            s.REP[s.idx] = BitsREP(0)
+          else:
+            s.REP[s.idx] += BitsREP(1)  
+        
     @s.update
     def test_mem_logic():
       # Pass through requests: just copy all of the fields over, except
@@ -181,9 +193,10 @@ class BlockingCacheFL( Component ):
       s.cacheresp.msg.type_  = s.cacheresp_type_out
       s.cacheresp.msg.opaque = s.memresp.msg.opaque
       s.cacheresp.msg.len    = len_
-    s.cacheresp.msg.data   //= s.memresp.msg.data[0:abw] if s.cacheresp_type_out==MemMsgType.READ else BitsData(0)
+      s.cacheresp.msg.data   = s.memresp.msg.data[0:abw] if s.cacheresp_type_out==MemMsgType.READ else BitsData(0)
      
   def line_trace(s):
-    return "idx:{} tag0:{} tag1:{} LRU:{}".format(s.idx, s.tag_arrays[0][s.idx], s.tag_arrays[1][s.idx], s.LRU[0] )
+    msg = "idx:{} tag0:{} tag1:{} REP:{}".format(s.idx, s.tag_arrays[0][s.idx], s.tag_arrays[1][s.idx], s.REP[0] )
 
+    return msg
 
