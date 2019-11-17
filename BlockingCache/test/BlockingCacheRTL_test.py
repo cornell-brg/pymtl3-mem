@@ -19,6 +19,7 @@ from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
 from BlockingCache.test.DmappedTestCases import test_case_table_dmap
 from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
 from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
+from pymtl3.passes.yosys import TranslationImportPass
 
 base_addr = 0x74
 max_cycles = 500
@@ -27,16 +28,16 @@ max_cycles = 500
 # Translate Function for the cache
 #-------------------------------------------------------------------------
 
-def translate():
+def translate(model):
   # Translate the checksum unit and import it back in using the yosys
   # backend
-  cacheSize = 8196 # size in bytes
-  dut = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
-  dut.elaborate()
-  dut.yosys_translate_import = True
-  dut = TranslationImportPass(  )( dut )
-  dut.elaborate()
-  dut.apply( TranslationPass() )
+  # cacheSize = 8196 # size in bytes
+  # dut = BlockingCachePRTL(cacheSize, GenericCacheMsg, GenericMemMsg)
+  # dut.elaborate()
+  model.cache.yosys_translate_import = True
+  model = TranslationImportPass(  )( model )
+  # dut.elaborate()
+  # dut.apply( TranslationPass() )
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
@@ -54,7 +55,7 @@ def test_generic( test_params ):
                          BlockingCachePRTL, GenericCacheMsg,
                          GenericMemMsg)
   harness.elaborate()
-  # translate()
+  translate(harness)
   # Load memory before the test
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )

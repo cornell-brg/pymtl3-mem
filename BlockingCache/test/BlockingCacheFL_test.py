@@ -77,9 +77,6 @@ class TestHarness(Component):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
            + s.mem.line_trace()  + " " + s.sink.line_trace()
 
-
-
-
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------

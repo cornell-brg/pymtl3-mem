@@ -307,23 +307,24 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def is_write_hit_clean_M0_logic():
-      if s.cachereq_type_M1 and \
-        s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and \
-          ~s.is_write_hit_clean_M1 and ~s.is_write_refill_M1:
+      if s.cachereq_type_M1 == WRITE and \
+        s.hit_M1 and not s.ctrl_bit_dty_rd_M1 and \
+          not s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
         s.is_write_hit_clean_M0 = b1(1)
       else:
         s.is_write_hit_clean_M0 = b1(0)
 
     @s.update
     def need_evict_M1():
-      if s.val_M1 and ~s.is_write_refill_M1 and ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:
+      if s.val_M1 and not s.is_write_refill_M1 and \
+        not s.hit_M1 and s.ctrl_bit_dty_rd_M1:
         s.is_evict_M1 = b1(1)
       else:
         s.is_evict_M1 = b1(0)
 
     @s.update
     def en_M1():
-      s.reg_en_M1 = ~s.stall_M1 and ~s.is_evict_M1
+      s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
 
     CS_data_array_wben_M1   = slice( 4,  4 + dwb )
     CS_data_array_type_M1   = slice( 3,  4 )

@@ -17,6 +17,9 @@ from pymtl3      import *
 from pymtl3.passes.yosys import TranslationImportPass, TranslationPass # Translation to Verilog
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, \
+  TestHarness, run_sim
+
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -56,6 +59,15 @@ def test_main():
     else:
       print()
       print("\nTranslation failed!")
+
+# def test_translate_verify():
+#   from pymtl3.passes.yosys import TranslationImportPass
+#   model = BlockingCachePRTL(cacheSize, CacheMsg, MemMsg)
+#   dut.elaborate()
+#   model.dut.yosys_translate_import = True
+#   model = TranslationImportPass()( dut )
+#   from pymtl3.passes import DynamicSim
+#   model.apply( DynamicSim )
 
 
 if __name__ == "__main__":
