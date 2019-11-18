@@ -29,7 +29,7 @@ class BlockingCachePRTL ( Component ):
     # Bitwidths
     #--------------------------------------------------------------------------
     
-    assert MemMsg.abw == CacheMsg.abw, "abw not the same" 
+    # assert MemMsg.abw == CacheMsg.abw, "abw not the same"  # Translation not implemnted error
     clw = MemMsg.dbw
     abw = MemMsg.abw
     obw = MemMsg.obw
@@ -72,29 +72,15 @@ class BlockingCachePRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    # M0  Signals to be connected
-    s.cachereq_opaque_M0     = Wire(BitsOpaque)
-    s.cachereq_type_M0       = Wire(BitsType)
-    s.cachereq_addr_M0       = Wire(BitsAddr)
-    s.cachereq_data_M0       = Wire(BitsData)
-
-    # Required as a result of the test harness using ints after it sends all the transactions
-    @s.update
-    def input_cast(): 
-      s.cachereq_opaque_M0 = BitsOpaque(s.cachereq.msg.opaque)
-      s.cachereq_type_M0   = BitsType(s.cachereq.msg.type_)
-      s.cachereq_addr_M0   = BitsAddr(s.cachereq.msg.addr)
-      s.cachereq_data_M0   = BitsData(s.cachereq.msg.data)
-
     s.cacheDpath = BlockingCacheDpathPRTL(
       abw, dbw, clw, idw, ofw, tgw, nbl,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux,
     )(
-      cachereq_opaque_M0  = s.cachereq_opaque_M0,
-      cachereq_type_M0    = s.cachereq_type_M0,
-      cachereq_addr_M0    = s.cachereq_addr_M0,
-      cachereq_data_M0    = s.cachereq_data_M0,
+      cachereq_opaque_M0  = s.cachereq.msg.opaque,
+      cachereq_type_M0    = s.cachereq.msg.type_,
+      cachereq_addr_M0    = s.cachereq.msg.addr,
+      cachereq_data_M0    = s.cachereq.msg.data,
 
       memresp_opaque_Y    = s.memresp.msg.opaque,
       memresp_type_Y      = s.memresp.msg.type_, 
@@ -135,8 +121,8 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
       s.cacheCtrl.tag_array_type_M0,    s.cacheDpath.tag_array_type_M0,
       s.cacheCtrl.tag_array_wben_M0,    s.cacheDpath.tag_array_wben_M0,
-      s.cacheCtrl.cachereq_type_M0,     s.cachereq_type_M0,
-      s.cacheDpath.cachereq_type_M0,    s.cachereq_type_M0,
+      s.cacheCtrl.cachereq_type_M0,     s.cachereq.msg.type_,
+      s.cacheDpath.cachereq_type_M0,    s.cachereq.msg.type_,
       s.cacheCtrl.ctrl_bit_val_wr_M0,   s.cacheDpath.ctrl_bit_val_wr_M0,
       s.cacheCtrl.ctrl_bit_dty_wr_M0,   s.cacheDpath.ctrl_bit_dty_wr_M0,
       s.cacheCtrl.reg_en_M0,            s.cacheDpath.reg_en_M0,

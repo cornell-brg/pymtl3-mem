@@ -1,11 +1,11 @@
 """
 =========================================================================
- BlockingCacheRTL_test.py
+BlockingCacheRTL_test.py
 =========================================================================
 Tests for Pipelined Blocking Cache RTL model 
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 04 November 2019
+Date   : 15 November 2019
 """
 
 import pytest
@@ -19,12 +19,26 @@ from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
 from BlockingCache.test.DmappedTestCases import test_case_table_dmap
 from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
 from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
+<<<<<<< HEAD
 from BlockingCache.test.RandomTestCases  import test_case_table_random
 from BlockingCache.test.RandomTestCases import CacheMsg as RandomCacheMsg
 from BlockingCache.test.RandomTestCases import MemMsg   as RandomMemMsg
+=======
+from pymtl3.passes.yosys import TranslationImportPass
+>>>>>>> 87ee2ac3ac07464a9a63ad71ae417b7c616cc0bf
 
 base_addr = 0x74
 max_cycles = 10000
+
+#-------------------------------------------------------------------------
+# Translate Function for the cache
+#-------------------------------------------------------------------------
+
+def translate(model):
+  # Translate the checksum unit and import it back in using the yosys
+  # backend
+  model.cache.yosys_translate_import = True
+  model = TranslationImportPass(  )( model )
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
@@ -42,7 +56,7 @@ def test_generic( test_params ):
                          BlockingCachePRTL, GenericCacheMsg,
                          GenericMemMsg)
   harness.elaborate()
-  # translate()
+  translate(harness)
   # Load memory before the test
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )
