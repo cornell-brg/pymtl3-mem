@@ -24,7 +24,7 @@ from BlockingCache.test.RandomTestCases import CacheMsg as RandomCacheMsg
 from BlockingCache.test.RandomTestCases import MemMsg   as RandomMemMsg
 
 base_addr = 0x74
-max_cycles = 500
+max_cycles = 10000
 
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
