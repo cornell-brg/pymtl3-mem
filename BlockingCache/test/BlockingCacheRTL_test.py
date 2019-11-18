@@ -37,7 +37,7 @@ def test_generic( test_params ):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, GenericCacheMsg,
-                         GenericMemMsg)
+                         GenericMemMsg, 2)
   harness.elaborate()
   # translate()
   # Load memory before the test
@@ -56,7 +56,7 @@ def test_dmap( test_params ):
                          test_params.stall, test_params.lat,
                          test_params.src, test_params.sink,
                          BlockingCachePRTL, DmapCacheMsg,
-                         DmapMemMsg)
+                         DmapMemMsg, 2)
   harness.elaborate()
   # translate()
   # Load memory before the test

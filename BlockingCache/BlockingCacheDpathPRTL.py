@@ -35,6 +35,7 @@ class BlockingCacheDpathPRTL (Component):
                 BitsTagWben   = "inv",  # Tag array write byte enable
                 BitsDataWben  = "inv",  # Data array write byte enable
                 BitsRdDataMux = "inv",  # Read data mux M2 
+                associativity = 1,      # Number of ways 
   ):
 	
     #---------------------------------------------------------------------

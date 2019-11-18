@@ -24,14 +24,17 @@ from BlockingCache.test.CacheMemory import CacheMemoryCL
 
 from pymtl3.passes.yosys import TranslationImportPass # Translation to Verilog
 from BlockingCache.test.GenericTestCases import test_case_table_generic
-from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
-from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
+from BlockingCache.test.GenericTestCases import CacheMsg   as GenericCacheMsg
+from BlockingCache.test.GenericTestCases import MemMsg     as GenericMemMsg
+from BlockingCache.test.GenericTestCases import cacheSize  as GenericcacheSize
 from BlockingCache.test.DmappedTestCases import test_case_table_dmap
-from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
-from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
+from BlockingCache.test.DmappedTestCases import CacheMsg   as DmapCacheMsg
+from BlockingCache.test.DmappedTestCases import MemMsg     as DmapMemMsg
+from BlockingCache.test.DmappedTestCases import cacheSize  as DmapcacheSize
 from BlockingCache.test.Asso2WayTestCases import test_case_table_asso_2way
-from BlockingCache.test.Asso2WayTestCases import CacheMsg as Asso2CacheMsg
-from BlockingCache.test.Asso2WayTestCases import MemMsg   as Asso2MemMsg
+from BlockingCache.test.Asso2WayTestCases import CacheMsg  as Asso2CacheMsg
+from BlockingCache.test.Asso2WayTestCases import MemMsg    as Asso2MemMsg
+from BlockingCache.test.Asso2WayTestCases import cacheSize as Asso2cacheSize
 
 base_addr = 0x70
 max_cycles = 1000
@@ -43,11 +46,8 @@ max_cycles = 1000
 class TestHarness(Component):
 
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg, MemMsg, 
+                src_delay, sink_delay, cacheSize, CacheModel, CacheMsg, MemMsg, 
                 associativity ):
-
-    
-    cacheSize = 8196 # size in bytes
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
     s.cache = CacheModel(cacheSize, CacheMsg, MemMsg, associativity)
@@ -143,7 +143,7 @@ def test_generic( test_params):
   else:
     mem = None
   setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
-  stall, lat, src, sink )
+  stall, lat, src, sink, 1 )
 
 @pytest.mark.parametrize( **test_case_table_dmap )
 def test_dmap( test_params):
@@ -157,7 +157,7 @@ def test_dmap( test_params):
   else:
     mem = None
   setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
-  stall, lat, src, sink )
+  stall, lat, src, sink, 1 )
 
 @pytest.mark.parametrize( **test_case_table_asso_2way )
 def test_asso2( test_params ):
@@ -171,4 +171,4 @@ def test_asso2( test_params ):
   else:
     mem = None
   setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
-  stall, lat, src, sink, 2   )
+  stall, lat, src, sink, 2 )

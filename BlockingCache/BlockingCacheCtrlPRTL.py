@@ -41,6 +41,7 @@ class BlockingCacheCtrlPRTL ( Component ):
                  twb           = 4,        # Tag array write byte enable bitwidth
                  dwb           = 16,       # Data array write byte enable bitwidth
                  rmx2          = 3,        # Read word mux bitwidth
+                 associativity = 1,        # Number of ways 
   ):
 
     mxsel0 = BitsRdDataMux(0)

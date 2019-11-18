@@ -35,8 +35,8 @@ class BlockingCachePRTL ( Component ):
     obw = MemMsg.obw
     dbw = CacheMsg.dbw
     nbl = nbytes//clw        # number of cache blocks; 8192*8/128 = 512
-    nby = nbl/associativity  # blocks per way; 1
-    idw = clog2(nbl)         # index width; clog2(512) = 9
+    nby = nbl//associativity  # blocks per way; 1
+    idw = clog2(nby)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
     twb = int(abw+7)//8      # Tag array write byte bitwidth
@@ -87,9 +87,10 @@ class BlockingCachePRTL ( Component ):
       s.cachereq_data_M0   = BitsData(s.cachereq.msg.data)
 
     s.cacheDpath = BlockingCacheDpathPRTL(
-      abw, dbw, clw, idw, ofw, tgw, nbl,
+      abw, dbw, clw, idw, ofw, tgw, nby,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux,
+      associativity
     )(
       cachereq_opaque_M0  = s.cachereq_opaque_M0,
       cachereq_type_M0    = s.cachereq_type_M0,
@@ -113,7 +114,8 @@ class BlockingCachePRTL ( Component ):
       dbw, ofw,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux, 
-      twb, dwb, rmx2
+      twb, dwb, rmx2,
+      associativity
     )(
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
