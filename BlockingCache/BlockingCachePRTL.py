@@ -58,6 +58,8 @@ class BlockingCachePRTL ( Component ):
     BitsTagWben   = mk_bits(twb)   # Tag array write byte enable
     BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
     BitsRdDataMux = mk_bits(rmx2)  # Read data mux M2 
+    BitsAssoclog2  = mk_bits(clog2(associativity))
+    BitsAssoc     = mk_bits(associativity)
     
     #--------------------------------------------------------------------------
     # Interface
@@ -75,7 +77,7 @@ class BlockingCachePRTL ( Component ):
     s.cacheDpath = BlockingCacheDpathPRTL(
       abw, dbw, clw, idw, ofw, tgw, nby,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagWben, BitsDataWben, BitsRdDataMux,
+      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2,
       associativity
     )(
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
@@ -99,9 +101,9 @@ class BlockingCachePRTL ( Component ):
     s.cacheCtrl = BlockingCacheCtrlPRTL(
       dbw, ofw,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagWben, BitsDataWben, BitsRdDataMux, 
-      twb, dwb, rmx2,
-      associativity
+      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
+      twb, dwb, rmx2, 
+      associativity,
     )(
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
@@ -120,7 +122,6 @@ class BlockingCachePRTL ( Component ):
     connect_pairs(
       s.cacheCtrl.memresp_mux_sel_M0,   s.cacheDpath.memresp_mux_sel_M0,
       s.cacheCtrl.wdata_mux_sel_M0,     s.cacheDpath.wdata_mux_sel_M0,
-      s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
       s.cacheCtrl.tag_array_type_M0,    s.cacheDpath.tag_array_type_M0,
       s.cacheCtrl.tag_array_wben_M0,    s.cacheDpath.tag_array_wben_M0,
       s.cacheCtrl.cachereq_type_M0,     s.cachereq.msg.type_,
@@ -132,14 +133,9 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
  
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
-      s.cacheCtrl.ctrl_bit_val_rd_M1,   s.cacheDpath.ctrl_bit_val_rd_M1,
-      s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
-      s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
-      s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
       s.cacheCtrl.reg_en_M1,            s.cacheDpath.reg_en_M1,
       s.cacheCtrl.reg_en_MSHR,          s.cacheDpath.reg_en_MSHR,
       s.cacheCtrl.MSHR_type,            s.cacheDpath.MSHR_type,
-      s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
       s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
       s.cacheCtrl.evict_mux_sel_M1,     s.cacheDpath.evict_mux_sel_M1,
@@ -147,26 +143,32 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
       s.cacheCtrl.read_data_mux_sel_M2, s.cacheDpath.read_data_mux_sel_M2,
-      s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
       s.cacheCtrl.cachereq_type_M2,     s.cacheDpath.cachereq_type_M2,
     )
 
+    # Connect ports based on associativity
+    for i in range(associativity):
+      s.cacheCtrl.tag_array_val_M0[i]  //= s.cacheDpath.tag_array_val_M0[i]
+      s.cacheCtrl.data_array_val_M1[i] //= s.cacheDpath.data_array_val_M1[i]
+      s.cacheCtrl.ctrl_bit_val_rd_M1[i]//= s.cacheDpath.ctrl_bit_val_rd_M1[i]
+      s.cacheCtrl.ctrl_bit_dty_rd_M1[i]//= s.cacheDpath.ctrl_bit_dty_rd_M1[i]
+      s.cacheCtrl.tag_match_M1[i]      //= s.cacheDpath.tag_match_M1[i]
+      s.cacheCtrl.offset_M1[i]         //= s.cacheDpath.offset_M1[i]
+      s.cacheCtrl.offset_M2[i]         //= s.cacheDpath.offset_M2[i]
+      
   # Line tracing
   def line_trace( s ):
-    memory_msg = memreq_msg = memresp_msg = ""
+    memreq_msg = memresp_msg = "{:42}".format(" ")
     
     if s.memresp.en:
-      memresp_msg = "<{}<".format(s.memresp.msg.data)
-      memory_msg = memresp_msg
-    elif s.memreq.en:
-      memreq_msg  = ">{}>".format(s.memreq.msg.data)
-      memory_msg = memreq_msg
-    if s.memreq.en and s.memresp.en:
-      memory_msg = "{}{}".format(memresp_msg,memreq_msg)
+      memresp_msg = "{}".format(s.memresp.msg)
+    if s.memreq.en:
+      memreq_msg  = "{}".format(s.memreq.msg)
 
-    msg = "{} {} {}".format(s.cacheCtrl.line_trace(),
-     s.cacheDpath.line_trace(), memory_msg)
-    
+    msg = "{}{} {} {}".format(memresp_msg, s.cacheCtrl.line_trace(),
+     memreq_msg, s.cacheDpath.line_trace())
+    # msg = "{} {}".format(s.cacheCtrl.line_trace(),
+    #  s.cacheDpath.line_trace())
     return msg
 
 

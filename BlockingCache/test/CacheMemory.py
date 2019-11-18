@@ -111,5 +111,6 @@ class CacheMemoryCL( Component ):
 
   def line_trace( s ):
     # msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
-    msg = "<{}<>{}>".format(s.resp,s.req)
+    # msg = "<{}<>{}>".format(s.resp,s.req)
+    msg = ""
     return msg

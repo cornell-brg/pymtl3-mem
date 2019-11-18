@@ -8,12 +8,13 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 15 November 2019
 """
 
-import random
+# import random
 
 from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from BlockingCache.BlockingCacheDpathPRTL import ReplacementPolicy
 
 # Constants
 STATE_GO           = b3(0)
@@ -38,6 +39,8 @@ class BlockingCacheCtrlPRTL ( Component ):
                  BitsTagWben   = "inv",    # Tag array write byte enable
                  BitsDataWben  = "inv",    # Data array write byte enable
                  BitsRdDataMux = "inv",    # Read data mux M2 
+                 BitsAssoclog2 = "inv",    # Bits for associativity
+                 BitsAssoc     = "inv",    # Bits for associativity
                  twb           = 4,        # Tag array write byte enable bitwidth
                  dwb           = 16,       # Data array write byte enable bitwidth
                  rmx2          = 3,        # Read word mux bitwidth
@@ -80,7 +83,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.memresp_mux_sel_M0    = OutPort(Bits1)
     s.addr_mux_sel_M0       = OutPort(Bits2)
     s.wdata_mux_sel_M0      = OutPort(Bits2)
-    s.tag_array_val_M0      = OutPort(Bits1)
+    s.tag_array_val_M0      = [OutPort(Bits1)  for _ in range(associativity)]
     s.tag_array_type_M0     = OutPort(Bits1)
     s.tag_array_wben_M0     = OutPort(BitsTagWben)
     s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
@@ -92,13 +95,13 @@ class BlockingCacheCtrlPRTL ( Component ):
     #--------------------------------------------------------------------------
 
     s.cachereq_type_M1      = InPort(BitsType)
-    s.ctrl_bit_val_rd_M1    = InPort(Bits1)
-    s.ctrl_bit_dty_rd_M1    = InPort(Bits1)
-    s.tag_match_M1          = InPort(Bits1)
-    s.offset_M1             = InPort(BitsOffset)
+    s.ctrl_bit_val_rd_M1    = [InPort(Bits1) for _ in range(associativity)]
+    s.ctrl_bit_dty_rd_M1    = [InPort(Bits1) for _ in range(associativity)]
+    s.tag_match_M1          = [InPort(Bits1) for _ in range(associativity)]
+    s.offset_M1             = [InPort(BitsOffset) for _ in range(associativity)]
 
     s.reg_en_M1             = OutPort(Bits1)
-    s.data_array_val_M1     = OutPort(Bits1)
+    s.data_array_val_M1     = [OutPort(Bits1) for _ in range(associativity)]
     s.data_array_type_M1    = OutPort(Bits1)
     s.data_array_wben_M1    = OutPort(BitsDataWben)
     s.reg_en_MSHR           = OutPort(Bits1)
@@ -109,7 +112,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     #--------------------------------------------------------------------------
 
     s.cachereq_type_M2      = InPort(BitsType)
-    s.offset_M2             = InPort(BitsOffset)
+    s.offset_M2             = [InPort(BitsOffset) for _ in range(associativity)]
     s.reg_en_M2             = OutPort(Bits1)
     s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
     s.read_word_mux_sel_M2  = OutPort(BitsRdDataMux)
@@ -210,7 +213,7 @@ class BlockingCacheCtrlPRTL ( Component ):
         s.is_write_refill_M0 = y
       else:
         s.is_write_refill_M0 = n
-
+    s.tag_array_val_choice_M0 = Wire(Bits1)
     CS_tag_array_wben_M0  = slice( 9, 9 + twb )
     CS_wdata_mux_sel_M0   = slice( 7, 9 )
     CS_addr_mux_sel_M0    = slice( 5, 7 )
@@ -239,14 +242,27 @@ class BlockingCacheCtrlPRTL ( Component ):
           elif (s.cachereq_type_M0 == READ):  s.cs0 = concat( tg_wbenf, b2(0)  , b2(0)  , b1(0)   ,  rd ,  y , n , n )
           elif (s.cachereq_type_M0 == WRITE): s.cs0 = concat( tg_wbenf, b2(0)  , b2(0)  , b1(0)   ,  rd ,  y , n , n )
 
-      s.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
-      s.tag_array_val_M0   = s.cs0[ CS_tag_array_val_M0   ]
-      s.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
-      s.wdata_mux_sel_M0   = s.cs0[ CS_wdata_mux_sel_M0   ]
-      s.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
-      s.addr_mux_sel_M0    = s.cs0[ CS_addr_mux_sel_M0    ]
-      s.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
-      s.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
+      s.tag_array_type_M0      = s.cs0[ CS_tag_array_type_M0  ]
+      s.tag_array_val_choice_M0= s.cs0[ CS_tag_array_val_M0   ]
+      s.tag_array_wben_M0      = s.cs0[ CS_tag_array_wben_M0  ]
+      s.wdata_mux_sel_M0       = s.cs0[ CS_wdata_mux_sel_M0   ]
+      s.memresp_mux_sel_M0     = s.cs0[ CS_memresp_mux_sel_M0 ]
+      s.addr_mux_sel_M0        = s.cs0[ CS_addr_mux_sel_M0    ]
+      s.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
+      s.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
+    
+    @s.update
+    def associativity_logic_M1():
+      if s.val_M0:
+        if s.is_refill_M0:
+                             
+        elif s.is_write_refill_M0:           
+        elif s.is_write_hit_clean_M0:        
+        else:
+          if (s.cachereq_type_M0 == INIT):   
+          elif (s.cachereq_type_M0 == READ): 
+          elif (s.cachereq_type_M0 == WRITE):
+      
 
     #--------------------------------------------------------------------------
     # M1 Stage

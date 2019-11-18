@@ -5,7 +5,7 @@
 Test for Pipelined Blocking Cache FL model
 
 Author : Xiaoyu Yan, Eric Tang
-Date   : 04 November 2019
+Date   : 17 November 2019
 """
 import pytest
 import struct
@@ -45,7 +45,7 @@ max_cycles = 1000
 class TestHarness(Component):
 
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, cacheSize, CacheModel, CacheMsg, MemMsg, 
+                src_delay, sink_delay, CacheModel, cacheSize, CacheMsg, MemMsg, 
                 associativity ):
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
@@ -98,15 +98,15 @@ def run_sim(th, max_cycles):
   th.tick()
   th.tick()
 
-def setup_tb(msgs, mem, CacheModel, CacheMsg, MemMsg, stall, lat, src, 
-sink, asso = 1):
+def setup_tb(msgs, mem, CacheModel, cacheSize, CacheMsg, 
+MemMsg, stall, lat, src, sink, asso = 1):
   
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          stall, lat,
                          src, sink,
-                         BlockingCacheFL, GenericCacheMsg,
-                         GenericMemMsg, asso)
+                         CacheModel, cacheSize, 
+                         CacheMsg, MemMsg, asso)
   th.elaborate()
   # Load memory before the test
   if mem != None:
@@ -125,7 +125,8 @@ def test_generic( test_params):
     mem = test_params.mem_data_func( base_addr )
   else:
     mem = None
-  setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
+  setup_tb( msg, mem, BlockingCacheFL, GenericcacheSize, 
+  GenericCacheMsg, GenericMemMsg, 
   stall, lat, src, sink, 1 )
 
 @pytest.mark.parametrize( **test_case_table_dmap )
@@ -139,7 +140,8 @@ def test_dmap( test_params):
     mem = test_params.mem_data_func( base_addr )
   else:
     mem = None
-  setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
+  setup_tb( msg, mem, BlockingCacheFL, DmapcacheSize, 
+  GenericCacheMsg, GenericMemMsg, 
   stall, lat, src, sink, 1 )
 
 @pytest.mark.parametrize( **test_case_table_asso_2way )
@@ -153,5 +155,6 @@ def test_asso2( test_params ):
     mem = test_params.mem_data_func( base_addr )
   else:
     mem = None
-  setup_tb( msg, mem, BlockingCacheFL, GenericCacheMsg, GenericMemMsg, 
+  setup_tb( msg, mem, BlockingCacheFL, Asso2cacheSize, 
+  GenericCacheMsg, GenericMemMsg, 
   stall, lat, src, sink, 2 )
