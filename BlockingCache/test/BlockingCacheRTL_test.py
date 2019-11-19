@@ -21,7 +21,7 @@ from BlockingCache.test.DmappedTestCases import test_case_table_dmap
 from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
 from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
 from BlockingCache.test.DmappedTestCases import cacheSize  as DmapcacheSize
-from BlockingCache.test.RandomTestCases  import test_case_table_random
+from BlockingCache.test.RandomTestCases  import test_case_table_random, test_case_table_random_lat
 from BlockingCache.test.RandomTestCases import CacheMsg  as RandomCacheMsg
 from BlockingCache.test.RandomTestCases import MemMsg    as RandomMemMsg
 from BlockingCache.test.RandomTestCases import cacheSize as RandomcacheSize
@@ -46,19 +46,16 @@ def translate(model):
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params ):
-  stall = test_params.stall
-  lat   = test_params.lat
-  src   = test_params.src
-  sink  = test_params.sink
-  
-  msg = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( base_addr )
-  else:
+    mem = test_params.mem_data_func(base_addr)
+  else: 
     mem = None
-  setup_tb( msg, mem, BlockingCachePRTL, GenericcacheSize, 
-  GenericCacheMsg, GenericMemMsg, 
-  stall, lat, src, sink, 1 )
+  setup_tb( test_params.msg_func( base_addr ), 
+  mem, BlockingCachePRTL, 
+  GenericcacheSize, GenericCacheMsg, GenericMemMsg, 
+  test_params.stall, test_params.lat, test_params.src, 
+  test_params.sink, 1 )
+
 
 #-------------------------------------------------------------------------
 # Direct Mapped tests
@@ -66,18 +63,15 @@ def test_generic( test_params ):
 
 @pytest.mark.parametrize( **test_case_table_dmap )
 def test_dmap( test_params ):
-  stall = test_params.stall
-  lat   = test_params.lat
-  src   = test_params.src
-  sink  = test_params.sink
-  msg = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( base_addr )
-  else:
+    mem = test_params.mem_data_func(base_addr)
+  else: 
     mem = None
-  setup_tb( msg, mem, BlockingCachePRTL, DmapcacheSize, 
-  DmapCacheMsg, DmapMemMsg, 
-  stall, lat, src, sink, 1 )
+  setup_tb( test_params.msg_func( base_addr ), 
+  mem, BlockingCachePRTL, 
+  DmapcacheSize, DmapCacheMsg, DmapMemMsg, 
+  test_params.stall, test_params.lat, test_params.src, 
+  test_params.sink, 1 )
 
 #-------------------------------------------------------------------------
 # Random Tests
@@ -85,15 +79,24 @@ def test_dmap( test_params ):
 
 @pytest.mark.parametrize( **test_case_table_random )
 def test_random( test_params ):
-  stall = test_params.stall
-  lat   = test_params.lat
-  src   = test_params.src
-  sink  = test_params.sink
-  msg = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( base_addr )
-  else:
+    mem = test_params.mem_data_func(base_addr)
+  else: 
     mem = None
-  setup_tb( msg, mem, BlockingCachePRTL, RandomcacheSize, 
-  RandomCacheMsg, RandomMemMsg, 
-  stall, lat, src, sink, 1 )
+  setup_tb( test_params.msg_func( base_addr ), 
+  mem, BlockingCachePRTL, 
+  RandomcacheSize, RandomCacheMsg, RandomMemMsg, 
+  test_params.stall, test_params.lat, test_params.src, 
+  test_params.sink, 1 )
+
+@pytest.mark.parametrize( **test_case_table_random_lat )
+def test_random( test_params ):
+  if test_params.mem_data_func != None:
+    mem = test_params.mem_data_func(base_addr)
+  else: 
+    mem = None
+  setup_tb( test_params.msg_func( base_addr ), 
+  mem, BlockingCachePRTL, 
+  RandomcacheSize, RandomCacheMsg, RandomMemMsg, 
+  test_params.stall, test_params.lat, test_params.src, 
+  test_params.sink, 1 )
