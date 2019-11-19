@@ -43,9 +43,6 @@ def translate(model):
 #-------------------------------------------------------------------------
 # Generic tests for both baseline and alternative design
 #-------------------------------------------------------------------------
-#-------------------------------------------------------------------------
-# Generic tests for both baseline and alternative design
-#-------------------------------------------------------------------------
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params ):
@@ -63,6 +60,10 @@ def test_generic( test_params ):
   GenericCacheMsg, GenericMemMsg, 
   stall, lat, src, sink, 1 )
 
+#-------------------------------------------------------------------------
+# Direct Mapped tests
+#-------------------------------------------------------------------------
+
 @pytest.mark.parametrize( **test_case_table_dmap )
 def test_dmap( test_params ):
   stall = test_params.stall
@@ -77,6 +78,10 @@ def test_dmap( test_params ):
   setup_tb( msg, mem, BlockingCachePRTL, DmapcacheSize, 
   DmapCacheMsg, DmapMemMsg, 
   stall, lat, src, sink, 1 )
+
+#-------------------------------------------------------------------------
+# Random Tests
+#-------------------------------------------------------------------------
 
 @pytest.mark.parametrize( **test_case_table_random )
 def test_random( test_params ):
