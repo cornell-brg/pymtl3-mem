@@ -21,6 +21,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
+cacheSize = 4198
 
 #-------------------------------------------------------------------------
 # make messages
@@ -130,6 +131,13 @@ test_case_table_dmap = mk_test_case_table([
   [ "read_evict",            read_evict,            evict_mem,            0.0,  1,  0,  0    ],
   [ "write_evict",           write_evict,           evict_mem,            0.0,  1,  0,  0    ],
   [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem, 0.0,  1,  0,  0    ],
-  [ "dmap_stall",            dir_mapped_long0_msg,  dir_mapped_long0_mem, 1.0,  5,  0,  0    ],
+])
+
+test_case_table_dmap_lat = mk_test_case_table([
+  ( "                        msg_func               mem_data_func         stall lat src sink"),
+  [ "read_evict",            read_evict,            evict_mem,            0.5,  1,  1,  1    ],
+  [ "write_evict",           write_evict,           evict_mem,            0.5,  1,  1,  1    ],
+  [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem, 0.5,  1,  1,  1    ],
+  [ "dmap_stall",            dir_mapped_long0_msg,  dir_mapped_long0_mem, 1.0,  5,  1,  1    ],
 ])
 

@@ -3,9 +3,8 @@
  BlockingCacheFL_test.py
 =========================================================================
 Test for Pipelined Blocking Cache FL model
-
 Author : Xiaoyu Yan, Eric Tang
-Date   : 04 November 2019
+Date   : 17 November 2019
 """
 import pytest
 import struct
@@ -23,11 +22,13 @@ from BlockingCache.BlockingCacheFL import BlockingCacheFL
 from BlockingCache.test.CacheMemory import CacheMemoryCL
 
 from BlockingCache.test.GenericTestCases import test_case_table_generic
-from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
-from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
+from BlockingCache.test.GenericTestCases import CacheMsg   as GenericCacheMsg
+from BlockingCache.test.GenericTestCases import MemMsg     as GenericMemMsg
+from BlockingCache.test.GenericTestCases import cacheSize  as GenericcacheSize
 from BlockingCache.test.DmappedTestCases import test_case_table_dmap
-from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
-from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
+from BlockingCache.test.DmappedTestCases import CacheMsg   as DmapCacheMsg
+from BlockingCache.test.DmappedTestCases import MemMsg     as DmapMemMsg
+from BlockingCache.test.DmappedTestCases import cacheSize  as DmapcacheSize
 
 base_addr = 0x70
 max_cycles = 1000
@@ -39,13 +40,11 @@ max_cycles = 1000
 class TestHarness(Component):
 
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg, MemMsg ):
-
-    
-    cacheSize = 8196 # size in bytes
+                src_delay, sink_delay, CacheModel, cacheSize, CacheMsg, MemMsg, 
+                associativity ):
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
-    s.cache = CacheModel(cacheSize, CacheMsg, MemMsg)
+    s.cache = CacheModel(cacheSize, CacheMsg, MemMsg, associativity)
     s.mem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
@@ -94,42 +93,49 @@ def run_sim(th, max_cycles):
   th.tick()
   th.tick()
 
-
+def setup_tb(msgs, mem, CacheModel, cacheSize, CacheMsg, 
+MemMsg, stall, lat, src, sink, asso = 1):
+  
+  # Instantiate testharness
+  th = TestHarness( msgs[::2], msgs[1::2],
+                         stall, lat,
+                         src, sink,
+                         CacheModel, cacheSize, 
+                         CacheMsg, MemMsg, asso)
+  th.elaborate()
+  # Load memory before the test
+  if mem != None:
+    th.load( mem[::2], mem[1::2] )
+  # Run the test
+  run_sim( th, max_cycles )
 
 @pytest.mark.parametrize( **test_case_table_generic )
 def test_generic( test_params):
-  msgs = test_params.msg_func( base_addr )
+  stall = test_params.stall
+  lat   = test_params.lat
+  src   = test_params.src
+  sink  = test_params.sink
+  msg = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( base_addr )
-  # Instantiate testharness
-  th = TestHarness( msgs[::2], msgs[1::2],
-                         test_params.stall, test_params.lat,
-                         test_params.src, test_params.sink,
-                         BlockingCacheFL, GenericCacheMsg,
-                         GenericMemMsg)
-  th.elaborate()
-  # translate()
-  # Load memory before the test
-  if test_params.mem_data_func != None:
-    th.load( mem[::2], mem[1::2] )
-  # Run the test
-  run_sim( th, max_cycles )
+  else:
+    mem = None
+  setup_tb( msg, mem, BlockingCacheFL, GenericcacheSize, 
+  GenericCacheMsg, GenericMemMsg, 
+  stall, lat, src, sink, 1 )
 
 @pytest.mark.parametrize( **test_case_table_dmap )
 def test_dmap( test_params):
-  msgs = test_params.msg_func( base_addr )
+  stall = test_params.stall
+  lat   = test_params.lat
+  src   = test_params.src
+  sink  = test_params.sink
+  msg = test_params.msg_func( base_addr )
   if test_params.mem_data_func != None:
     mem = test_params.mem_data_func( base_addr )
-  # Instantiate testharness
-  th = TestHarness( msgs[::2], msgs[1::2],
-                         test_params.stall, test_params.lat,
-                         test_params.src, test_params.sink,
-                         BlockingCacheFL, DmapCacheMsg,
-                         DmapMemMsg)
-  th.elaborate()
-  # translate()
-  # Load memory before the test
-  if test_params.mem_data_func != None:
-    th.load( mem[::2], mem[1::2] )
-  # Run the test
-  run_sim( th, max_cycles )
+  else:
+    mem = None
+  setup_tb( msg, mem, BlockingCacheFL, DmapcacheSize, 
+  DmapCacheMsg, DmapMemMsg, 
+  stall, lat, src, sink, 1 )
+

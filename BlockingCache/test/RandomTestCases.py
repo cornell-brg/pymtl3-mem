@@ -21,6 +21,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
+cacheSize = 4198
 
 #-------------------------------------------------------------------------
 # make messages
@@ -259,6 +260,18 @@ def l():
 test_case_table_random = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
   [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
+  [ "read_rand_data_stall",  read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
+  [ "read_rand_data_lat",    read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
+  [ "read_rand_stall_lat",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
+  [ "rand_src_sink_delay",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
+  [ "rand_requests",         rand_requests_dmap,    rand_requests_mem,   0.0,  1,   0,   0  ],
+  [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,   0,   0  ],
+  [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
+])
+
+test_case_table_random_stall = mk_test_case_table([
+  ( "                        msg_func               mem_data_func        stall lat src sink"),
+  [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,   0,   0  ],
   [ "read_rand_data_stall",  read_rand_data_dmap,   read_rand_data_mem,  r(),  1,   0,   0  ],
   [ "read_rand_data_lat",    read_rand_data_dmap,   read_rand_data_mem,  0.0,  l(), 0,   0  ],
   [ "read_rand_stall_lat",   read_rand_data_dmap,   read_rand_data_mem,  r(),  l(), 0,   0  ],
@@ -267,4 +280,3 @@ test_case_table_random = mk_test_case_table([
   [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,   0,   0  ],
   [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
 ])
-
