@@ -253,6 +253,29 @@ def l():
   '''
   return random.randrange(10)+1
 
+
+def rand_test(n):
+  '''
+  Generates fully random sequence of transactions. Use FL model to find
+  corresponding resp msgs
+
+  :param n: length of test
+
+  :returns: List of length 2n transactions
+  '''
+  data  = generate_data(n)
+  types = generate_type(n)
+  addr  = generate_address(n)
+  
+	msgs = ['None'] * (2 * n)
+  for i in range(n):
+    if types[i] == 'wr':
+      msgs[2*i-1] = req(types[i], i, addr[i], 0, data[i])
+    else:
+      msgs[2*i-1] = req(types[i], i, addr[i], 0, 0)
+
+  return msgs
+
 #---------------------------------------------------------------------------------------------
 # Test table for direct mapped cache tests
 #---------------------------------------------------------------------------------------------
