@@ -61,8 +61,6 @@ class TestHarness(Component):
     connect( s.cache.memreq, s.cache2mem.recv )
     connect( s.mem.ifc[0].req, s.cache2mem.send )
 
-
-
   def load( s, addrs, data_ints ):
     for addr, data_int in zip( addrs, data_ints ):
       data_bytes_a = bytearray()
