@@ -33,7 +33,7 @@ class RandomTestHarness( Component ):
     s.DUT = DUT(cacheSize, CacheMsg, MemMsg, associativity)
     s.REF = REF(cacheSize, CacheMsg, MemMsg, associativity)
     s.DUTmem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
-    s.REFmem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
+    s.REFmem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], 1) # Use our own modified mem
     s.DUTcache2mem = RecvRTL2SendCL(MemMsg.Req)
     s.DUTmem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.REFcache2mem = RecvRTL2SendCL(MemMsg.Req)
@@ -93,7 +93,7 @@ CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
 cacheSize = 1024
 
-def rand_transaction_gen(num):
+def rand_transaction_gen(size):
   
 
 def test_random_sweep():

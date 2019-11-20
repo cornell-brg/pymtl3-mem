@@ -57,13 +57,12 @@ def generate_type(n):
 		requestSequence.append(requestTypes[idx[i]])	
 	return requestSequence
 
-def generate_address(n):
-	randAddr = []
-	tagArray = []
-	tag = (random.sample(range(4095),n))
-	for i in range(n):
-		idx = random.randint(0,15)*16 + random.randint(0, 3)*4
-		randAddr.append(tag[i]*256+idx)
+def generate_address(n, addr_min=0, addr_max=0xffff0):
+	randAddr = [random.randint(addr_min,addr_max) for i in range(n)]
+	# tag = (random.sample(range(4095),n))
+	# for i in range(n):
+	# 	idx = random.randint(0,15)*16 + random.randint(0, 3)*4
+	# 	randAddr.append(tag[i]*256+idx)
 
 	return randAddr
 
@@ -254,20 +253,21 @@ def l():
   return random.randrange(10)+1
 
 
-def rand_test(n):
+def rand_test(n, addr_min, addr_max):
   '''
   Generates fully random sequence of transactions. Use FL model to find
   corresponding resp msgs
 
   :param n: length of test
+  :param addr_min: min addr for address range
+  :param addr_max: max addr for address range
 
   :returns: List of length 2n transactions
   '''
   data  = generate_data(n)
   types = generate_type(n)
-  addr  = generate_address(n)
-  
-	msgs = ['None'] * (2 * n)
+  addr  = generate_address(n, addr_min, addr_max)
+  msgs = [0] * (2 * n)
   for i in range(n):
     if types[i] == 'wr':
       msgs[2*i-1] = req(types[i], i, addr[i], 0, data[i])
