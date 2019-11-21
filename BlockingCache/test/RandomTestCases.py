@@ -311,6 +311,26 @@ def gen_fully_random_table(max_size=1000):
 
   return table
 
+#-------------------------------------------------------------------------
+# Test: Randomly read or write random data from random low addresses
+#-------------------------------------------------------------------------
+def rand_rw_alladdr( base_addr, size, nways, nbanks, linesize, mem=None ):
+  random.seed(0xbaadf00d)
+  model = ModelCache(size, nways, nbanks, linesize, mem)
+  for i in xrange(RAND_LEN):
+    addr = random.randint(0x00000000, 0x00000400)
+    addr = addr & Bits(32, 0xfffffffc) # Align the address
+    if random.randint(0,1):
+      # Write something
+      value = random.getrandbits(32)
+      model.write(addr, value)
+    else:
+      # Read something
+      model.read(addr)
+  return model.get_transactions()
+
+
+
 #---------------------------------------------------------------------------------------------
 # Test table for random direct mapped cache tests
 #---------------------------------------------------------------------------------------------
@@ -335,5 +355,5 @@ test_case_table_random_lat = mk_test_case_table([
   [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
 ])
 
-test_case_table_fully_random = gen_fully_random_table()
+# test_case_table_fully_random = gen_fully_random_table()
 
