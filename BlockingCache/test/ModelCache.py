@@ -155,6 +155,7 @@ class ModelCache:
     # The transactions list contains the requests and responses for
     # the stream of read/write calls on this model
     self.transactions = []
+    self.opaque = 0
 
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
@@ -172,9 +173,10 @@ class ModelCache:
     else:
       value = Bits(32, 0)
 
-    opaque = random.randint(0,255)
-    self.transactions.append(req('rd', opaque, addr, 0, 0))
-    self.transactions.append(resp('rd', opaque, hit, 0, value))
+    # opaque = random.randint(0,255)
+    self.opaque += 1
+    self.transactions.append(req('rd', self.opaque, addr, 0, 0))
+    self.transactions.append(resp('rd', self.opaque, hit, 0, value))
 
   def write(self, addr, value):
     value = Bits(32, value)
@@ -182,9 +184,10 @@ class ModelCache:
 
     self.mem[addr.int()] = value
 
-    opaque = random.randint(0,255)
-    self.transactions.append(req('wr', opaque, addr, 0, value))
-    self.transactions.append(resp('wr', opaque, hit, 0, 0))
+    # opaque = random.randint(0,255)
+    self.opaque += 1
+    self.transactions.append(req('wr', self.opaque, addr, 0, value))
+    self.transactions.append(resp('wr', self.opaque, hit, 0, 0))
     
   def get_transactions(self):
     return self.transactions
