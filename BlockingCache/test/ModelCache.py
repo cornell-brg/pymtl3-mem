@@ -8,6 +8,38 @@ Author: Eric Tang (et396), Xiaoyu Yan (xy97)
 Date:   20 November 2019
 '''
 
+import math
+import random
+
+from pymtl3 import *
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
+from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+
+obw  = 8   # Short name for opaque bitwidth
+abw  = 32  # Short name for addr bitwidth
+dbw  = 32  # Short name for data bitwidth
+clw  = 128
+CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+MemMsg = ReqRespMsgTypes(obw, abw, clw)
+cacheSize = 4198
+
+#-------------------------------------------------------------------------
+# make messages
+#-------------------------------------------------------------------------
+
+def req( type_, opaque, addr, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return CacheMsg.Req( type_, opaque, addr, len, data )
+
+def resp( type_, opaque, test, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  return CacheMsg.Resp( type_, opaque, test, len, data )
+
 #----------------------------------------------------------------------
 # Enhanced random tests
 #----------------------------------------------------------------------
@@ -45,16 +77,16 @@ class HitMissTracker:
     # a direct-mapped cache
     self.line = []
     self.valid = []
-    for n in xrange(self.nlines):
-      self.line.insert(n, [Bits(32, 0) for x in xrange(nways)])
-      self.valid.insert(n, [False for x in xrange(nways)])
+    for n in range(self.nlines):
+      self.line.insert(n, [Bits(32, 0) for x in range(nways)])
+      self.valid.insert(n, [False for x in range(nways)])
 
     # Initialize the lru array
     # Implemented as an array for each set index
     # lru[idx][0] is the most recently used
     # lru[idx][-1] is the least recently used
     self.lru = []
-    for n in xrange(self.nsets):
+    for n in range(self.nsets):
       self.lru.insert(n, [x for x in range(nways)])
 
   # Generate the components of an address
