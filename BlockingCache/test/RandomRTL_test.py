@@ -17,9 +17,12 @@ from BlockingCache.test.CacheMemory import CacheMemoryCL
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 
 from BlockingCache.test.BlockingCacheFL_test import run_sim, setup_tb
-
+from BlockingCache.test.RandomTestSink import RandomTestSink
+from .RandomTestCases import rand_test
+from .GenericTestCases import read_hit_1word_clean
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
+from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
 
 
 class RandomTestHarness( Component ):
@@ -29,7 +32,8 @@ class RandomTestHarness( Component ):
   """
   def construct(s, src_msgs, stall_prob, latency, src_delay, sink_delay,
   DUT, REF, cacheSize, cacheMsg, MemMsg, associativity):
-    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
+    s.DUTsrc   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
+    s.REFsrc   = TestSrcRTL(CacheMsg.Req, src_msgs, 0)
     s.DUT = DUT(cacheSize, CacheMsg, MemMsg, associativity)
     s.REF = REF(cacheSize, CacheMsg, MemMsg, associativity)
     s.DUTmem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
@@ -38,12 +42,12 @@ class RandomTestHarness( Component ):
     s.DUTmem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.REFcache2mem = RecvRTL2SendCL(MemMsg.Req)
     s.REFmem2cache = RecvCL2SendRTL(MemMsg.Resp)
-    s.sink = CacheTestSinkRTL(CacheMsg.Resp, sink_delay)
+    s.sink = RandomTestSink(CacheMsg.Resp, sink_delay, 20)
 
-    s.src.send  //= s.DUT.cachereq
-    s.src.send  //= s.REF.cachereq
-    s.sink.recv //= s.DUT.cacheresp
-    s.sink.recv //= s.REF.cacheresp
+    s.DUTsrc.send  //= s.DUT.cachereq
+    s.REFsrc.send  //= s.REF.cachereq
+    s.sink.DUT_recv //= s.DUT.cacheresp
+    s.sink.REF_recv //= s.REF.cacheresp
 
     s.DUTmem.ifc[0].resp //= s.DUTmem2cache.recv
     s.DUT.memresp         //= s.DUTmem2cache.send
@@ -62,11 +66,11 @@ class RandomTestHarness( Component ):
       s.DUTmem.write_mem( addr, data_bytes_a )
       s.REFmem.write_mem( addr, data_bytes_a )
   def done( s ):
-    return s.src.done() and s.sink.done()
+    return s.DUTsrc.done() and s.REFsrc.done() and s.sink.done()
 
   def line_trace( s ):
-    return s.src.line_trace() + " " + s.cache.line_trace() + " " \
-           + s.DUTmem.line_trace()  + " " + s.sink.line_trace()
+    return s.DUTsrc.line_trace() + " " + \
+      s.REFsrc.line_trace() + " " + s.sink.line_trace()
 
 #----------------------------------------------------------------------
 # Run the simulation
@@ -93,8 +97,12 @@ CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
 cacheSize = 1024
 
-def rand_transaction_gen(size):
-  
 
 def test_random_sweep():
-  tb = RandomTestHarness()
+  # generated_tests = rand_test(20,0x0,0x2000)
+  generated_tests = read_hit_1word_clean()
+  # print (generated_tests)
+  th = RandomTestHarness(generated_tests[::2],0,1,0,0,BlockingCachePRTL,
+  BlockingCacheFL,cacheSize,CacheMsg, MemMsg,1)
+  run_sim(th, 200)
+

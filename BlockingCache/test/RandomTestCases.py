@@ -57,8 +57,8 @@ def generate_type(n):
 		requestSequence.append(requestTypes[idx[i]])	
 	return requestSequence
 
-def generate_address(n, addr_min=0, addr_max=0xffff0):
-	randAddr = [random.randint(addr_min,addr_max) for i in range(n)]
+def generate_address(n, addr_min=0, addr_max=0xffff):
+	randAddr = [random.randint(addr_min,addr_max)*4 for i in range(n)]
 	# tag = (random.sample(range(4095),n))
 	# for i in range(n):
 	# 	idx = random.randint(0,15)*16 + random.randint(0, 3)*4
@@ -267,13 +267,14 @@ def rand_test(n, addr_min, addr_max):
   data  = generate_data(n)
   types = generate_type(n)
   addr  = generate_address(n, addr_min, addr_max)
-  msgs = [0] * (2 * n)
+  msgs = [0] * ( n)
   for i in range(n):
     if types[i] == 'wr':
-      msgs[2*i-1] = req(types[i], i, addr[i], 0, data[i])
+      msgs[i] = req(types[i], i, addr[i], 0, data[i])
     else:
-      msgs[2*i-1] = req(types[i], i, addr[i], 0, 0)
+      msgs[i] = req(types[i], i, addr[i], 0, 0)
 
+  # print (msgs)
   return msgs
 
 #---------------------------------------------------------------------------------------------
