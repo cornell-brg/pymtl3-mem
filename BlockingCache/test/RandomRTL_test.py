@@ -42,7 +42,7 @@ class RandomTestHarness( Component ):
     s.DUTmem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.REFcache2mem = RecvRTL2SendCL(MemMsg.Req)
     s.REFmem2cache = RecvCL2SendRTL(MemMsg.Resp)
-    s.sink = RandomTestSink(CacheMsg.Resp, sink_delay, 20)
+    s.sink = RandomTestSink(CacheMsg.Resp, sink_delay, 2)
 
     s.DUTsrc.send  //= s.DUT.cachereq
     s.REFsrc.send  //= s.REF.cachereq
@@ -125,5 +125,5 @@ def test_random_sweep():
   # print (generated_tests)
   th = RandomTestHarness(generated_tests[::2],0,1,0,0,BlockingCachePRTL,
   BlockingCacheFL,cacheSize,CacheMsg, MemMsg,1)
-  run_sim(th, 200)
+  run_sim(th, 20)
 

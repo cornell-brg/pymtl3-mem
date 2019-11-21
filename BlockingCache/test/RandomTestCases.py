@@ -335,5 +335,5 @@ test_case_table_random_lat = mk_test_case_table([
   [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
 ])
 
-test_case_table_fully_random = gen_fully_random_table()
+# test_case_table_fully_random = gen_fully_random_table()
 

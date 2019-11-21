@@ -126,6 +126,7 @@ class BlockingCacheFL( Component ):
 
     @s.update
     def tag_check_logic():
+      s.cacheresp.msg.test = b2(0)
       if s.reset:
         for i in range(nbl):
           s.tag_array[i] = BitsAddr(0)
