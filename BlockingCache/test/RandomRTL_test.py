@@ -99,7 +99,7 @@ cacheSize = 1024
 
 def setup_tb(msgs, mem, CacheModel, cacheSize, CacheMsg, 
                 MemMsg, stall, lat, src, sink, asso = 1):
-  
+                  
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          stall, lat,

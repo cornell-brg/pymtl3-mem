@@ -11,9 +11,12 @@ Date   : 16 November 2019
 import pytest
 import struct
 import random
+
+from pymtl3 import *
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+from BlockingCache.test.ModelCache import ModelCache
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -21,7 +24,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
-cacheSize = 4198
+cacheSize = 4096
 
 #-------------------------------------------------------------------------
 # make messages
@@ -277,7 +280,7 @@ def rand_test(n, addr_min=0, addr_max=0xffff0):
   # print (msgs)
   return msgs
 
-def rand_mem(addr_min=0, addr_max=0xffff0):
+def rand_mem(addr_min=0, addr_max=0xfff):
   '''
   Randomly generate start state for memory
 
@@ -289,9 +292,8 @@ def rand_mem(addr_min=0, addr_max=0xffff0):
   while curr_addr <= addr_max:
     d = generate_data(1)
     mem.append(curr_addr)
-    mem.append(d)
+    mem.append(d[0])
     curr_addr += 4 
-
   return mem
 
 def gen_fully_random_table(max_size=1000):
@@ -310,6 +312,52 @@ def gen_fully_random_table(max_size=1000):
     table.append([test_name, tests, mem, r(), l(), l(), l()])
 
   return table
+
+#-------------------------------------------------------------------------
+# Test: Randomly read or write random data from random low addresses
+#-------------------------------------------------------------------------
+def rand_rw_alladdr( mem=None ):
+  
+  model = ModelCache(cacheSize, 1, 1, clw, mem)
+
+  RAND_LEN = random.randint(1,20)
+
+  data  = generate_data(RAND_LEN)
+  types = generate_type(RAND_LEN)
+  addr  = generate_address(RAND_LEN)
+  for i in range(RAND_LEN):
+    if types[i] == 'wr':
+      # Write something
+      model.write(addr[i] & Bits32(0xfffffffc), data[i])
+    else:
+      # Read something
+      model.read(addr[i] & Bits32(0xfffffffc))
+
+  return model.get_transactions()
+
+#-------------------------------------------------------------------------
+# Test: Randomly read or write random data from random low addresses
+#-------------------------------------------------------------------------
+def rand_small_addr_range( mem=None ):
+  
+  model = ModelCache(cacheSize, 1, 1, clw, mem)
+
+  RAND_LEN = random.randint(1,20)
+
+  data  = generate_data(RAND_LEN)
+  types = generate_type(RAND_LEN)
+  addr  = generate_address(RAND_LEN,0x10,0x100)
+  for i in range(RAND_LEN):
+    if types[i] == 'wr':
+      # Write something
+      model.write(addr[i] & Bits32(0xfffffffc), data[i])
+    else:
+      # Read something
+      model.read(addr[i] & Bits32(0xfffffffc))
+
+  return model.get_transactions()
+
+
 
 #---------------------------------------------------------------------------------------------
 # Test table for random direct mapped cache tests
@@ -332,8 +380,13 @@ test_case_table_random_lat = mk_test_case_table([
   [ "rand_src_sink_delay",   read_rand_data_dmap,   read_rand_data_mem,  r(),  l(), l(), l()],
   [ "rand_requests",         rand_requests_dmap,    rand_requests_mem,   0.0,  1,   0,   0  ],
   [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,   0,   0  ],
-  [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
+  [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ],
 ])
 
-# test_case_table_fully_random = gen_fully_random_table()
+test_case_table_enhanced_random = mk_test_case_table([
+  ( "                        msg_func               mem_data_func        stall lat src sink"),
+  [ "completely_random",     rand_rw_alladdr,       rand_mem,            0.0,  1,   0,  0   ],
+  [ "completely_random",     rand_rw_alladdr,       rand_mem,            r(),  l(), l(), l()],
+  [ "rand_small_addr_range",     rand_small_addr_range, rand_mem,            0.0,  1,   0,  0],
+])
 
