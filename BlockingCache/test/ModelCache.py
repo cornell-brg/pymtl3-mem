@@ -60,7 +60,7 @@ class HitMissTracker:
 
     # Compute how the address is sliced
     self.offset_start = 0
-    self.offset_end = self.offset_start + int(math.log(linesize, 2))
+    self.offset_end = self.offset_start + int(math.log(linesize//8, 2))
     self.bank_start = self.offset_end
     if nbanks > 0:
       self.bank_end = self.bank_start + int(math.log(nbanks, 2))
@@ -71,6 +71,7 @@ class HitMissTracker:
     self.tag_start = self.idx_end
     self.tag_end = 32
 
+    print(self.offset_start,self.bank_start,self.idx_start,self.tag_start)
     # Initialize the tag and valid array
     # Both arrays are of the form line[idx][way]
     # Note that line[idx] is a one-element array for

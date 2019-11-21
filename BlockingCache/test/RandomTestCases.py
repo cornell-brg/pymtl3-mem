@@ -24,7 +24,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
-cacheSize = 4096
+cacheSize = 1024
 
 #-------------------------------------------------------------------------
 # make messages
@@ -340,7 +340,7 @@ def rand_rw_alladdr( mem=None ):
 #-------------------------------------------------------------------------
 def rand_small_addr_range( mem=None ):
   
-  model = ModelCache(cacheSize, 1, 1, clw, mem)
+  model = ModelCache(cacheSize, 1, 0, clw, mem)
 
   RAND_LEN = random.randint(1,20)
 
