@@ -24,7 +24,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
-cacheSize = 1024
+cacheSize = 512
 
 #-------------------------------------------------------------------------
 # make messages
@@ -342,11 +342,11 @@ def rand_small_addr_range( mem=None ):
   
   model = ModelCache(cacheSize, 1, 0, clw, mem)
 
-  RAND_LEN = random.randint(1,20)
+  RAND_LEN = 50#random.randint(30,30)
 
   data  = generate_data(RAND_LEN)
   types = generate_type(RAND_LEN)
-  addr  = generate_address(RAND_LEN,0x10,0x100)
+  addr  = generate_address(RAND_LEN,0x00,0x20)
   for i in range(RAND_LEN):
     if types[i] == 'wr':
       # Write something
@@ -356,8 +356,26 @@ def rand_small_addr_range( mem=None ):
       model.read(addr[i] & Bits32(0xfffffffc))
 
   return model.get_transactions()
+#-------------------------------------------------------------------------
+# Test: Randomly read or write random data from random low addresses
+#-------------------------------------------------------------------------
+def rand_bug_inject( mem, addr_min, addr_max ):
+  model = ModelCache(cacheSize, 1, 0, clw, mem)
 
+  RAND_LEN = 20#random.randint(30,30)
 
+  data  = generate_data(RAND_LEN)
+  types = generate_type(RAND_LEN)
+  addr  = generate_address(RAND_LEN,addr_min,addr_max)
+  for i in range(RAND_LEN):
+    if types[i] == 'wr':
+      # Write something
+      model.write(addr[i] & Bits32(0xfffffffc), data[i])
+    else:
+      # Read something
+      model.read(addr[i] & Bits32(0xfffffffc))
+
+  return model.get_transactions()
 
 #---------------------------------------------------------------------------------------------
 # Test table for random direct mapped cache tests
@@ -388,5 +406,6 @@ test_case_table_enhanced_random = mk_test_case_table([
   [ "completely_random",     rand_rw_alladdr,       rand_mem,            0.0,  1,   0,  0   ],
   [ "completely_random",     rand_rw_alladdr,       rand_mem,            r(),  l(), l(), l()],
   [ "rand_small_addr_range",     rand_small_addr_range, rand_mem,            0.0,  1,   0,  0],
+  [ "rand_bug_inject",     rand_bug_inject, rand_mem,            0.0,  1,   0,  0],
 ])
 

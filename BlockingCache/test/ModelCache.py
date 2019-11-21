@@ -71,7 +71,7 @@ class HitMissTracker:
     self.tag_start = self.idx_end
     self.tag_end = 32
 
-    print(self.offset_start,self.bank_start,self.idx_start,self.tag_start)
+    # print(self.offset_start,self.bank_start,self.idx_start,self.tag_start)
     # Initialize the tag and valid array
     # Both arrays are of the form line[idx][way]
     # Note that line[idx] is a one-element array for
