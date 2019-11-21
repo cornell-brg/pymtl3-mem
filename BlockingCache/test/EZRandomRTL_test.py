@@ -1,6 +1,6 @@
 """
 =========================================================================
-RandomRTL_test.py
+EZRandomRTL_test.py
 =========================================================================
 Random Tests for Pipelined Blocking Cache RTL model 
 
@@ -19,7 +19,12 @@ from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
 from BlockingCache.test.BlockingCacheFL_test import run_sim, setup_tb
-from BlockingCache.test.RandomTestCases import rand_test
+from BlockingCache.test.RandomTestCases import rand_mem, rand_test
+
+from BlockingCache.test.RandomTestCases import CacheMsg  as RandCacheMsg
+from BlockingCache.test.RandomTestCases import cacheSize as RandCacheSize
+from BlockingCache.test.RandomTestCases import MemMsg    as RandMemMsg
+
 
 class RandomTestHarness( Component ):
   """
@@ -92,14 +97,19 @@ CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
 cacheSize = 1024
 
-def setup_tb(msgs, mem, CacheModel, cacheSize, CacheMsg, 
-                MemMsg, stall, lat, src, sink, asso = 1):
-  
+def fl_setup_tb(msgs, mem, cacheSize, CacheMsg, MemMsg, stall, lat, 
+             src, sink, asso = 1):
+  '''
+  Setup and run modified testbench for FL model of Blocking Cache
+
+  :returns: Response to request messages
+  '''
+
   # Instantiate testharness
   th = TestHarness( msgs[::2], msgs[1::2],
                          stall, lat,
                          src, sink,
-                         CacheModel, cacheSize, 
+                         BlockingCacheFL, cacheSize, 
                          CacheMsg, MemMsg, asso)
   th.elaborate()
   # Load memory before the test
@@ -109,10 +119,23 @@ def setup_tb(msgs, mem, CacheModel, cacheSize, CacheMsg,
   run_sim( th, max_cycles ) 
 
 def rand_transaction_gen(size):
-  tests = rand_test(size)
-  setup_tb( msg, mem, BlockingCacheFL, GenericcacheSize, 
-  GenericCacheMsg, GenericMemMsg, 
-  stall, lat, src, sink, 1 )
+  '''
+  Generate complete random sequence of cache reqs and resps. 
+  
+  :returns: (trans, mem) 
+  '''
+
+  trans = rand_test(size)
+  mem = rand_mem()
+
+  resps = fl_setup_tb( trans, mem,  RandCacheSize, RandCacheMsg,\
+                       RandMemMsg, 1, 1, 0, 0, 1 )
+
+  for i in range(len(resps)):
+    trans[2*i-1] = resps[i] 
+
+  return trans, mem
 
 def test_random_sweep():
   tb = RandomTestHarness()
+

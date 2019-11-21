@@ -253,7 +253,7 @@ def l():
   return random.randrange(10)+1
 
 
-def rand_test(n, addr_min, addr_max):
+def rand_test(n, addr_min=0, addr_max=0xffff0):
   '''
   Generates fully random sequence of transactions. Use FL model to find
   corresponding resp msgs
@@ -270,14 +270,48 @@ def rand_test(n, addr_min, addr_max):
   msgs = [0] * (2 * n)
   for i in range(n):
     if types[i] == 'wr':
-      msgs[2*i-1] = req(types[i], i, addr[i], 0, data[i])
+      msgs[2*i] = req(types[i], i, addr[i], 0, data[i])
     else:
-      msgs[2*i-1] = req(types[i], i, addr[i], 0, 0)
+      msgs[2*i] = req(types[i], i, addr[i], 0, 0)
 
   return msgs
 
+def rand_mem(addr_min=0, addr_max=0xffff0):
+  '''
+  Randomly generate start state for memory
+
+  :returns: list of memory addresses w/ random data values
+  '''
+  mem = []
+
+  curr_addr = addr_min
+  while curr_addr <= addr_max:
+    d = generate_data(1)
+    mem.append(curr_addr)
+    mem.append(d)
+    curr_addr += 4 
+
+  return mem
+
+def gen_fully_random_table(max_size=1000):
+  '''
+  Create table of fully random cache requests and mem
+  
+  :returns: fully random test case table
+  '''
+
+  table = [( "                        msg_func               mem_data_func        stall lat src sink")]
+  for i in range(max_size):
+    test_name = 'rand test ' + str(i)
+    n = random.randint(1,1000)
+    tests = rand_test(n)
+    mem = rand_mem()
+    table.append([test_name, tests, mem, r(), l(), l(), l()])
+
+  return table
+
 #---------------------------------------------------------------------------------------------
-# Test table for direct mapped cache tests
+# Test table for random direct mapped cache tests
 #---------------------------------------------------------------------------------------------
 
 test_case_table_random = mk_test_case_table([
@@ -299,3 +333,6 @@ test_case_table_random_lat = mk_test_case_table([
   [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,   0,   0  ],
   [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,   0,   0  ]
 ])
+
+test_case_table_fully_random = gen_fully_random_table()
+
