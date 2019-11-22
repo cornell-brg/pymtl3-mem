@@ -24,7 +24,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
-cacheSize = 512
+cacheSize = 4096
 
 #-------------------------------------------------------------------------
 # make messages

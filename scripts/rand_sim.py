@@ -17,19 +17,26 @@ operators = {
   }  
 }
 
+def initialization():
+  PATH_TO_CTRL = "/home/xy97/"
+  command = "python {} --input-spec {} \
+    --no-overwrite --functional --no-astdump".format(
+      "~/work/pymtl3/scripts/bug-injector/bug_injector.py",
+      "mutation_targets.json"
+  )
+  os.system(command)
+
 def run(name, out_dir, test_num):
   rpt_target = "{}/{}_N{:03d}.json".format(\
     out_dir, name, test_num )
   os.system("echo -e '\033[{};3{}m'RUNNING'\033[0m' \
     test={} rpt_dir={} test_num={}".format(\
     random.randint(0,1), random.randint(0,7), name,rpt_target,test_num))
-  command = "pytest ../BlockingCache/test/BlockingCacheRandomRTL_test.py\
+  command = "pytest --disable-pytest-warnings \
+    ../BlockingCache/test/BlockingCacheRandomRTL_test.py\
     -k test_bug_inj -q --rand-out-dir {}".format(rpt_target)
   os.system(command)
   print(command)
-  
-    # if not stats:
-    #   continue
 
 def plot(out_dir):
   onlyfiles = [f for f in os.listdir(out_dir) \
@@ -54,9 +61,10 @@ if __name__ =="__main__":
     sim_dir = "{}_logs".format(op)
     if not os.path.exists( sim_dir ):
       os.mkdir( sim_dir )
-    for i in range( trials ):
-      run(op, sim_dir, i)
-    plot(sim_dir)
+    initialization()
+    # for i in range( trials ):
+    #   run(op, sim_dir, i)
+    # plot(sim_dir)
 
 
 # def task_sim():

@@ -3,7 +3,6 @@
  BlockingCacheCtrlPRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
-
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 15 November 2019
 """
@@ -168,7 +167,9 @@ class BlockingCacheCtrlPRTL ( Component ):
         else:                                  s.next_state = STATE_REFILL
       elif s.curr_state == STATE_EVICT:        s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL_WRITE: s.next_state = STATE_GO
-      # assert False, 'undefined state: next state block' # NOT TRANSLATABLE
+
+      else:
+        assert False, 'undefined state: next state block'
 
     #--------------------------------------------------------------------------
     # Y Stage 
@@ -231,7 +232,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.cs0 = concat( tg_wbenf, b2(0)  , b2(0)  ,    x    ,  rd ,  n , x , x )
       if s.val_M0: #                                          tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|tg_v|dty|val
         if s.is_refill_M0:                    s.cs0 = concat( tg_wbenf, b2(1)  , b2(1)  , b1(1)   ,  wr ,  y , n , y )
-        elif s.is_write_refill_M0:            s.cs0 = concat( tg_wbenf, b2(2)  , b2(1)  , b1(1)   ,  wr ,  y , n , y )
+        elif s.is_write_refill_M0:            s.cs0 = concat( tg_wbenf, b2(2)  , b2(1)  , b1(1)   ,  wr ,  y , y , y )
         elif s.is_write_hit_clean_M0:         s.cs0 = concat( tg_wbenf, b2(0)  , b2(2)  , b1(0)   ,  wr ,  y , y , y )
         else:
           if (s.cachereq_type_M0 == INIT):    s.cs0 = concat( tg_wbenf, b2(0)  , b2(0)  , b1(0)   ,  wr ,  y , n , y )
@@ -307,24 +308,23 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def is_write_hit_clean_M0_logic():
-      if s.cachereq_type_M1 == WRITE and \
-        s.hit_M1 and not s.ctrl_bit_dty_rd_M1 and \
-          not s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
+      if s.cachereq_type_M1 and \
+        s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and \
+          ~s.is_write_hit_clean_M1 and ~s.is_write_refill_M1:
         s.is_write_hit_clean_M0 = b1(1)
       else:
         s.is_write_hit_clean_M0 = b1(0)
 
     @s.update
     def need_evict_M1():
-      if s.val_M1 and not s.is_write_refill_M1 and \
-        not s.hit_M1 and s.ctrl_bit_dty_rd_M1:
+      if s.val_M1 and ~s.is_write_refill_M1 and ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:
         s.is_evict_M1 = b1(1)
       else:
         s.is_evict_M1 = b1(0)
 
     @s.update
     def en_M1():
-      s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
+      s.reg_en_M1 = ~s.stall_M1 and ~s.is_evict_M1
 
     CS_data_array_wben_M1   = slice( 4,  4 + dwb )
     CS_data_array_type_M1   = slice( 3,  4 )
