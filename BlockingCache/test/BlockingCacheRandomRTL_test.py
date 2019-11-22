@@ -87,17 +87,17 @@ def test_bug_inject(rand_out_dir):
   abw  = 32  # Short name for addr bitwidth
   dbw  = 32  # Short name for data bitwidth
   min_addr = 0
-  max_addr = 0x30
+  max_addr = 50 # 100 words
   fail_test = 1
   failed = False
   clw  = 128
-  cacheSize = 1024
+  cacheSize = random.choice([256,512,1024,2048,4096,8192,16384])
   CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
   MemMsg = ReqRespMsgTypes(obw, abw, clw)
-  for i in range(30):
-    transaction_length = random.randint(1,30)
+  for i in range(100): # max amount of tests before we give up
+    transaction_length = random.randint(1,50)
     mem = rand_mem(min_addr, max_addr)
-    msgs = rand_bug_inject(mem,min_addr,max_addr,transaction_length)
+    msgs = rand_bug_inject(mem,min_addr,max_addr,transaction_length,cacheSize,clw)
 
     # Instantiate testharness
     harness = TestHarness( msgs[::2], msgs[1::2],
@@ -121,7 +121,10 @@ def test_bug_inject(rand_out_dir):
         curr_cyc += 1
       assert curr_cyc < max_cycles
     except:
-      resp = int(harness.sink.recv.msg.opaque - 1)
+      if int(harness.sink.recv.msg.opaque) > 1:
+        resp = int(harness.sink.recv.msg.opaque - 1)
+      else:
+        resp =  int(harness.sink.recv.msg.opaque)
       fail_test = i+1
       failed = True
       break

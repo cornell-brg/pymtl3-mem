@@ -360,7 +360,7 @@ def rand_small_addr_range( mem=None ):
 #-------------------------------------------------------------------------
 # Test: Randomly read or write random data from random low addresses
 #-------------------------------------------------------------------------
-def rand_bug_inject( mem, addr_min, addr_max, trans_legth ):
+def rand_bug_inject( mem, addr_min, addr_max, trans_legth, cacheSize, clw ):
   model = ModelCache(cacheSize, 1, 0, clw, mem)
   data  = generate_data(trans_legth)
   types = generate_type(trans_legth)

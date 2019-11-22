@@ -9,22 +9,26 @@ import numpy as np
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 
-
+PATH_TO_CTRL = "../BlockingCache/BlockingCacheCtrlPRTL.py"
 operators = {
   "random_bug" : {
-    'trials'   : 20,
-    'max_test' : 20,
+    'trials'   : 3,
+    'max_test' : 50,
   }  
 }
 
-def initialization():
-  PATH_TO_CTRL = "/home/xy97/"
+def initial():
+  
+  os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
   command = "python {} --input-spec {} \
-    --no-overwrite --functional --no-astdump".format(
+     --functional --no-astdump".format(
       "~/work/pymtl3/scripts/bug-injector/bug_injector.py",
       "mutation_targets.json"
   )
   os.system(command)
+
+def finish():
+  os.system("mv {0}_correct {0}".format(PATH_TO_CTRL))
 
 def run(name, out_dir, test_num):
   rpt_target = "{}/{}_N{:03d}.json".format(\
@@ -36,20 +40,38 @@ def run(name, out_dir, test_num):
     ../BlockingCache/test/BlockingCacheRandomRTL_test.py\
     -k test_bug_inj -q --rand-out-dir {}".format(rpt_target)
   os.system(command)
-  print(command)
+  # print(command)
 
 def plot(out_dir):
+  print("PLOTING")
   onlyfiles = [f for f in os.listdir(out_dir) \
     if os.path.isfile(os.path.join(out_dir, f))]
   test_vector = []
+  transaction_vector = []
   for i in range(len(onlyfiles)):
     with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
       stats = json.load(fd2)
       test_vector.append(stats['test'])
+      transaction_vector.append(stats['trans'])
   plt.hist(test_vector, density=False, bins=30)
+  plt.title('Histogram for Number of Tests')
   plt.xlabel('Tests')  
   plt.ylabel('Bugs')  
-  plt.savefig('histogram.pdf')
+  plt.savefig('Tests.pdf')
+  plt.hist(transaction_vector, density=False, bins=30)
+  plt.title('Histogram for Number of Transactions')
+  plt.xlabel('Number of Transactions')  
+  plt.ylabel('Bugs')  
+  plt.savefig('Transactions.pdf')
+
+  plt.hist2d(test_vector, transaction_vector, bins=30, density=False, cmap='plasma')
+  plt.title('Heat Map for Number of Transactions')
+  plt.xlabel('Tests')  
+  plt.ylabel('Transactions')  
+  cb = plt.colorbar()
+  cb.set_label('Number of Bugs')
+  plt.savefig('HeatMap.pdf')
+
 
 
 if __name__ =="__main__":
@@ -59,12 +81,15 @@ if __name__ =="__main__":
     max_test = d['max_test']
     trials = d['trials']
     sim_dir = "{}_logs".format(op)
-    if not os.path.exists( sim_dir ):
-      os.mkdir( sim_dir )
-    initialization()
-    # for i in range( trials ):
-    #   run(op, sim_dir, i)
-    # plot(sim_dir)
+    # if not os.path.exists( sim_dir ):
+    os.system("rm -rf {}".format(sim_dir))
+    os.mkdir( sim_dir )
+    for j in range( max_test):
+      initial()
+      for i in range( trials ):
+        run(op, sim_dir, i+trials*j)
+      finish()
+    plot(sim_dir)
 
 
 # def task_sim():

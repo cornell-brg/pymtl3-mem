@@ -155,7 +155,7 @@ class ModelCache:
     # The transactions list contains the requests and responses for
     # the stream of read/write calls on this model
     self.transactions = []
-    self.opaque = 0
+    self.opaque = 1
 
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
