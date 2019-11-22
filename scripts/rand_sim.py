@@ -5,15 +5,31 @@ import json
 import sys
 import random
 import matplotlib.pyplot as plt
-import numpy as np
+import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
+
+#-------------------------------------------------------------------------
+# Helper functions and classes
+#-------------------------------------------------------------------------
+
+def parse_cmdline():
+  p = argparse.ArgumentParser()
+  # p.add_argument( "--input-spec" )
+  p.add_argument( "--trials" )
+  p.add_argument( "--simulations" )
+  p.add_argument( "--plot", action = 'store_true', default = False )
+  p.add_argument( "--bug-inject",   action = 'store_true', default = False )
+  # p.add_argument( "--functional",   action = 'store_true', default = False )
+
+  opts = p.parse_args()
+  return opts
 
 PATH_TO_CTRL = "../BlockingCache/BlockingCacheCtrlPRTL.py"
 operators = {
   "random_bug" : {
     'trials'   : 3,
-    'max_test' : 50,
+    'max_test' : 1,
   }  
 }
 
@@ -53,18 +69,18 @@ def plot(out_dir):
       stats = json.load(fd2)
       test_vector.append(stats['test'])
       transaction_vector.append(stats['trans'])
-  plt.hist(test_vector, density=False, bins=30)
+  plt.hist(test_vector, density=False, bins=auto)
   plt.title('Histogram for Number of Tests')
   plt.xlabel('Tests')  
   plt.ylabel('Bugs')  
   plt.savefig('Tests.pdf')
-  plt.hist(transaction_vector, density=False, bins=30)
+  plt.hist(transaction_vector, density=False, bins=auto)
   plt.title('Histogram for Number of Transactions')
   plt.xlabel('Number of Transactions')  
   plt.ylabel('Bugs')  
   plt.savefig('Transactions.pdf')
 
-  plt.hist2d(test_vector, transaction_vector, bins=30, density=False, cmap='plasma')
+  plt.hist2d(test_vector, transaction_vector, bins=auto, density=False, cmap='plasma')
   plt.title('Heat Map for Number of Transactions')
   plt.xlabel('Tests')  
   plt.ylabel('Transactions')  
@@ -78,18 +94,25 @@ if __name__ =="__main__":
   os.system("cd .. && cd build")
   for op, d in operators.items():
     # print (op, d)
-    max_test = d['max_test']
-    trials = d['trials']
+    opts = parse_cmdline()
+    
     sim_dir = "{}_logs".format(op)
-    # if not os.path.exists( sim_dir ):
-    os.system("rm -rf {}".format(sim_dir))
-    os.mkdir( sim_dir )
-    for j in range( max_test):
-      initial()
-      for i in range( trials ):
-        run(op, sim_dir, i+trials*j)
-      finish()
-    plot(sim_dir)
+    if opts.plot:
+      plot(sim_dir)
+    else:
+      # if not os.path.exists( sim_dir ):
+      max_test = d['max_test']
+      trials = d['trials']
+      os.system("rm -rf {}".format(sim_dir))
+      os.mkdir( sim_dir )
+      for j in range( max_test):
+        if opts.bug_inject:
+          initial()
+        for i in range( trials ):
+          run(op, sim_dir, i+trials*j)
+        if opts.bug_inject:
+          finish()
+      plot(sim_dir)
 
 
 # def task_sim():

@@ -110,6 +110,7 @@ def test_bug_inject(rand_out_dir):
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
     # Run the test
+    resp = transaction_length
     try:
       harness.apply( DynamicSim )
       harness.sim_reset()
@@ -129,13 +130,13 @@ def test_bug_inject(rand_out_dir):
       failed = True
       break
       # assert False
-  if failed:
-    output = {"test":fail_test, "trans":resp, \
-      "cacheSize":cacheSize, "clw":clw}
-    with open("{}".format(rand_out_dir)\
-       , 'w') as fd:
-       json.dump(output,fd,sort_keys=True, \
-         indent=2, separators=(',',':'))
+
+  output = {"test":fail_test, "trans":resp, \
+    "cacheSize":cacheSize, "clw":clw, "failed":failed}
+  with open("{}".format(rand_out_dir)\
+      , 'w') as fd:
+    json.dump(output,fd,sort_keys=True, \
+      indent=2, separators=(',',':'))
     # print("\nFailed at test {} and trans {}".format(\
     #   fail_test, resp))
       
