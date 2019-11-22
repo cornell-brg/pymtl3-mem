@@ -19,10 +19,15 @@ from BlockingCache.test.RandomTestCases import test_case_table_enhanced_random
 from BlockingCache.test.RandomTestCases import CacheMsg  as RandomCacheMsg
 from BlockingCache.test.RandomTestCases import MemMsg    as RandomMemMsg
 from BlockingCache.test.RandomTestCases import cacheSize as RandomCacheSize
-
 from BlockingCache.test.RandomTestCases import rand_bug_inject, rand_mem
+from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+
+
+import json
+import random
+
 base_addr = 0x0
-max_cycles = 10000
+max_cycles = 500
 
 #-------------------------------------------------------------------------
 # Random tests for both baseline and alternative design
@@ -77,31 +82,58 @@ def test_random( test_params ):
 #-------------------------------------------------------------------------
 
 # @pytest.mark.parametrize( **test_case_table_enhanced_random )
-def test_bug_inject(  ):
+def test_bug_inject(rand_out_dir):
+  obw  = 8   # Short name for opaque bitwidth
+  abw  = 32  # Short name for addr bitwidth
+  dbw  = 32  # Short name for data bitwidth
   min_addr = 0
   max_addr = 0x30
-  fail_test = 0
-  for i in range(10):
+  fail_test = 1
+  failed = False
+  clw  = 128
+  cacheSize = 1024
+  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+  MemMsg = ReqRespMsgTypes(obw, abw, clw)
+  for i in range(30):
+    transaction_length = random.randint(1,30)
     mem = rand_mem(min_addr, max_addr)
-    msgs = rand_bug_inject(mem,min_addr,max_addr)
-
+    msgs = rand_bug_inject(mem,min_addr,max_addr,transaction_length)
 
     # Instantiate testharness
     harness = TestHarness( msgs[::2], msgs[1::2],
                           0, 1,
                           0, 0,
-                          BlockingCachePRTL, RandomCacheSize,
-                          RandomCacheMsg, RandomMemMsg, 1)
+                          BlockingCachePRTL, cacheSize,
+                          CacheMsg, MemMsg, 1)
     harness.elaborate()
     # Load memory before the test
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
     # Run the test
     try:
-      run_sim( harness, max_cycles )
+      harness.apply( DynamicSim )
+      harness.sim_reset()
+      curr_cyc = 0
+      # print("")
+      while not harness.done() and curr_cyc < max_cycles:
+        harness.tick()
+        # print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
+        curr_cyc += 1
+      assert curr_cyc < max_cycles
     except:
-      fail_test = i
+      resp = int(harness.sink.recv.msg.opaque - 1)
+      fail_test = i+1
+      failed = True
       break
-  print("Failed at test {}".format(fail_test))
+      # assert False
+  if failed:
+    output = {"test":fail_test, "trans":resp, \
+      "cacheSize":cacheSize, "clw":clw}
+    with open("{}".format(rand_out_dir)\
+       , 'w') as fd:
+       json.dump(output,fd,sort_keys=True, \
+         indent=2, separators=(',',':'))
+    # print("\nFailed at test {} and trans {}".format(\
+    #   fail_test, resp))
       
 

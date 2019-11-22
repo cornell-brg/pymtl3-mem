@@ -6,11 +6,17 @@ def pytest_addoption(parser):
                     help="run verilog translation, " )
   parser.addoption( "--dump-vcd", action="store_true",
                     help="dump vcd for each test" )
+  parser.addoption("--rand-out-dir",action="store",
+                    help="stores result of test")
 
 @pytest.fixture
 def test_verilog(request):
   """Test Verilog translation rather than python."""
   return request.config.option.test_verilog
+
+@pytest.fixture()
+def rand_out_dir(request):
+    return request.config.getoption("rand_out_dir")
 
 @pytest.fixture
 def dump_vcd(request):
@@ -44,3 +50,11 @@ def pytest_runtest_setup(item):
   test_verilog = item.config.option.test_verilog
   if test_verilog and 'test_verilog' not in item.funcargnames:
     pytest.skip("ignoring non-Verilog tests")
+
+
+# def pytest_generate_tests(metafunc):
+#     # This is called for every test. Only get/set command line arguments
+#     # if the argument is specified in the list of test "fixturenames".
+#     option_value = metafunc.config.option.rand_out_dir
+#     if 'rand-out-dir' in metafunc.fixturenames and option_value is not None:
+#         metafunc.parametrize("out_dir", [option_value])

@@ -347,7 +347,7 @@ def rand_small_addr_range( mem=None ):
   print(RAND_LEN)
   data  = generate_data(RAND_LEN)
   types = generate_type(RAND_LEN)
-  addr  = generate_address(RAND_LEN,0x00,0x20)
+  addr  = generate_address(RAND_LEN,0x00,240)
   for i in range(RAND_LEN):
     if types[i] == 'wr':
       # Write something
@@ -360,15 +360,12 @@ def rand_small_addr_range( mem=None ):
 #-------------------------------------------------------------------------
 # Test: Randomly read or write random data from random low addresses
 #-------------------------------------------------------------------------
-def rand_bug_inject( mem, addr_min, addr_max ):
+def rand_bug_inject( mem, addr_min, addr_max, trans_legth ):
   model = ModelCache(cacheSize, 1, 0, clw, mem)
-
-  RAND_LEN = 20#random.randint(30,30)
-
-  data  = generate_data(RAND_LEN)
-  types = generate_type(RAND_LEN)
-  addr  = generate_address(RAND_LEN,addr_min,addr_max)
-  for i in range(RAND_LEN):
+  data  = generate_data(trans_legth)
+  types = generate_type(trans_legth)
+  addr  = generate_address(trans_legth,addr_min,addr_max)
+  for i in range(trans_legth):
     if types[i] == 'wr':
       # Write something
       model.write(addr[i] & Bits32(0xfffffffc), data[i])
