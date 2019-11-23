@@ -358,4 +358,8 @@ class BlockingCacheDpathPRTL (Component):
 
       
   def line_trace( s ):
-    return ""
+    msg = ""
+    # msg = f"tag_A1={s.tag_array_idx_M0} "
+    # msg += f"dat_A1={s.data_array_idx_M1} "
+    # msg += f"t_v={s.tag_array_val_M0} d_v={s.data_array_val_M1}"
+    return msg

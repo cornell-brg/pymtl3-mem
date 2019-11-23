@@ -22,19 +22,18 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128
 CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 MemMsg = ReqRespMsgTypes(obw, abw, clw)
-cacheSize = 4096
 
 #-------------------------------------------------------------------------
 # make messages
 #-------------------------------------------------------------------------
 
-def req( type_, opaque, addr, len, data ):
+def req( CacheMsg, type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   return CacheMsg.Req( type_, opaque, addr, len, data )
 
-def resp( type_, opaque, test, len, data ):
+def resp( CacheMsg, type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
@@ -156,6 +155,7 @@ class ModelCache:
     # the stream of read/write calls on this model
     self.transactions = []
     self.opaque = 1
+    self.CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
@@ -175,8 +175,8 @@ class ModelCache:
 
     # opaque = random.randint(0,255)
     self.opaque += 1
-    self.transactions.append(req('rd', self.opaque, addr, 0, 0))
-    self.transactions.append(resp('rd', self.opaque, hit, 0, value))
+    self.transactions.append(req(self.CacheMsg,'rd', self.opaque, addr, 0, 0))
+    self.transactions.append(resp(self.CacheMsg,'rd', self.opaque, hit, 0, value))
 
   def write(self, addr, value):
     value = Bits(32, value)
@@ -186,8 +186,8 @@ class ModelCache:
 
     # opaque = random.randint(0,255)
     self.opaque += 1
-    self.transactions.append(req('wr', self.opaque, addr, 0, value))
-    self.transactions.append(resp('wr', self.opaque, hit, 0, 0))
+    self.transactions.append(req(self.CacheMsg,'wr', self.opaque, addr, 0, value))
+    self.transactions.append(resp(self.CacheMsg,'wr', self.opaque, hit, 0, 0))
     
   def get_transactions(self):
     return self.transactions
