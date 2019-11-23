@@ -28,6 +28,9 @@ From build directory, run:
 python ../scripts/rand_sim.py              : runs the current design
 python ../scripts/rand_sim.py --plot       : NO SIM; plot only
 python ../scripts/rand_sim.py --bug-inject : Peitian's bug injector
+
+--trials : number of trials
+--simulations: each sim will have a new bug if --bug-inject enabled
 """
 
 
