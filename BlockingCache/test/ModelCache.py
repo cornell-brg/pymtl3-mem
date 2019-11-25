@@ -154,7 +154,7 @@ class ModelCache:
     # The transactions list contains the requests and responses for
     # the stream of read/write calls on this model
     self.transactions = []
-    self.opaque = 1
+    self.opaque = 0
     self.CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
 
   def check_hit(self, addr):
