@@ -19,6 +19,7 @@ import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 
+tag = 3
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -29,7 +30,7 @@ python ../scripts/rand_sim.py              : runs the current design
 python ../scripts/rand_sim.py --plot       : NO SIM; plot only
 python ../scripts/rand_sim.py --bug-inject : Peitian's bug injector
 
---trials : number of trials
+--trials : number of times we run the simulation with the same bug
 --simulations: each sim will have a new bug if --bug-inject enabled
 """
 
@@ -64,9 +65,9 @@ def initial():
   print("NEW BUG")
   os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
   command = "python {} --input-spec {} \
-     --functional --no-astdump >>inject.out 2>&1".format(
-      "~/work/pymtl3/scripts/bug-injector/bug_injector.py",
-      "mutation_targets.json" 
+     --functional --no-astdump --if-const --expr-elim >>inject_{}.out 2>&1".format(
+      "~/work/pymtl3-fft/script/bug_injector.py",
+      "mutation_targets.json",tag 
   )
   os.system(command)
 
@@ -96,25 +97,27 @@ def plot(out_dir):
   for i in range(len(onlyfiles)):
     with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
       stats = json.load(fd2)
-      test_vector.append(stats['test'])
       transaction_vector.append(stats['trans'])
       if stats['failed']:
+        test_vector.append(stats['test'])
         cacheSize_vector.append(stats['cacheSize'])
         clw_vector.append(stats['clw'])
+  # print (test_vector)
+  
   fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=1, ncols=4, sharey='row')
   
-  ax1.hist(test_vector, density=False, bins=30)
+  ax1.hist(test_vector, range=(0, max(test_vector)))
   ax1.set_xlabel('Tests',fontsize = 10) 
   ax1.set_ylabel('Number of Bugs',fontsize = 10) 
 
-  ax2.hist(transaction_vector, density=False, bins=30)
+  ax2.hist(transaction_vector, range=(0, max(transaction_vector)))
   ax2.set_xlabel('Transactions',fontsize = 10) 
 
-  ax3.hist(cacheSize_vector, density=False, bins=30)
+  ax3.hist(cacheSize_vector, range=(0, max(cacheSize_vector)))
   ax3.set_xlabel('Cache Size',fontsize = 10) 
-  ax3.tick_params(axis='both', which='major', labelsize=8)
+  # ax3.tick_params(axis='both', which='major', labelsize=8)
 
-  ax4.hist(clw_vector, density=False, bins=30)
+  ax4.hist(clw_vector, range=(0, max(clw_vector)))
   ax4.set_xlabel('Cacheline Size',fontsize = 10) 
   
   fig.savefig(f'{out_dir}_sim_plots.pdf')
@@ -137,23 +140,24 @@ def plot(out_dir):
 if __name__ =="__main__":
   os.system("cd .. && cd build")
   opts = parse_cmdline()
-  if opts.bug_inject:
-    os.system("rm inject.out")
+  # if opts.bug_inject:
+  #   os.system("inject_{}.out".format(tag))
   if opts.plot:
     for op, d in operators.items():   
-      sim_dir = "{}_logs".format(op)
+      sim_dir = "{}_{}_logs".format(op,tag)
       plot(sim_dir)
   else:
     for op, d in operators.items():   
-      sim_dir = "{}_logs".format(op)
-      os.system("rm -rf {}".format(sim_dir))
-      os.mkdir( sim_dir )
+      sim_dir = "{}_{}_logs".format(op,tag)
+      if not os.path.exists( sim_dir ):
+        # os.system("rm -rf {}".format(sim_dir))
+        os.mkdir( sim_dir )
     for j in range(int(opts.simulations)):
       if opts.bug_inject:
         initial()
       for i in range(int(opts.trials)):
         for op, d in operators.items():   
-          sim_dir = "{}_logs".format(op)
+          sim_dir = "{}_{}_logs".format(op,tag)
           # if not os.path.exists( sim_dir ):
           # max_test = d['max_test']
           # trials = d['trials']
@@ -164,7 +168,7 @@ if __name__ =="__main__":
       if opts.bug_inject:
         finish()
     for op, d in operators.items():   
-      sim_dir = "{}_logs".format(op)
+      sim_dir = "{}_{}_logs".format(op,tag)
       plot(sim_dir) 
   
 

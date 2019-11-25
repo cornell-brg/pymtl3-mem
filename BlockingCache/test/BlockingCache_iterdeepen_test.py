@@ -14,7 +14,7 @@ from pymtl3 import *
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from .ModelCache import ModelCache
 from BlockingCache.test.RandomTestCases import rand_mem, \
-  generate_data, generate_type, generate_address
+  generate_data, generate_type, generate_address, r
 from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
 from BlockingCache.test.BlockingCacheFL_test import TestHarness
 
@@ -47,11 +47,9 @@ def test_iter_deepen(rand_out_dir):
   dbw  = 32  # Short name for data bitwidth
   max_cycles = 500
   addr_min = 0
-  addr_max = 200 # 100 words
-  test_num = 1
+  addr_max = 400 # 100 words
+  test_num = 0
   failed = False
-
-  print()
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
   cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
   ntests_per_step = 2
@@ -64,6 +62,7 @@ def test_iter_deepen(rand_out_dir):
         print(f"clw[{clw_arr[i]}] size[{cacheSize_arr[j]}]")
         for num_trans in range(1,max_transaction_len+1):
           for test_number in range(ntests_per_step):
+            test_num += 1
             mem = rand_mem(addr_min, addr_max)
             msgs = setup_golden_model(mem, addr_min,addr_max,\
               num_trans,cacheSize_arr[j],clw_arr[i])
@@ -71,16 +70,16 @@ def test_iter_deepen(rand_out_dir):
             CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
             MemMsg = ReqRespMsgTypes(obw, abw, clw_arr[i])
             harness = TestHarness(msgs[::2], msgs[1::2], \
-              0, 1, 0, 0, BlockingCachePRTL, cacheSize_arr[j],\
+              r(), 1, 0, 0, BlockingCachePRTL, cacheSize_arr[j],\
                 CacheMsg, MemMsg, 1)
 
             harness.elaborate()
             harness.load( mem[::2], mem[1::2] )
             resp = num_trans
+            harness.apply( DynamicSim )
+            harness.sim_reset()
+            curr_cyc = 0
             try:
-              harness.apply( DynamicSim )
-              harness.sim_reset()
-              curr_cyc = 0
               # print("")
               while not harness.done() and curr_cyc < max_cycles:
                 harness.tick()
@@ -89,14 +88,14 @@ def test_iter_deepen(rand_out_dir):
               assert curr_cyc < max_cycles
             except:
               print ('FAILED')
-              if int(harness.sink.recv.msg.opaque) > 1:
-                resp = int(harness.sink.recv.msg.opaque - 1)
-              else:
-                resp =  int(harness.sink.recv.msg.opaque)
+              # if int(harness.sink.recv.msg.opaque) > 1:
+                # resp = int(harness.sink.recv.msg.opaque - 1)
+              # else:
+              resp =  int(harness.sink.recv.msg.opaque)
               
               failed = True
               assert not failed
-            test_num += 1
+            
   except:
     pass
   output = {"test":test_num, "trans":resp, \
