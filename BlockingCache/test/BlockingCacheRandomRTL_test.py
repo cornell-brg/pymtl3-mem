@@ -20,7 +20,7 @@ import json
 import random
 
 base_addr = 0x0
-max_cycles = 500
+max_cycles = 1000
 
 #-------------------------------------------------------------------------
 # Complete random testing
@@ -34,7 +34,7 @@ def test_complete_random(rand_out_dir):
   max_addr = 400 # 100 words
   fail_test = 0
   failed = False
-  ntests_per_step = 50
+  ntests_per_step = 100
   # print(f"clw[{clw}] size[{cacheSize}]")
 
   for i in range(ntests_per_step): # max amount of tests before we give up
@@ -43,7 +43,7 @@ def test_complete_random(rand_out_dir):
     cacheSize = 2**( clog2(clw) + random.randint(1,6)) #minimum cacheSize is 2 times clw
     CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
     MemMsg = ReqRespMsgTypes(obw, abw, clw)
-    transaction_length = random.randint(1,50)
+    transaction_length = random.randint(1,100)
     mem = rand_mem(min_addr, max_addr)
     msgs = complete_random_test(mem,min_addr,max_addr,transaction_length,cacheSize,clw)
 
@@ -68,10 +68,10 @@ def test_complete_random(rand_out_dir):
       assert curr_cyc < max_cycles
     except:
       print("FAILED")
-      # if int(harness.sink.recv.msg.opaque) > 1:
-        # resp = int(harness.sink.recv.msg.opaque - 1)
-      # else:
-      resp =  int(harness.sink.recv.msg.opaque)
+      if int(harness.sink.recv.msg.opaque) > 1:
+        resp = int(harness.sink.recv.msg.opaque - 1)
+      else:
+        resp =  int(harness.sink.recv.msg.opaque)
       
       failed = True
       break

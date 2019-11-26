@@ -50,8 +50,6 @@ class TestHarness(Component):
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
 
-    # s.cache.yosys_translate_import = True
-
     connect( s.src.send,  s.cache.cachereq  )
     connect( s.sink.recv, s.cache.cacheresp )
 

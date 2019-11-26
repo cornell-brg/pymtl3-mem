@@ -19,7 +19,7 @@ import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 
-tag = 4
+tag = 6
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -50,27 +50,28 @@ def parse_cmdline():
 PATH_TO_CTRL = "../BlockingCache/BlockingCacheCtrlPRTL.py"
 operators = {
   "complete_random" : {
-    'trials'   : 2,
-    'max_test' : 2,
     'test_to_run': "BlockingCacheRandomRTL_test",
   },  
   "iterative_deepen" : {
-    'trials'   : 2,
-    'max_test' : 2,
     'test_to_run': "BlockingCache_iterdeepen_test",
+  },
+  "hypothesis" : {
+    'test_to_run': "BlockingCache_hypothesis_test",
   }
 }
 
 def initial(sim_num):
-  print("NEW BUG")
+  
   flags = ["--functional", "--if-const", "--expr-elim"]
   os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
-  command = "echo sim_num = {} >>inject_{}.out 2>&1".format(sim_num)
+  command = "echo sim_num = {} >>inject_{}.out 2>&1".format(sim_num,tag)
+  os.system(command)
   command = "python {} --input-spec {} \
      {} --no-astdump >>inject_{}.out 2>&1".format(
       "~/work/pymtl3-fft/script/bug_injector.py",
-      "mutation_targets.json",flags[random.randint(0,2)],tag 
+      "mutation_targets.json",flags[0],tag 
   ) # Fix the flags!! 
+  print(f"NEW BUG cmd={command}")
   os.system(command)
 
 def finish():
@@ -113,7 +114,7 @@ def plot(op,out_dir):
   
   fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=1, ncols=4, sharey='row')
   
-  ax1.hist(test_vector, bins=[0,1,2,3,4,5,6,7,500])#range=(0, max(test_vector)))
+  ax1.hist(test_vector, bins=100)#range=(0, max(test_vector)))
   ax1.set_xlabel('Tests',fontsize = 10) 
   ax1.set_ylabel('Number of Bugs',fontsize = 10) 
 

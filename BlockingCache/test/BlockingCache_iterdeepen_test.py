@@ -39,28 +39,28 @@ def setup_golden_model(mem, addr_min, addr_max, num_trans, cacheSize, clw ):
 #-------------------------------------------------------------------------
 # run_test
 #-------------------------------------------------------------------------
+max_cycles = 1000
 
 def test_iter_deepen(rand_out_dir):
   # Instantiate testharness
   obw  = 8   # Short name for opaque bitwidth
   abw  = 32  # Short name for addr bitwidth
   dbw  = 32  # Short name for data bitwidth
-  max_cycles = 500
   addr_min = 0
   addr_max = 400 # 100 words
   test_num = 0
   failed = False
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
   cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
-  ntests_per_step = 1      # 10
-  max_transaction_len = 50 #100
+  ntests_per_step = 10      # 10
+  max_transaction_len = 100 #100
   try:
     for i in range(len(clw_arr)):
       curr_clw = clw_arr[i]
       for j in range(i, len(cacheSize_arr)):
         curr_cacheSize = cacheSize_arr[j]
         print(f"clw[{clw_arr[i]}] size[{cacheSize_arr[j]}]")
-        for num_trans in range(1,max_transaction_len+1):
+        for num_trans in range(1,max_transaction_len):
           for test_number in range(ntests_per_step):
             test_num += 1
             mem = rand_mem(addr_min, addr_max)
@@ -83,15 +83,15 @@ def test_iter_deepen(rand_out_dir):
               # print("")
               while not harness.done() and curr_cyc < max_cycles:
                 harness.tick()
-                # print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
+                print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
                 curr_cyc += 1
               assert curr_cyc < max_cycles
             except:
               print ('FAILED')
-              # if int(harness.sink.recv.msg.opaque) > 1:
-                # resp = int(harness.sink.recv.msg.opaque - 1)
-              # else:
-              resp =  int(harness.sink.recv.msg.opaque)
+              if int(harness.sink.recv.msg.opaque) == 0:
+                resp = num_trans
+              else:
+                resp =  int(harness.sink.recv.msg.opaque)
               
               failed = True
               assert not failed
