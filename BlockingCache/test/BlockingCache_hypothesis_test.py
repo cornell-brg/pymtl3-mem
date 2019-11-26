@@ -56,11 +56,7 @@ def gen_reqs( draw):
   clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
   cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384]),
   transactions  = st.integers( 1, 100 ),
-  # n_tests       = st.integers( 1, 50 ),
-  req   = st.data(),
-  # addr = st.integers(addr_min, addr_max),
-  # type_ = st.integers(0, 1),
-  # data =  st.integers(0, 0xffffffff), 
+  req   = st.data(), 
 )
 def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   global test_idx, failed
@@ -103,7 +99,10 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
     assert curr_cyc < max_cycles
   except:
     # print ('FAILED')
-    resp =  int(harness.sink.recv.msg.opaque)
+    if int(harness.sink.recv.msg.opaque) == 0:
+      resp = transactions
+    else:
+      resp =  int(harness.sink.recv.msg.opaque)
     failed = True
   if not failed:
     test_idx += 1

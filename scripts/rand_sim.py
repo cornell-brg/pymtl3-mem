@@ -19,7 +19,7 @@ import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 
-tag = 6
+tag = 7
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -68,8 +68,8 @@ def initial(sim_num):
   os.system(command)
   command = "python {} --input-spec {} \
      {} --no-astdump >>inject_{}.out 2>&1".format(
-      "~/work/pymtl3-fft/script/bug_injector.py",
-      "mutation_targets.json",flags[0],tag 
+      "~/work/pymtl3-mem/scripts/bug_injector.py",
+      "mutation_targets.json",flags[random.randint(0,2)],tag 
   ) # Fix the flags!! 
   print(f"NEW BUG cmd={command}")
   os.system(command)

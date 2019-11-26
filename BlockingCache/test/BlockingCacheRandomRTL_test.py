@@ -67,7 +67,7 @@ def test_complete_random(rand_out_dir):
         curr_cyc += 1
       assert curr_cyc < max_cycles
     except:
-      print("FAILED")
+      # print("FAILED")
       if int(harness.sink.recv.msg.opaque) > 1:
         resp = int(harness.sink.recv.msg.opaque - 1)
       else:

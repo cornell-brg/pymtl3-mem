@@ -87,7 +87,7 @@ def test_iter_deepen(rand_out_dir):
                 curr_cyc += 1
               assert curr_cyc < max_cycles
             except:
-              print ('FAILED')
+              # print ('FAILED')
               if int(harness.sink.recv.msg.opaque) == 0:
                 resp = num_trans
               else:
