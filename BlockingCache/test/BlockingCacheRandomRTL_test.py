@@ -49,7 +49,7 @@ def test_complete_random(rand_out_dir):
 
     # Instantiate testharness
     harness = TestHarness( msgs[::2], msgs[1::2],
-                          r(), 1, 0, 0, BlockingCachePRTL, cacheSize,
+                          r(), 2, 2, 2, BlockingCachePRTL, cacheSize,
                           CacheMsg, MemMsg, 1)
     harness.elaborate()
     # Load memory before the test
@@ -60,10 +60,10 @@ def test_complete_random(rand_out_dir):
     harness.sim_reset()
     curr_cyc = 0
     try:
-    # print("")
+      print("")
       while not harness.done() and curr_cyc < max_cycles:
         harness.tick()
-        # print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
+        print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
         curr_cyc += 1
       assert curr_cyc < max_cycles
     except:

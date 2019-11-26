@@ -247,13 +247,13 @@ def r():
   '''
   return random.random()
 
-def l():
+def l(max_ = 10):
   '''
   Create random memory latency
 
   returns: int between 1 and 100
   '''
-  return random.randrange(10)+1
+  return random.randint(1,max_)
 
 
 def rand_test(n, addr_min=0, addr_max=0xffff0):

@@ -9,9 +9,10 @@ Date   : 24 November 2019
 """
 from pymtl3 import *
 import json
+import random
 import hypothesis
 from hypothesis import strategies as st
-from BlockingCache.test.RandomTestCases import rand_mem, r
+from BlockingCache.test.RandomTestCases import rand_mem, r, l
 from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
 from .ModelCache import ModelCache
 from BlockingCache.test.BlockingCacheFL_test import TestHarness
@@ -48,8 +49,7 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
       st.lists( gen_reqs( ), min_size = 1, max_size=transactions ),
       label= "pkts"
     )
-  # print (cacheSize, clw)
-
+  print (cacheSize, clw, l(3))
   mem = rand_mem(addr_min, addr_max)
   model = ModelCache(cacheSize, 1, 0, clw, mem)
   for i in range(len(reqs_lst)):
@@ -63,7 +63,7 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
   MemMsg = ReqRespMsgTypes(obw, abw, clw)
   harness = TestHarness(msgs[::2], msgs[1::2], \
-  r(), 1, 0, 0, BlockingCachePRTL, cacheSize,\
+  r(), 2, 2, 2, BlockingCachePRTL, cacheSize,\
     CacheMsg, MemMsg, 1)
   harness.elaborate()
   harness.load( mem[::2], mem[1::2] )
@@ -71,11 +71,11 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   harness.apply( DynamicSim )
   harness.sim_reset()
   curr_cyc = 0
-  # print("")
+  print("")
   try:
     while not harness.done() and curr_cyc < max_cycles:
       harness.tick()
-      # print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
+      print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
       curr_cyc += 1
     assert curr_cyc < max_cycles
   except:

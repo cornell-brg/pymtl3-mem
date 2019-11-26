@@ -14,7 +14,7 @@ from pymtl3 import *
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from .ModelCache import ModelCache
 from BlockingCache.test.RandomTestCases import rand_mem, \
-  generate_data, generate_type, generate_address, r
+  generate_data, generate_type, generate_address, r, l
 from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
 from BlockingCache.test.BlockingCacheFL_test import TestHarness
 
@@ -70,7 +70,7 @@ def test_iter_deepen(rand_out_dir):
             CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
             MemMsg = ReqRespMsgTypes(obw, abw, clw_arr[i])
             harness = TestHarness(msgs[::2], msgs[1::2], \
-              r(), 1, 0, 0, BlockingCachePRTL, cacheSize_arr[j],\
+              r(), 2, 2, 2, BlockingCachePRTL, cacheSize_arr[j],\
                 CacheMsg, MemMsg, 1)
 
             harness.elaborate()
@@ -80,7 +80,7 @@ def test_iter_deepen(rand_out_dir):
             harness.sim_reset()
             curr_cyc = 0
             try:
-              # print("")
+              print("")
               while not harness.done() and curr_cyc < max_cycles:
                 harness.tick()
                 print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
