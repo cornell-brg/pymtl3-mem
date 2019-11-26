@@ -1,11 +1,11 @@
 """
 =========================================================================
-rand_sim.py
+directed_rand_sim.py
 =========================================================================
-Script to run test cases
+Script to run test cases on manually injected bugs
 
-Author : Xiaoyu Yan, Eric Tang (et396)
-Date   : 22 November 2019
+Author : Eric Tang (et396)
+Date   : 25 November 2019
 """
 
 #! /usr/bin/env python
@@ -48,16 +48,28 @@ def parse_cmdline():
 
 
 def run_random(name, out_dir, test_num):
+  '''
+  Run completely random tests on cache design. 
+  Records the total number of tests run, number of transactions in the failing test
+  and the cache size in a json file
+
+  :param name:
+  :param out_dir:
+  :param test_num: int, test number
+  '''
+
   rpt_target = f"{out_dir}/{name}_N{test_num:03d}.json"
-  print(f"RUNNING test num {test_num}")
+  print(f"RUNNING Complete Random test {test_num}")
   command = f"pytest --disable-pytest-warnings \
     ../BlockingCache/test/BlockingCacheRandomRTL_test.py -q\
     --rand-out-dir {rpt_target}"
   os.system(command)
 
 def run_iter_deep(name, out_dir, test_num):
+  '''
+  '''
   rpt_target = f"{out_dir}/{name}_N{test_num:03d}.json"
-  print(f"RUNNING test num {test_num}")
+  print(f"RUNNING Iterative Deepening test {test_num}")
   command = f"pytest --disable-pytest-warnings \
     ../BlockingCache/test/BlockingCache_iterdeepen_test.py -q\
     --rand-out-dir {rpt_target}"
@@ -71,6 +83,6 @@ if __name__ =="__main__":
     os.mkdir( sim_dir )
 
   for j in range(int(opts.trials)):
-    # run_random('dirty_bit_bug', sim_dir, j)
-    run_iter_deep('iter_dirty_bit_bug', sim_dir, j)
+    run_random('dirty_bit_bug', sim_dir, j)
+    # run_iter_deep('iter_dirty_bit_bug', sim_dir, j)
   
