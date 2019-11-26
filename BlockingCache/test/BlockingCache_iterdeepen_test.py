@@ -52,8 +52,8 @@ def test_iter_deepen(rand_out_dir):
   failed = False
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
   cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
-  ntests_per_step = 2
-  max_transaction_len = 50
+  ntests_per_step = 1      # 10
+  max_transaction_len = 50 #100
   try:
     for i in range(len(clw_arr)):
       curr_clw = clw_arr[i]

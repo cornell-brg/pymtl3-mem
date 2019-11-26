@@ -31,19 +31,18 @@ def test_complete_random(rand_out_dir):
   abw  = 32  # Short name for addr bitwidth
   dbw  = 32  # Short name for data bitwidth
   min_addr = 0
-  max_addr = random.randint(100,0xfff) # 100 words
+  max_addr = 400 # 100 words
   fail_test = 0
   failed = False
-  clw  = 2**(6+random.randint(0,4)) # minimum cacheline size is 64 bits
-  cacheSize = 2**( clog2(clw) + random.randint(1,6)) #minimum cacheSize is 2 times clw
   ntests_per_step = 50
-  print(f"clw[{clw}] size[{cacheSize}]")
+  # print(f"clw[{clw}] size[{cacheSize}]")
 
-  CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-  MemMsg = ReqRespMsgTypes(obw, abw, clw)
   for i in range(ntests_per_step): # max amount of tests before we give up
-    fail_test += 1
-    
+    fail_test += 1  
+    clw  = 2**(6+random.randint(0,4)) # minimum cacheline size is 64 bits
+    cacheSize = 2**( clog2(clw) + random.randint(1,6)) #minimum cacheSize is 2 times clw
+    CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
+    MemMsg = ReqRespMsgTypes(obw, abw, clw)
     transaction_length = random.randint(1,50)
     mem = rand_mem(min_addr, max_addr)
     msgs = complete_random_test(mem,min_addr,max_addr,transaction_length,cacheSize,clw)
@@ -64,15 +63,15 @@ def test_complete_random(rand_out_dir):
     # print("")
       while not harness.done() and curr_cyc < max_cycles:
         harness.tick()
-        print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
+        # print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
         curr_cyc += 1
       assert curr_cyc < max_cycles
     except:
       print("FAILED")
-      if int(harness.sink.recv.msg.opaque) > 1:
-        resp = int(harness.sink.recv.msg.opaque - 1)
-      else:
-        resp =  int(harness.sink.recv.msg.opaque)
+      # if int(harness.sink.recv.msg.opaque) > 1:
+        # resp = int(harness.sink.recv.msg.opaque - 1)
+      # else:
+      resp =  int(harness.sink.recv.msg.opaque)
       
       failed = True
       break
