@@ -19,25 +19,6 @@ from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 test_idx = 1
 failed = False
 
-# def setup_golden_model(mem, addr, types):
-#   model = ModelCache(cacheSize, 1, 0, clw, mem)
-#   for i in range(num_trans):
-#     if types[i] == 'wr':
-#       # Write something
-#       model.write(addr[i] & Bits32(0xfffffffc), data[i])
-#     else:
-#       # Read something
-#       model.read(addr[i] & Bits32(0xfffffffc))
-#   return model.get_transactions()
-
-#-------------------------------------------------------------------------
-# mk_src_pkts
-#-------------------------------------------------------------------------
-# def req( CacheMsg, type_, opaque, addr, len, data ):
-#   if   type_ == 'rd': type_ = MemMsgType.READ
-#   elif type_ == 'wr': type_ = MemMsgType.WRITE
-#   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-#   return CacheMsg.Req( type_, opaque, addr, len, data )
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
