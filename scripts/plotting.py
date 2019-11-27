@@ -153,7 +153,7 @@ def plot(bugs, num_tests):
 
   # Set x labels
   for i in range(3):
-    axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
+    axs[4, i].set_xticklabels(bugs, rotation=45, **xlabelfont)
   
   axs[4, i].set_xlabel('Bug Type', **ylabelfont)
  
