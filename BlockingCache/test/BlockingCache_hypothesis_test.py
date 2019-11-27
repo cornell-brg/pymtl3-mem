@@ -30,7 +30,7 @@ dbw  = 32  # Short name for data bitwidth
 max_cycles = 1000
 addr_min = 0
 addr_max = 400 # 400 words
-test_complexity = 0
+
 
 @st.composite
 def gen_reqs( draw):
@@ -47,7 +47,8 @@ def gen_reqs( draw):
   req   = st.data(), 
 )
 def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
-  global test_idx, failed, time_limit_reached, test_complexity
+  global test_idx, failed, time_limit_reached
+  test_complexity = 0
   if cacheSize < 2*clw:
     cacheSize = 2*clw
 
@@ -65,6 +66,7 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
     else:
       # Read something
       model.read(addr & Bits32(0xfffffffc))
+  test_complexity /= transactions
   msgs = model.get_transactions()
   CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
   MemMsg = ReqRespMsgTypes(obw, abw, clw)
@@ -75,37 +77,46 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   harness.load( mem[::2], mem[1::2] )
   resp = transactions
   harness.apply( DynamicSim )
-  harness.sim_reset()
-  curr_cyc = 0
+  local_failed = False
   if (time.monotonic() - start_time) > 54000:
     time_limit_reached = True
     failed = True
     assert False
-  print("")
   try:
-    while not harness.done() and curr_cyc < max_cycles:
+    harness.sim_reset()
+  except:
+    failed = True
+    local_failed = True
+  curr_cyc = 0
+  print("")
+  while not harness.done() and curr_cyc < max_cycles:
+    try:
       harness.tick()
       print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
-      curr_cyc += 1
-      
-    assert curr_cyc < max_cycles
-  except:
-    # print ('FAILED')
-    if int(harness.sink.recv.msg.opaque) == 0:
-      resp = transactions
-    else:
-      resp =  int(harness.sink.recv.msg.opaque)
+    except:
+      failed = True
+      local_failed = True
+      print ('FAILED')
+      # if int(harness.sink.recv.msg.opaque) == 0:
+      #   resp = transactions
+      # else:
+      #   resp = int(harness.sink.recv.msg.opaque)
+      break
+    curr_cyc += 1
+  if local_failed or curr_cyc >= max_cycles:
     failed = True
+    raise AssertionError
+
   if not failed:
     test_idx += 1
   else:
     output = {"test":test_idx, "trans":resp, \
     "cacheSize":cacheSize, "clw":clw, "failed":failed,\
       "timeOut":time_limit_reached, \
-        "testComplexity": test_complexity/transactions}
+        "testComplexity": test_complexity}
     with open(f"{rand_out_dir}", 'w') as fd:
       json.dump(output,fd,sort_keys=True, \
         indent=2, separators=(',',':'))
-    raise AssertionError
+    # raise AssertionError
 
 # print (test_idx)
