@@ -9,6 +9,7 @@ Date   : 22 November 2019
 """
 
 import json
+import time
 from pymtl3 import *
 
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
@@ -42,6 +43,9 @@ def setup_golden_model(mem, addr_min, addr_max, num_trans, cacheSize, clw ):
 max_cycles = 1000
 
 def test_iter_deepen(rand_out_dir):
+  start_time = time.monotonic()
+  time_limit_reached = False
+  
   # Instantiate testharness
   obw  = 8   # Short name for opaque bitwidth
   abw  = 32  # Short name for addr bitwidth
@@ -52,7 +56,7 @@ def test_iter_deepen(rand_out_dir):
   failed = False
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
   cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
-  ntests_per_step = 10      # 10
+  ntests_per_step = 5      # 10
   max_transaction_len = 100 #100
   try:
     for i in range(len(clw_arr)):
@@ -62,15 +66,29 @@ def test_iter_deepen(rand_out_dir):
         print(f"clw[{clw_arr[i]}] size[{cacheSize_arr[j]}]")
         for num_trans in range(1,max_transaction_len):
           for test_number in range(ntests_per_step):
+            test_complexity = 0
             test_num += 1
             mem = rand_mem(addr_min, addr_max)
+            # Setup Golden Model
+            model = ModelCache(cacheSize, 1, 0, clw, mem)
+            data  = generate_data(num_trans)
+            types = generate_type(num_trans)
+            addr  = generate_address(num_trans,addr_min,addr_max)
+            for i in range(num_trans):
+              if types[i] == 'wr':
+                # Write something
+                model.write(addr[i] & Bits32(0xfffffffc), data[i])
+              else:
+                # Read something
+                model.read(addr[i] & Bits32(0xfffffffc))
+            
             msgs = setup_golden_model(mem, addr_min,addr_max,\
               num_trans,cacheSize_arr[j],clw_arr[i])
             
             CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
             MemMsg = ReqRespMsgTypes(obw, abw, clw_arr[i])
             harness = TestHarness(msgs[::2], msgs[1::2], \
-              r(), 2, 2, 2, BlockingCachePRTL, cacheSize_arr[j],\
+              0, 2, 2, 2, BlockingCachePRTL, cacheSize_arr[j],\
                 CacheMsg, MemMsg, 1)
 
             harness.elaborate()
@@ -79,12 +97,17 @@ def test_iter_deepen(rand_out_dir):
             harness.apply( DynamicSim )
             harness.sim_reset()
             curr_cyc = 0
+            if (time.monotonic() - start_time) > 54000:
+              time_limit_reached = True
+              failed = True
+              assert False
             try:
               print("")
               while not harness.done() and curr_cyc < max_cycles:
                 harness.tick()
                 print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
                 curr_cyc += 1
+                
               assert curr_cyc < max_cycles
             except:
               # print ('FAILED')
@@ -99,7 +122,9 @@ def test_iter_deepen(rand_out_dir):
   except:
     pass
   output = {"test":test_num, "trans":resp, \
-    "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed}
+    "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
+      "timeOut":time_limit_reached, \
+        "testComplexity": test_complexity/transactions}
   with open("{}".format(rand_out_dir)\
       , 'w') as fd:
     json.dump(output,fd,sort_keys=True, \
