@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-tag = 7
+tag = 8
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
