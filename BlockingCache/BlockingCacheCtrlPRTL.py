@@ -312,7 +312,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       if s.cachereq_type_M1 and \
         s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and \
           ~s.is_write_hit_clean_M1 and ~s.is_write_refill_M1:
-        s.is_write_hit_clean_M0 = b1(1)
+        s.is_write_hit_clean_M0 = b1(0)
       else:
         s.is_write_hit_clean_M0 = b1(0)
 

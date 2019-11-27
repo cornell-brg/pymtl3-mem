@@ -45,6 +45,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
     wbenf = BitsDataWben(-1)
+    tg_wben0 = BitsTagWben(0)
     tg_wbenf = BitsTagWben(-1)
     data_array_wb_mask = 2**(dbw//8)-1
     READ  = BitsType(MemMsgType.READ)
@@ -232,7 +233,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.cs0 = concat( tg_wbenf, b2(0)  , b2(2)  ,    x    ,  rd ,  n , x , x )
       if s.val_M0: #                                          tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|tg_v|dty|val
         if s.is_refill_M0:                    s.cs0 = concat( tg_wbenf, b2(1)  , b2(1)  , b1(1)   ,  wr ,  y , n , y )
-        elif s.is_write_refill_M0:            s.cs0 = concat( tg_wbenf, b2(2)  , b2(1)  , b1(1)   ,  wr ,  y , n, y )
+        elif s.is_write_refill_M0:            s.cs0 = concat( tg_wbenf, b2(2)  , b2(1)  , b1(1)   ,  wr ,  y , n , y )
         elif s.is_write_hit_clean_M0:         s.cs0 = concat( tg_wbenf, b2(0)  , b2(2)  , b1(0)   ,  wr ,  y , y , y )
         else:
           if (s.cachereq_type_M0 == INIT):    s.cs0 = concat( tg_wbenf, b2(0)  , b2(0)  , b1(0)   ,  wr ,  y , n , y )

@@ -1,105 +1,162 @@
 import json
+import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-def plot(out_dir):
+titlefont = {'fontname':'Times New Roman', 'size': 24}
+ylabelfont = {'fontname':'Times New Roman','size': 14}
+xlabelfont = {'fontname':'Times New Roman','size': 10}
+
+
+def plot(bugs, num_tests):
+  '''
+  Plots all directed bugs
+
+  :param bugs: list of all bugs
+  :param num_tests: number of tests run
+  '''
 
   print("PLOTING")
 
+  rand_test = np.zeros((len(bugs), num_tests)) - 1
+  iter_test = np.zeros((len(bugs), num_tests)) - 1
+  hypothesis_test = np.zeros((len(bugs), num_tests)) - 1
+
+  rand_cacheSize = np.zeros((len(bugs), num_tests)) - 1
+  iter_cacheSize = np.zeros((len(bugs), num_tests)) - 1
+  hypothesis_cacheSize = np.zeros((len(bugs), num_tests)) - 1
+
+  rand_clw = np.zeros((len(bugs), num_tests)) - 1
+  iter_clw = np.zeros((len(bugs), num_tests)) - 1
+  hypothesis_clw = np.zeros((len(bugs), num_tests)) - 1
+
+  rand_trans = np.zeros((len(bugs), num_tests)) - 1
+  iter_trans = np.zeros((len(bugs), num_tests)) - 1
+  hypothesis_trans = np.zeros((len(bugs), num_tests)) - 1
+
+  rand_complexity = np.zeros((len(bugs), num_tests)) - 1
+  iter_complexity = np.zeros((len(bugs), num_tests)) - 1
+  hypothesis_complexity = np.zeros((len(bugs), num_tests)) - 1
+
+  results_dir = os.path.join(os.getcwd(), '..', 'results')
+
   # Parse data from json
-  onlyfiles = [f for f in os.listdir(out_dir) if os.path.isfile(os.path.join(out_dir, f))]
-  test_vector = []
-  transaction_vector = []
-  cacheSize_vector = []
-  clw_vector = []
-  for i in range(len(onlyfiles)):
-    with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
-      stats = json.load(fd2)
-      test_vector.append(stats['test'])
-      transaction_vector.append(stats['trans'])
-      if stats['failed']:
-        cacheSize_vector.append(stats['cacheSize'])
-        clw_vector.append(stats['clw'])
+  for i in range(len(bugs)):
+    bug_dir = os.path.join(results_dir, bugs[i])
+    onlyfiles = [f for f in os.listdir(bug_dir) if os.path.isfile(os.path.join(bug_dir, f))]
 
+    for j in range(len(onlyfiles)):
+      if onlyfiles[j].startswith('rand'):
+        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        with open(filename, 'r') as fd2:
+          num = int(filename[-8:-5])
+          stats = json.load(fd2)
+          rand_test      [i, num] = stats['test']
+          rand_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          rand_clw       [i, num] = stats['clw']
+          rand_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            rand_complexity[i, num] = stats['testComplexity']
 
-  i = 0
-  while i < len(test_vector):
-    if test_vector[i] >= 1000:
-      del(test_vector[i])
-    else:
-      i += 1
-  print(test_vector)
+    for j in range(len(onlyfiles)):
+      if onlyfiles[j].startswith('iter'):
+        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        with open(filename, 'r') as fd2:
+          num = int(filename[-8:-5])
+          stats = json.load(fd2)
+          iter_test      [i, num] = stats['test']
+          iter_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          iter_clw       [i, num] = stats['clw']
+          iter_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            iter_complexity[i, num] = stats['testComplexity']
+
+    for j in range(len(onlyfiles)):
+      if onlyfiles[j].startswith('hypothesis'):
+        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        with open(filename, 'r') as fd2:
+          num = int(filename[-8:-5])
+          stats = json.load(fd2)
+          hypothesis_test      [i, num] = stats['test']
+          hypothesis_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          hypothesis_clw       [i, num] = stats['clw']
+          hypothesis_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            hypothesis_complexity[i, num] = stats['testComplexity']
+
+  rand_test       = rand_test.transpose()
+  rand_cacheSize  = rand_cacheSize.transpose()
+  rand_clw        = rand_clw.transpose()
+  rand_trans      = rand_trans.transpose()
+  rand_complexity = rand_complexity.transpose()
+
+  iter_test       = iter_test.transpose()
+  iter_cacheSize  = iter_cacheSize.transpose()
+  iter_clw        = iter_clw.transpose()
+  iter_trans      = iter_trans.transpose()
+  iter_complexity = iter_complexity.transpose()
+
+  hypothesis_test       = hypothesis_test.transpose()
+  hypothesis_cacheSize  = hypothesis_cacheSize.transpose()
+  hypothesis_clw        = hypothesis_clw.transpose()
+  hypothesis_trans      = hypothesis_trans.transpose()
+  hypothesis_complexity = hypothesis_complexity.transpose()
 
 
   # Plot Results
-  fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=1, ncols=4, sharey='row')
-  
-  ax1.hist(test_vector, density=False, bins=30)
-  ax1.set_xlabel('Tests',fontsize = 10) 
-  ax1.set_ylabel('Frequency',fontsize = 10) 
+  fig, axs = plt.subplots(nrows=5, ncols=3, figsize=(20,20), sharey='row')
 
-  ax2.hist(transaction_vector, density=False, bins=30)
-  ax2.set_xlabel('Transactions',fontsize = 10) 
+  axs[0, 0].boxplot(rand_test)
+  axs[1, 0].boxplot(rand_cacheSize)
+  axs[2, 0].boxplot(rand_clw)
+  axs[3, 0].boxplot(rand_trans)
+  axs[4, 0].boxplot(rand_complexity)
 
-  ax3.hist(cacheSize_vector, density=False, bins=30)
-  ax3.set_xlabel('Cache Size',fontsize = 10) 
-  ax3.tick_params(axis='both', which='major', labelsize=8)
+  axs[0, 1].boxplot(iter_test)
+  axs[1, 1].boxplot(iter_cacheSize)
+  axs[2, 1].boxplot(iter_clw)
+  axs[3, 1].boxplot(iter_trans)
+  axs[4, 1].boxplot(iter_complexity)
 
-  ax4.hist(clw_vector, density=False, bins=30)
-  ax4.set_xlabel('Cacheline Size',fontsize = 10) 
-  
-  fig.savefig(f'{out_dir}_sim_plots.pdf')
+  axs[0, 2].boxplot(hypothesis_test)
+  axs[1, 2].boxplot(hypothesis_cacheSize)
+  axs[2, 2].boxplot(hypothesis_clw)
+  axs[3, 2].boxplot(hypothesis_trans)
+  axs[4, 2].boxplot(hypothesis_complexity)
 
-def plot_boxplot(out_dir):
-  print("PLOTING")
+  # Set Titles
+  axs[0, 0].set_title('Complete Random',     **titlefont)
+  axs[0, 1].set_title('Iterative Deepening', **titlefont)
+  axs[0, 2].set_title('Hypothesis',          **titlefont)
 
-  # Parse data from json
-  onlyfiles = [f for f in os.listdir(out_dir) if os.path.isfile(os.path.join(out_dir, f))]
-  test_vector = []
-  transaction_vector = []
-  cacheSize_vector = []
-  clw_vector = []
-  for i in range(len(onlyfiles)):
-    if onlyfiles[i].startswith('iter'):
-      print(onlyfiles[i])
-      with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
-        stats = json.load(fd2)
-        test_vector.append(stats['test'])
-        transaction_vector.append(stats['trans'])
-        if stats['failed']:
-          cacheSize_vector.append(stats['cacheSize'])
-          clw_vector.append(stats['clw'])
+  # Set y labels
+  axs[0, 0].set_ylabel('Num tests',       **ylabelfont)
+  axs[1, 0].set_ylabel('Num Cachelines',  **ylabelfont)
+  axs[2, 0].set_ylabel('Cahceline Width', **ylabelfont)
+  axs[3, 0].set_ylabel('Num Trans',       **ylabelfont)
+  axs[4, 0].set_ylabel('Avg Complexity',  **ylabelfont)
 
+  for r in range(5):
+    for c in range(3):
+      axs[r, c].spines['top'  ].set_visible( False )
+      axs[r, c].spines['right'].set_visible( False )
+      axs[r, c].set_xticklabels([])
 
-  i = 0
-  while i < len(test_vector):
-    if test_vector[i] >= 1000:
-      del(test_vector[i])
-    else:
-      i += 1
-  print(test_vector)
-
-
-  # Plot Results
-  fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=1, ncols=4)
-  
-  ax1.boxplot(test_vector)
-  ax1.set_xlabel('Tests',fontsize = 10) 
-  ax1.set_ylabel('Frequency',fontsize = 10) 
-
-  ax2.boxplot(transaction_vector)
-  ax2.set_xlabel('Transactions',fontsize = 10) 
-
-  ax3.boxplot(cacheSize_vector)
-  ax3.set_xlabel('Cache Size',fontsize = 10) 
-  ax3.tick_params(axis='both', which='major', labelsize=8)
-
-  ax4.boxplot(clw_vector)
-  ax4.set_xlabel('Cacheline Size',fontsize = 10) 
-  
-  fig.savefig(f'{out_dir}_sim_plots.pdf')  
+  # Set x labels
+  for i in range(3):
+    axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
+    axs[4, i].set_xlabel('Bug Type', **ylabelfont)
+ 
+  fig.savefig(os.path.join(results_dir,'directed_bug_results.pdf'))
 
 if __name__ == '__main__':
     cwd = os.getcwd()
-    data_dir = os.path.join(cwd,'directed_bugs_results_more')
-    plot_boxplot(data_dir)
+    results_dir = os.path.join(cwd, '..', 'results')
+    # plot_boxplot(data_dir)
+    bugs = os.listdir(results_dir)
+    bugs_dir = []
+    for b in bugs:
+      if os.path.isdir(os.path.join(results_dir, b)):
+        bugs_dir.append(b)
+
+    plot(bugs_dir, 250)
