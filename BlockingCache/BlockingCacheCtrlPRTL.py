@@ -319,7 +319,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     @s.update
     def need_evict_M1():
       if s.val_M1 and ~s.is_write_refill_M1 and ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:
-        s.is_evict_M1 = b1(0)
+        s.is_evict_M1 = b1(1)
       else:
         s.is_evict_M1 = b1(0)
 
