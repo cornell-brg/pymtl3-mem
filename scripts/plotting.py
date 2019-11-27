@@ -22,13 +22,13 @@ def plot(bugs, num_tests):
   iter_test = np.zeros((len(bugs), num_tests)) - 1
   hypothesis_test = np.zeros((len(bugs), num_tests)) - 1
 
-  rand_cacheSize = np.zeros((len(bugs), num_tests)) - 1
-  iter_cacheSize = np.zeros((len(bugs), num_tests)) - 1
-  hypothesis_cacheSize = np.zeros((len(bugs), num_tests)) - 1
+  rand_cacheSize = np.zeros((len(bugs), num_tests)) + 1
+  iter_cacheSize = np.zeros((len(bugs), num_tests)) + 1
+  hypothesis_cacheSize = np.zeros((len(bugs), num_tests)) + 1
 
-  rand_clw = np.zeros((len(bugs), num_tests)) - 1
-  iter_clw = np.zeros((len(bugs), num_tests)) - 1
-  hypothesis_clw = np.zeros((len(bugs), num_tests)) - 1
+  rand_clw = np.zeros((len(bugs), num_tests)) + 1
+  iter_clw = np.zeros((len(bugs), num_tests)) + 1
+  hypothesis_clw = np.zeros((len(bugs), num_tests)) + 1
 
   rand_trans = np.zeros((len(bugs), num_tests)) - 1
   iter_trans = np.zeros((len(bugs), num_tests)) - 1
@@ -154,7 +154,8 @@ def plot(bugs, num_tests):
   # Set x labels
   for i in range(3):
     axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
-    axs[4, i].set_xlabel('Bug Type', **ylabelfont)
+  
+  axs[4, i].set_xlabel('Bug Type', **ylabelfont)
  
   fig.savefig(os.path.join(results_dir,'directed_bug_results.pdf'), bbox_inches='tight')
 
