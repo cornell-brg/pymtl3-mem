@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-titlefont = {'fontname':'Times New Roman', 'size': 24}
-ylabelfont = {'fontname':'Times New Roman','size': 14}
-xlabelfont = {'fontname':'Times New Roman','size': 10}
+titlefont = {'fontname':'Times New Roman', 'size': 40}
+ylabelfont = {'fontname':'Times New Roman','size': 30}
+xlabelfont = {'fontname':'Times New Roman','size': 20}
 
 
 def plot(bugs, num_tests):
@@ -46,44 +46,52 @@ def plot(bugs, num_tests):
     onlyfiles = [f for f in os.listdir(bug_dir) if os.path.isfile(os.path.join(bug_dir, f))]
 
     for j in range(len(onlyfiles)):
-      print(onlyfiles[j])
       if onlyfiles[j].startswith('rand'):
         filename = os.path.join(bug_dir, onlyfiles[j]) 
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
-          stats = json.load(fd2)
-          rand_test      [i, num] = stats['test']
-          rand_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-          rand_clw       [i, num] = stats['clw']
-          rand_trans     [i, num] = stats['trans']
-          if 'testComplexity' in stats:
-            rand_complexity[i, num] = stats['testComplexity']
+          try:
+            stats = json.load(fd2)
+            rand_test      [i, num] = stats['test']
+            rand_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+            rand_clw       [i, num] = stats['clw']
+            rand_trans     [i, num] = stats['trans']
+            if 'testComplexity' in stats:
+              rand_complexity[i, num] = stats['testComplexity']
+          except:
+            pass
 
     for j in range(len(onlyfiles)):
       if onlyfiles[j].startswith('iter'):
         filename = os.path.join(bug_dir, onlyfiles[j]) 
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
-          stats = json.load(fd2)
-          iter_test      [i, num] = stats['test']
-          iter_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-          iter_clw       [i, num] = stats['clw']
-          iter_trans     [i, num] = stats['trans']
-          if 'testComplexity' in stats:
-            iter_complexity[i, num] = stats['testComplexity']
+          try:
+            stats = json.load(fd2)
+            iter_test      [i, num] = stats['test']
+            iter_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+            iter_clw       [i, num] = stats['clw']
+            iter_trans     [i, num] = stats['trans']
+            if 'testComplexity' in stats:
+              iter_complexity[i, num] = stats['testComplexity']
+          except:
+            pass
 
     for j in range(len(onlyfiles)):
       if onlyfiles[j].startswith('hypothesis'):
         filename = os.path.join(bug_dir, onlyfiles[j]) 
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
-          stats = json.load(fd2)
-          hypothesis_test      [i, num] = stats['test']
-          hypothesis_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-          hypothesis_clw       [i, num] = stats['clw']
-          hypothesis_trans     [i, num] = stats['trans']
-          if 'testComplexity' in stats:
-            hypothesis_complexity[i, num] = stats['testComplexity']
+          try:
+            stats = json.load(fd2)
+            hypothesis_test      [i, num] = stats['test']
+            hypothesis_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+            hypothesis_clw       [i, num] = stats['clw']
+            hypothesis_trans     [i, num] = stats['trans']
+            if 'testComplexity' in stats:
+              hypothesis_complexity[i, num] = stats['testComplexity']
+          except:
+            pass
 
   rand_test       = rand_test.transpose()
   rand_cacheSize  = rand_cacheSize.transpose()
@@ -105,23 +113,23 @@ def plot(bugs, num_tests):
 
 
   # Plot Results
-  fig, axs = plt.subplots(nrows=5, ncols=3, figsize=(20,20), sharey='row')
+  fig, axs = plt.subplots(nrows=5, ncols=3, figsize=(20,35), sharey='row')
 
   axs[0, 0].boxplot(rand_test)
-  axs[1, 0].boxplot(rand_cacheSize)
-  axs[2, 0].boxplot(rand_clw)
+  axs[1, 0].boxplot(np.log2(rand_cacheSize))
+  axs[2, 0].boxplot(np.log2(rand_clw))
   axs[3, 0].boxplot(rand_trans)
   axs[4, 0].boxplot(rand_complexity)
 
   axs[0, 1].boxplot(iter_test)
-  axs[1, 1].boxplot(iter_cacheSize)
-  axs[2, 1].boxplot(iter_clw)
+  axs[1, 1].boxplot(np.log2(iter_cacheSize))
+  axs[2, 1].boxplot(np.log2(iter_clw))
   axs[3, 1].boxplot(iter_trans)
   axs[4, 1].boxplot(iter_complexity)
 
   axs[0, 2].boxplot(hypothesis_test)
-  axs[1, 2].boxplot(hypothesis_cacheSize)
-  axs[2, 2].boxplot(hypothesis_clw)
+  axs[1, 2].boxplot(np.log2(hypothesis_cacheSize))
+  axs[2, 2].boxplot(np.log2(hypothesis_clw))
   axs[3, 2].boxplot(hypothesis_trans)
   axs[4, 2].boxplot(hypothesis_complexity)
 
@@ -148,7 +156,7 @@ def plot(bugs, num_tests):
     axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
     axs[4, i].set_xlabel('Bug Type', **ylabelfont)
  
-  fig.savefig(os.path.join(results_dir,'directed_bug_results.pdf'))
+  fig.savefig(os.path.join(results_dir,'directed_bug_results.pdf'), bbox_inches='tight')
 
 if __name__ == '__main__':
     cwd = os.getcwd()
@@ -158,7 +166,10 @@ if __name__ == '__main__':
     bugs_dir = []
     for b in bugs:
       if os.path.isdir(os.path.join(results_dir, b)):
-        bugs_dir.append(b)
+        if b == 'random':
+          bugs_dir.append(b)
+        else:
+          bugs_dir.insert(0,b)
 
     print(bugs_dir)
     plot(bugs_dir, 250)
