@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os
 
 titlefont = {'fontname':'Times New Roman', 'size': 40}
-ylabelfont = {'fontname':'Times New Roman','size': 30}
-xlabelfont = {'fontname':'Times New Roman','size': 20}
+ylabelfont = {'fontname':'Times New Roman','size': 13}
+xlabelfont = {'fontname':'Times New Roman','size': 10}
 
 
 def plot(bugs, num_tests):
@@ -47,7 +47,7 @@ def plot(bugs, num_tests):
 
     for j in range(len(onlyfiles)):
       if onlyfiles[j].startswith('rand'):
-        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        filename = os.path.join(bug_dir, onlyfiles[j])
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
           try:
@@ -63,7 +63,7 @@ def plot(bugs, num_tests):
 
     for j in range(len(onlyfiles)):
       if onlyfiles[j].startswith('iter'):
-        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        filename = os.path.join(bug_dir, onlyfiles[j])
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
           try:
@@ -79,7 +79,7 @@ def plot(bugs, num_tests):
 
     for j in range(len(onlyfiles)):
       if onlyfiles[j].startswith('hypothesis'):
-        filename = os.path.join(bug_dir, onlyfiles[j]) 
+        filename = os.path.join(bug_dir, onlyfiles[j])
         with open(filename, 'r') as fd2:
           num = int(filename[-8:-5])
           try:
@@ -113,50 +113,82 @@ def plot(bugs, num_tests):
 
 
   # Plot Results
-  fig, axs = plt.subplots(nrows=5, ncols=3, figsize=(20,35), sharey='row')
+  fig, axs = plt.subplots(nrows=5, ncols=3, figsize=(6,8))
 
   axs[0, 0].boxplot(rand_test)
-  axs[1, 0].boxplot(np.log2(rand_cacheSize))
-  axs[2, 0].boxplot(np.log2(rand_clw))
+  axs[1, 0].boxplot(rand_cacheSize)
+  axs[2, 0].boxplot(rand_clw)
   axs[3, 0].boxplot(rand_trans)
   axs[4, 0].boxplot(rand_complexity)
 
   axs[0, 1].boxplot(iter_test)
-  axs[1, 1].boxplot(np.log2(iter_cacheSize))
-  axs[2, 1].boxplot(np.log2(iter_clw))
+  axs[1, 1].boxplot(iter_cacheSize)
+  axs[2, 1].boxplot(iter_clw)
   axs[3, 1].boxplot(iter_trans)
   axs[4, 1].boxplot(iter_complexity)
 
   axs[0, 2].boxplot(hypothesis_test)
-  axs[1, 2].boxplot(np.log2(hypothesis_cacheSize))
-  axs[2, 2].boxplot(np.log2(hypothesis_clw))
+  axs[1, 2].boxplot(hypothesis_cacheSize)
+  axs[2, 2].boxplot(hypothesis_clw)
   axs[3, 2].boxplot(hypothesis_trans)
   axs[4, 2].boxplot(hypothesis_complexity)
 
   # Set Titles
-  axs[0, 0].set_title('Complete Random',     **titlefont)
-  axs[0, 1].set_title('Iterative Deepening', **titlefont)
-  axs[0, 2].set_title('Hypothesis',          **titlefont)
+  # axs[0, 0].set_title('Complete Random',     **titlefont)
+  # axs[0, 1].set_title('Iterative Deepening', **titlefont)
+  # axs[0, 2].set_title('Hypothesis',          **titlefont)
 
   # Set y labels
-  axs[0, 0].set_ylabel('Num tests',       **ylabelfont)
-  axs[1, 0].set_ylabel('Num Cachelines',  **ylabelfont)
-  axs[2, 0].set_ylabel('Cahceline Width', **ylabelfont)
-  axs[3, 0].set_ylabel('Num Trans',       **ylabelfont)
-  axs[4, 0].set_ylabel('Avg Complexity',  **ylabelfont)
+  axs[0, 0].set_ylabel('#tests',       **ylabelfont)
+  axs[1, 0].set_ylabel('#cachelines',  **ylabelfont)
+  axs[2, 0].set_ylabel('cacheline width(bit)', **ylabelfont)
+  axs[3, 0].set_ylabel('#transactions',       **ylabelfont)
+  axs[4, 0].set_ylabel('avg. complexity',  **ylabelfont)
+
+  for r in [1,2,4]:
+    for c in range(3):
+      axs[r][c].set_yscale('log', basey=2)
 
   for r in range(5):
     for c in range(3):
       axs[r, c].spines['top'  ].set_visible( False )
       axs[r, c].spines['right'].set_visible( False )
       axs[r, c].set_xticklabels([])
+      axs[r, c].get_yaxis().set_label_coords(-0.28,0.5)
 
   # Set x labels
   for i in range(3):
-    axs[4, i].set_xticklabels(bugs, rotation=45, **xlabelfont)
-  
-  axs[4, i].set_xlabel('Bug Type', **ylabelfont)
- 
+    axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
+
+  # axs[4, i].set_xlabel('Bug Type', **ylabelfont)
+
+  top_limit = [
+    [80, 600, 80],
+    [64, 64, 64],
+    [1024, 1024, 1024],
+    [100, 100, 4],
+    [3*10**9, 3*10**9, 3*10**9],
+  ]
+
+  import math
+  for r_idx in [0,3]:
+    for c_idx in range(3):
+      axs[r_idx][c_idx].set_ylim( bottom=0, top=top_limit[r_idx][c_idx]*1.2 )
+      axs[r_idx][c_idx].set_yticks( range(0, math.ceil(top_limit[r_idx][c_idx]*1.2), top_limit[r_idx][c_idx]//2) )
+
+  # Cachelines: r_idx = 1
+  r_idx = 1
+  for c_idx in range(3):
+    axs[r_idx][c_idx].set_ylim( top=top_limit[r_idx][c_idx]*1.2 )
+    axs[r_idx][c_idx].set_yticks( [ 2**x for x in range(12) if 2**x < top_limit[r_idx][c_idx]] )
+
+  # cacheline width
+  r_idx = 2
+  for c_idx in range(3):
+    axs[r_idx][c_idx].set_ylim( bottom=31, top=top_limit[r_idx][c_idx]*1.2 )
+
+    axs[r_idx][c_idx].set_yticks( [ 2**x for x in range(12) if 31 < 2**x < top_limit[r_idx][c_idx]] )
+
   fig.savefig(os.path.join(results_dir,'directed_bug_results.pdf'), bbox_inches='tight')
 
 if __name__ == '__main__':
