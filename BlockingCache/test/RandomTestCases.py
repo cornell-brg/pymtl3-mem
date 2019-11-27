@@ -402,6 +402,6 @@ test_case_table_random_lat = mk_test_case_table([
 test_case_table_enhanced_random = mk_test_case_table([
   ( "                        msg_func               mem_data_func        stall lat src sink"),
   [ "completely_random",     rand_rw_alladdr,       rand_mem,            0.0,  1,   0,  0   ],
-  [ "rand_small_addr_range",     rand_small_addr_range, rand_mem,            0.0,  1,   0,  0],
+  [ "rand_small_addr_range", rand_small_addr_range, rand_mem,            0.0,  1,   0,  0],
 ])
 
