@@ -19,7 +19,7 @@ import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 
-tag = 3
+tag = 7
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -50,25 +50,28 @@ def parse_cmdline():
 PATH_TO_CTRL = "../BlockingCache/BlockingCacheCtrlPRTL.py"
 operators = {
   "complete_random" : {
-    'trials'   : 2,
-    'max_test' : 2,
     'test_to_run': "BlockingCacheRandomRTL_test",
   },  
   "iterative_deepen" : {
-    'trials'   : 2,
-    'max_test' : 2,
     'test_to_run': "BlockingCache_iterdeepen_test",
+  },
+  "hypothesis" : {
+    'test_to_run': "BlockingCache_hypothesis_test",
   }
 }
 
-def initial():
-  print("NEW BUG")
+def initial(sim_num):
+  
+  flags = ["--functional", "--if-const", "--expr-elim"]
   os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
+  command = "echo sim_num = {} >>inject_{}.out 2>&1".format(sim_num,tag)
+  os.system(command)
   command = "python {} --input-spec {} \
-     --functional --no-astdump --if-const --expr-elim >>inject_{}.out 2>&1".format(
-      "~/work/pymtl3-fft/script/bug_injector.py",
-      "mutation_targets.json",tag 
-  )
+     {} --no-astdump >>inject_{}.out 2>&1".format(
+      "~/work/pymtl3-mem/scripts/bug_injector.py",
+      "mutation_targets.json",flags[random.randint(0,2)],tag 
+  ) # Fix the flags!! 
+  print(f"NEW BUG cmd={command}")
   os.system(command)
 
 def finish():
@@ -86,7 +89,7 @@ def run(name, out_dir, test_num, test):
   os.system(command)
   # print(command)
 
-def plot(out_dir):
+def plot(op,out_dir):
   print("PLOTING")
   onlyfiles = [f for f in os.listdir(out_dir) \
     if os.path.isfile(os.path.join(out_dir, f))]
@@ -98,26 +101,31 @@ def plot(out_dir):
     with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
       stats = json.load(fd2)
       transaction_vector.append(stats['trans'])
-      if stats['failed']:
+      if op=="iterative_deepen":
+        if stats['failed']:
+          test_vector.append(stats['test'])
+      else:
         test_vector.append(stats['test'])
+      
+      if stats['failed']:
         cacheSize_vector.append(stats['cacheSize'])
         clw_vector.append(stats['clw'])
   # print (test_vector)
   
   fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=1, ncols=4, sharey='row')
   
-  ax1.hist(test_vector, range=(0, max(test_vector)))
+  ax1.hist(test_vector, bins=100)#range=(0, max(test_vector)))
   ax1.set_xlabel('Tests',fontsize = 10) 
   ax1.set_ylabel('Number of Bugs',fontsize = 10) 
 
-  ax2.hist(transaction_vector, range=(0, max(transaction_vector)))
+  ax2.hist(transaction_vector, bins=50)#range=(0, max(transaction_vector)))
   ax2.set_xlabel('Transactions',fontsize = 10) 
 
-  ax3.hist(cacheSize_vector, range=(0, max(cacheSize_vector)))
+  ax3.hist(cacheSize_vector, bins=30)#range=(0, max(cacheSize_vector)))
   ax3.set_xlabel('Cache Size',fontsize = 10) 
   # ax3.tick_params(axis='both', which='major', labelsize=8)
 
-  ax4.hist(clw_vector, range=(0, max(clw_vector)))
+  ax4.hist(clw_vector, bins=30)#range=(0, max(clw_vector)))
   ax4.set_xlabel('Cacheline Size',fontsize = 10) 
   
   fig.savefig(f'{out_dir}_sim_plots.pdf')
@@ -145,7 +153,7 @@ if __name__ =="__main__":
   if opts.plot:
     for op, d in operators.items():   
       sim_dir = "{}_{}_logs".format(op,tag)
-      plot(sim_dir)
+      plot(op,sim_dir)
   else:
     for op, d in operators.items():   
       sim_dir = "{}_{}_logs".format(op,tag)
@@ -154,7 +162,7 @@ if __name__ =="__main__":
         os.mkdir( sim_dir )
     for j in range(int(opts.simulations)):
       if opts.bug_inject:
-        initial()
+        initial(j)
       for i in range(int(opts.trials)):
         for op, d in operators.items():   
           sim_dir = "{}_{}_logs".format(op,tag)
@@ -169,7 +177,7 @@ if __name__ =="__main__":
         finish()
     for op, d in operators.items():   
       sim_dir = "{}_{}_logs".format(op,tag)
-      plot(sim_dir) 
+      plot(op,sim_dir) 
   
 
 # def task_sim():
