@@ -45,6 +45,7 @@ class BlockingCacheCtrlPRTL ( Component ):
     mxsel0 = BitsRdDataMux(0)
     wben0 = BitsDataWben(0)
     wbenf = BitsDataWben(-1)
+    tg_wben0 = BitsTagWben(0)
     tg_wbenf = BitsTagWben(-1)
     data_array_wb_mask = 2**(dbw//8)-1
     READ  = BitsType(MemMsgType.READ)
@@ -341,7 +342,7 @@ class BlockingCacheCtrlPRTL ( Component ):
       wben = s.wben_out
       if s.val_M1: #                                                wben| ty|val|ostall|addr
                    #                                                                    mux  
-        if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n    , b1(0))
+        if s.is_refill_M1:                          s.cs1 = concat( wben, wr, y , n    , b1(0))
         elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1))
         elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n    , b1(0))
         else:

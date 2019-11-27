@@ -60,13 +60,15 @@ def plot_boxplot(out_dir):
   cacheSize_vector = []
   clw_vector = []
   for i in range(len(onlyfiles)):
-    with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
-      stats = json.load(fd2)
-      test_vector.append(stats['test'])
-      transaction_vector.append(stats['trans'])
-      if stats['failed']:
-        cacheSize_vector.append(stats['cacheSize'])
-        clw_vector.append(stats['clw'])
+    if onlyfiles[i].startswith('iter'):
+      print(onlyfiles[i])
+      with open("{}/{}".format(out_dir,onlyfiles[i]), 'r') as fd2:
+        stats = json.load(fd2)
+        test_vector.append(stats['test'])
+        transaction_vector.append(stats['trans'])
+        if stats['failed']:
+          cacheSize_vector.append(stats['cacheSize'])
+          clw_vector.append(stats['clw'])
 
 
   i = 0
@@ -99,5 +101,5 @@ def plot_boxplot(out_dir):
 
 if __name__ == '__main__':
     cwd = os.getcwd()
-    data_dir = os.path.join(cwd,'directed_bugs_results')
+    data_dir = os.path.join(cwd,'directed_bugs_results_more')
     plot_boxplot(data_dir)

@@ -5,7 +5,7 @@ BlockingCache_iterdeepen_test.py
 Random test with iterative deepening to find bugs
 
 Author : Xiaoyu Yan, Eric Tang (et396)
-Date   : 22 November 2019
+Date   : 26 November 2019
 """
 
 import json
@@ -52,8 +52,9 @@ def test_iter_deepen(rand_out_dir):
   failed = False
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
   cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
-  ntests_per_step = 10      # 10
-  max_transaction_len = 100 #100
+  ntests_per_step = 10       # Number of times to test each configuration
+  max_transaction_len = 100  # Maximum number of transactions per test
+
   try:
     for i in range(len(clw_arr)):
       curr_clw = clw_arr[i]
