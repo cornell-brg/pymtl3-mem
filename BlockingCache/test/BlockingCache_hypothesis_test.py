@@ -89,8 +89,6 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   local_failed = False
   if (time.monotonic() - start_time) > 54000:
     time_limit_reached = True
-    failed = True
-    assert False
   try:
     harness.sim_reset()
   except:
@@ -112,7 +110,7 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
       #   resp = int(harness.sink.recv.msg.opaque)
       break
     curr_cyc += 1
-  if local_failed or curr_cyc >= max_cycles:
+  if local_failed or curr_cyc >= max_cycles or time_limit_reached:
     failed = True
     output = {"test":test_idx, "trans":resp, \
     "cacheSize":cacheSize, "clw":clw, "failed":failed,\

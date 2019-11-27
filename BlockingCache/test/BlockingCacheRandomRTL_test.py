@@ -89,7 +89,7 @@ def test_complete_random(rand_out_dir):
     curr_cyc = 0
     try:
       if (time.monotonic() - start_time) > 54000:
-        time_limit_reached = failed = True
+        time_limit_reached = True
         assert False
       print("")
       while not harness.done() and curr_cyc < max_cycles:
@@ -97,7 +97,7 @@ def test_complete_random(rand_out_dir):
         print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
         curr_cyc += 1
         
-      assert curr_cyc < max_cycles
+      assert curr_cyc < max_cycles and not time_limit_reached
     except:
       # print("FAILED")
       if int(harness.sink.recv.msg.opaque) > 1:
