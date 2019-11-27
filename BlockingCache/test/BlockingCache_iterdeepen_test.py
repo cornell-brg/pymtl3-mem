@@ -125,11 +125,11 @@ def test_iter_deepen(rand_out_dir):
             else:
               resp =  int(harness.sink.recv.msg.opaque)
             
-              output = {"test":test_num, "trans":resp, \
-              "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
-                "timeOut":time_limit_reached, \
-                  "testComplexity": test_complexity, "avg_addr": avg_addr, \
-                    "avg_data": avg_data, "avg_type": avg_type }
+            output = {"test":test_num, "trans":resp, \
+            "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
+              "timeOut":time_limit_reached, \
+                "testComplexity": test_complexity, "avg_addr": avg_addr, \
+                  "avg_data": avg_data, "avg_type": avg_type }
             with open("{}".format(rand_out_dir)\
                 , 'w') as fd:
               json.dump(output,fd,sort_keys=True, \
