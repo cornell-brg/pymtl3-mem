@@ -105,11 +105,6 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
     curr_cyc += 1
   if local_failed or curr_cyc >= max_cycles:
     failed = True
-    raise AssertionError
-
-  if not failed:
-    test_idx += 1
-  else:
     output = {"test":test_idx, "trans":resp, \
     "cacheSize":cacheSize, "clw":clw, "failed":failed,\
       "timeOut":time_limit_reached, \
@@ -117,6 +112,9 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
     with open(f"{rand_out_dir}", 'w') as fd:
       json.dump(output,fd,sort_keys=True, \
         indent=2, separators=(',',':'))
-    # raise AssertionError
+    raise AssertionError
 
+  if not failed:
+    test_idx += 1
+    # raise AssertionError
 # print (test_idx)
