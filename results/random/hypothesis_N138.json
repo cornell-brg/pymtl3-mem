@@ -5,8 +5,8 @@
   "cacheSize":128,
   "clw":64,
   "failed":true,
-  "test":3,
+  "test":1,
   "testComplexity":0.0,
   "timeOut":false,
-  "trans":2
+  "trans":1
 }
