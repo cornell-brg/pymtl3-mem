@@ -46,6 +46,7 @@ def plot(bugs, num_tests):
     onlyfiles = [f for f in os.listdir(bug_dir) if os.path.isfile(os.path.join(bug_dir, f))]
 
     for j in range(len(onlyfiles)):
+      print(onlyfiles[j])
       if onlyfiles[j].startswith('rand'):
         filename = os.path.join(bug_dir, onlyfiles[j]) 
         with open(filename, 'r') as fd2:
@@ -159,4 +160,5 @@ if __name__ == '__main__':
       if os.path.isdir(os.path.join(results_dir, b)):
         bugs_dir.append(b)
 
+    print(bugs_dir)
     plot(bugs_dir, 250)

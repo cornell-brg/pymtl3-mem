@@ -39,7 +39,6 @@ def test_complete_random(rand_out_dir):
   fail_test = 0
   failed = False
   ntests_per_step = 100
-  # print(f"clw[{clw}] size[{cacheSize}]")
 
   for i in range(ntests_per_step): # max amount of tests before we give up
     test_complexity = 0
@@ -47,8 +46,8 @@ def test_complete_random(rand_out_dir):
     avg_data = 0
     avg_type = 0
     fail_test += 1  
-    clw  = 2**(6+random.randint(0,4)) # minimum cacheline size is 64 bits
-    cacheSize = 2**( clog2(clw) + random.randint(1,6)) #minimum cacheSize is 2 times clw
+    clw  = 2**(6+random.randint(0,4))                  # minimum cacheline size is 64 bits
+    cacheSize = 2**( clog2(clw) + random.randint(1,7)) # minimum cacheSize is 2 times clw
     CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
     MemMsg = ReqRespMsgTypes(obw, abw, clw) 
     transaction_length = random.randint(1,100)

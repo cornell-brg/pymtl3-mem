@@ -55,15 +55,14 @@ def test_iter_deepen(rand_out_dir):
   test_num = 0
   failed = False
   clw_arr       = [2**(6+i) for i in range(5)] # minimum cacheline size is 64 bits
-  cacheSize_arr = [2**(7+i) for i in range(7)] #minimum cacheSize is 2 times clw
+  cacheSize_arr = [i+1      for i in range(7)] #minimum cacheSize is 2 times clw
   ntests_per_step = 5      # 10
   max_transaction_len = 100 #100
   
   for i in range(len(clw_arr)):
     curr_clw = clw_arr[i]
     for j in range(i, len(cacheSize_arr)):
-      curr_cacheSize = cacheSize_arr[j]
-      print(f"clw[{clw_arr[i]}] size[{cacheSize_arr[j]}]")
+      curr_cacheSize = 2**cacheSize_arr[j]*curr_clw
       for num_trans in range(1,max_transaction_len):
         for test_number in range(ntests_per_step):
           if (time.monotonic() - start_time) > 54000:
