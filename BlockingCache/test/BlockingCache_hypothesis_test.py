@@ -49,6 +49,9 @@ def gen_reqs( draw):
 def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   global test_idx, failed, time_limit_reached
   test_complexity = 0
+  avg_addr = 0
+  avg_data = 0
+  avg_type = 0
   if cacheSize < 2*clw:
     cacheSize = 2*clw
 
@@ -60,6 +63,9 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
   model = ModelCache(cacheSize, 1, 0, clw, mem)
   for i in range(len(reqs_lst)):
     addr, type_, data = reqs_lst[i]
+    avg_addr += addr
+    avg_data += data
+    avg_type += type_
     test_complexity = test_complexity + addr + type_ + data
     if type_ == 1:
       model.write(addr & Bits32(0xfffffffc), data)
@@ -67,6 +73,9 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
       # Read something
       model.read(addr & Bits32(0xfffffffc))
   test_complexity /= transactions
+  avg_addr /= transactions
+  avg_data /= transactions
+  avg_type /= transactions
   msgs = model.get_transactions()
   CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
   MemMsg = ReqRespMsgTypes(obw, abw, clw)
@@ -108,7 +117,8 @@ def test_hypothesis(clw,cacheSize,transactions,req,rand_out_dir):
     output = {"test":test_idx, "trans":resp, \
     "cacheSize":cacheSize, "clw":clw, "failed":failed,\
       "timeOut":time_limit_reached, \
-        "testComplexity": test_complexity}
+        "testComplexity": test_complexity, "avg_addr": avg_addr, \
+          "avg_data": avg_data, "avg_type": avg_type }
     with open(f"{rand_out_dir}", 'w') as fd:
       json.dump(output,fd,sort_keys=True, \
         indent=2, separators=(',',':'))

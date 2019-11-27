@@ -1,4 +1,5 @@
 """
+=========================================================================
 BlockingCache_iterdeepen_test.py
 =========================================================================
 Random test with iterative deepening to find bugs
@@ -67,9 +68,10 @@ def test_iter_deepen(rand_out_dir):
         for test_number in range(ntests_per_step):
           if (time.monotonic() - start_time) > 54000:
             time_limit_reached = True
-            failed = True
-            assert False
           test_complexity = 0
+          avg_addr = 0
+          avg_data = 0
+          avg_type = 0
           test_num += 1
           mem = rand_mem(addr_min, addr_max)
           # Setup Golden Model
@@ -78,15 +80,21 @@ def test_iter_deepen(rand_out_dir):
           types = generate_type(num_trans)
           addr  = generate_address(num_trans,addr_min,addr_max)
           for i in range(num_trans):
+            avg_addr += addr[i]
+            avg_data += data[i]
             if types[i] == 'wr':
               test_complexity = test_complexity + 1 + addr[i] + data[i]
               # Write something
               model.write(addr[i] & Bits32(0xfffffffc), data[i])
+              avg_type += 1
             else:
               test_complexity = test_complexity + addr[i] + data[i]
               # Read something
               model.read(addr[i] & Bits32(0xfffffffc))
           test_complexity /= num_trans
+          avg_type /= num_trans
+          avg_addr /= num_trans
+          avg_data /= num_trans
           msgs = model.get_transactions()
           
           CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
@@ -109,7 +117,7 @@ def test_iter_deepen(rand_out_dir):
               print ("{:3d}: {}".format(curr_cyc, harness.line_trace()))
               curr_cyc += 1
               
-            assert curr_cyc < max_cycles
+            assert curr_cyc < max_cycles and not time_limit_reached
           except:
             failed = True
             # print ('FAILED')
@@ -118,10 +126,11 @@ def test_iter_deepen(rand_out_dir):
             else:
               resp =  int(harness.sink.recv.msg.opaque)
             
-            output = {"test":test_num, "trans":resp, \
-            "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
-              "timeOut":time_limit_reached, \
-                "testComplexity": test_complexity}
+              output = {"test":test_num, "trans":resp, \
+              "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
+                "timeOut":time_limit_reached, \
+                  "testComplexity": test_complexity, "avg_addr": avg_addr, \
+                    "avg_data": avg_data, "avg_type": avg_type }
             with open("{}".format(rand_out_dir)\
                 , 'w') as fd:
               json.dump(output,fd,sort_keys=True, \
@@ -131,7 +140,8 @@ def test_iter_deepen(rand_out_dir):
   output = {"test":test_num, "trans":resp, \
   "cacheSize":curr_cacheSize, "clw":curr_clw, "failed":failed,\
     "timeOut":time_limit_reached, \
-      "testComplexity": test_complexity}
+      "testComplexity": test_complexity, "avg_addr": avg_addr, \
+        "avg_data": avg_data, "avg_type": avg_type }
   with open("{}".format(rand_out_dir)\
       , 'w') as fd:
     json.dump(output,fd,sort_keys=True, \

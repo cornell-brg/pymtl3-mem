@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-tag = 8
+tag = 9
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -166,11 +166,6 @@ if __name__ =="__main__":
       for i in range(int(opts.trials)):
         for op, d in operators.items():   
           sim_dir = "{}_{}_logs".format(op,tag)
-          # if not os.path.exists( sim_dir ):
-          # max_test = d['max_test']
-          # trials = d['trials']
-          # os.system("rm -rf {}".format(sim_dir))
-          # os.mkdir( sim_dir )
           test = d["test_to_run"]
           run(op, sim_dir, i+int(opts.trials)*j, test)
       if opts.bug_inject:

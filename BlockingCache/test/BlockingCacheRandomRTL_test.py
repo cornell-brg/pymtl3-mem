@@ -43,6 +43,9 @@ def test_complete_random(rand_out_dir):
 
   for i in range(ntests_per_step): # max amount of tests before we give up
     test_complexity = 0
+    avg_addr = 0
+    avg_data = 0
+    avg_type = 0
     fail_test += 1  
     clw  = 2**(6+random.randint(0,4)) # minimum cacheline size is 64 bits
     cacheSize = 2**( clog2(clw) + random.randint(1,6)) #minimum cacheSize is 2 times clw
@@ -56,16 +59,22 @@ def test_complete_random(rand_out_dir):
     types = generate_type(transaction_length)
     addr  = generate_address(transaction_length,addr_min,addr_max)
     for i in range(transaction_length): 
+      avg_addr += addr[i]
+      avg_data += data[i]
       if types[i] == 'wr':
         test_complexity = test_complexity + 1 + addr[i] + data[i]
         # Write something
         model.write(addr[i] & Bits32(0xfffffffc), data[i])
+        avg_type += 1
       else:
         test_complexity = test_complexity + addr[i] + data[i]
         # Read something
         model.read(addr[i] & Bits32(0xfffffffc))
     msgs = model.get_transactions()
     test_complexity /= transaction_length
+    avg_addr /= transaction_length
+    avg_data /= transaction_length
+    avg_type /= transaction_length
     # Instantiate testharness
     harness = TestHarness( msgs[::2], msgs[1::2],
                           0, 2, 2, 2, BlockingCachePRTL, cacheSize,
@@ -78,10 +87,10 @@ def test_complete_random(rand_out_dir):
     harness.apply( DynamicSim )
     harness.sim_reset()
     curr_cyc = 0
-    if (time.monotonic() - start_time) > 54000:
-      time_limit_reached = failed = True
-      assert False
     try:
+      if (time.monotonic() - start_time) > 54000:
+        time_limit_reached = failed = True
+        assert False
       print("")
       while not harness.done() and curr_cyc < max_cycles:
         harness.tick()
@@ -102,7 +111,8 @@ def test_complete_random(rand_out_dir):
   output = {"test":fail_test, "trans":resp, \
     "cacheSize":cacheSize, "clw":clw, "failed":failed, \
       "timeOut":time_limit_reached, \
-        "testComplexity": test_complexity}
+        "testComplexity": test_complexity, "avg_addr": avg_addr, \
+          "avg_data": avg_data, "avg_type": avg_type }
   with open("{}".format(rand_out_dir)\
       , 'w') as fd:
     json.dump(output,fd,sort_keys=True, \
