@@ -1,5 +1,5 @@
 """
-=========================================================================
+========================================================================
 BlockingCache_iterdeepen_test.py
 =========================================================================
 Random test with iterative deepening to find bugs
@@ -105,7 +105,3 @@ def test_iter_deepen(rand_out_dir):
       , 'w') as fd:
     json.dump(output,fd,sort_keys=True, \
       indent=2, separators=(',',':'))
-          
-          
-
-

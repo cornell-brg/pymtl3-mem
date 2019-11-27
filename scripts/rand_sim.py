@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-
 tag = 7
 #-------------------------------------------------------------------------
 # Helper functions and classes
@@ -146,6 +145,7 @@ def plot(op,out_dir):
   # plt.savefig('HeatMap.pdf')
 
 if __name__ =="__main__":
+  start = time.monotonic()
   os.system("cd .. && cd build")
   opts = parse_cmdline()
   # if opts.bug_inject:
@@ -179,7 +179,8 @@ if __name__ =="__main__":
       sim_dir = "{}_{}_logs".format(op,tag)
       plot(op,sim_dir) 
   
-
+  end = time.monotonic()
+  print (end-start)
 # def task_sim():
 #   for op, d in operators.items():
 #     # print (op, d)
