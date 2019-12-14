@@ -1,0 +1,12 @@
+{
+  "avg_addr":949.6,
+  "avg_data":2350315977.3,
+  "avg_type":0.4,
+  "cacheSize":128,
+  "clw":64,
+  "failed":true,
+  "test":49,
+  "testComplexity":2350316927.3,
+  "timeOut":false,
+  "trans":7
+}
