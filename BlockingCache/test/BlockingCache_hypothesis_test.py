@@ -39,7 +39,7 @@ def gen_reqs( draw):
   data = draw( st.integers(0, 0xffffffff), label="data" )
   return (addr,type_,data)
 
-@hypothesis.settings( deadline = None )
+@hypothesis.settings( deadline = None, max_examples=150 )
 @hypothesis.given(
   clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
   cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384]),

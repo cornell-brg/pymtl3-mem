@@ -38,7 +38,7 @@ def test_complete_random(rand_out_dir):
   addr_max = 400 # 100 words
   fail_test = 0
   failed = False
-  ntests_per_step = 100
+  ntests_per_step = 150
 
   for i in range(ntests_per_step): # max amount of tests before we give up
     test_complexity = 0
