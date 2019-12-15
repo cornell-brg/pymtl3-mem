@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import argparse
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-tag = 12
+tag = 13
 #-------------------------------------------------------------------------
 # Helper functions and classes
 #-------------------------------------------------------------------------
@@ -62,7 +62,7 @@ operators = {
 def initial(sim_num):
   
   flags = ["--functional", "--if-const", "--expr-elim"]
-  # os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
+  os.system("cp {0} {0}_correct".format(PATH_TO_CTRL))
   command = "echo sim_num = {} >>inject_{}.out 2>&1".format(sim_num,tag)
   os.system(command)
   command = "python {} --input-spec {} \
@@ -164,14 +164,14 @@ if __name__ =="__main__":
       if opts.bug_inject:
         initial(j)
       for i in range(int(opts.trials)):
-        os.system( 'rm -rf .hypothesis' )
+        os.system( 'rm -rf .hypothesis' )  
         for op, d in operators.items():   
           sim_dir = "{}_{}_logs".format(op,tag)
           test = d["test_to_run"]
           run(op, sim_dir, i+int(opts.trials)*j, test)
       if opts.bug_inject:
-        # finish()
-        os.system('git stash')
+        finish()
+        # os.system('git stash')
     for op, d in operators.items():   
       sim_dir = "{}_{}_logs".format(op,tag)
       plot(op,sim_dir) 

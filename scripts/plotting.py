@@ -173,9 +173,9 @@ def plot(bugs, num_tests):
   for i in range(3):
     axs[4, i].set_xticklabels(bugs, rotation=90, **xlabelfont)
 
-  axs[4, 0].set_xlabel('(a) CRT', **ylabelfont)
-  axs[4, 1].set_xlabel('(b) IDT', **ylabelfont)
-  axs[4, 2].set_xlabel('(c) PyH2', **ylabelfont)
+  # axs[4, 0].set_xlabel('(a) CRT', **ylabelfont)
+  # axs[4, 1].set_xlabel('(b) IDT', **ylabelfont)
+  # axs[4, 2].set_xlabel('(c) PyH2', **ylabelfont)
 
   top_limit = [
     [80, 600, 80],
@@ -212,7 +212,7 @@ def filter_data(data):
   '''
 
   filter_data = []
-  
+
   r, c = data.shape
   for i in range(c):
     col = data[:,i]
