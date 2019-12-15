@@ -35,7 +35,7 @@ def run_random(name, out_dir, test_num):
   :param test_num: int, test number
   '''
 
-  rpt_target = f"{out_dir}/rand_{name}_N{test_num:03d}.json"
+  rpt_target = f"{out_dir}/crt_{name}_N{test_num:03d}.json"
   print(f"RUNNING Complete Random test {test_num}")
   command = f"pytest --disable-pytest-warnings \
     ../BlockingCache/test/BlockingCacheRandomRTL_test.py -q\
@@ -51,7 +51,7 @@ def run_iter_deep(name, out_dir, test_num):
   :param test_num: test number
   '''
   
-  rpt_target = f"{out_dir}/iter_{name}_N{test_num:03d}.json"
+  rpt_target = f"{out_dir}/idt_{name}_N{test_num:03d}.json"
   print(f"RUNNING Iterative Deepening test {test_num}")
   command = f"pytest --disable-pytest-warnings \
     ../BlockingCache/test/BlockingCache_iterdeepen_test.py -q\
@@ -67,7 +67,7 @@ def run_hypothesis(name, out_dir, test_num):
   :param test_num: test number
   '''
   
-  rpt_target = f"{out_dir}/hypothesis_{name}_N{test_num:03d}.json"
+  rpt_target = f"{out_dir}/pyh2_{name}_N{test_num:03d}.json"
   print(f"RUNNING hypothesis test {test_num}")
   command = f"pytest --disable-pytest-warnings \
     ../BlockingCache/test/BlockingCache_hypothesis_test.py -q\
@@ -76,17 +76,23 @@ def run_hypothesis(name, out_dir, test_num):
 
 if __name__ =="__main__":
   opts = parse_cmdline()
-  user_input = input()
-  bug_type = 'write_hit_bug'
+  bug_type = 'wr_hit'
 
-  results_dir = os.path.join(os.getcwd(), '..', 'results', bug_type)
-  if not os.path.exists(results_dir):
-    os.mkdir( results_dir )
+  # results_dir = os.path.join(os.getcwd(),  bug_type)
+  results_dir_crt  = os.path.join(os.getcwd(), '..', 'results', bug_type, 'CRT')
+  results_dir_idt  = os.path.join(os.getcwd(), '..', 'results', bug_type, 'IDT')
+  results_dir_pyh2 = os.path.join(os.getcwd(), '..', 'results', bug_type, 'PyH2')
+  results_dir = [results_dir_pyh2]
+  for folder in results_dir:
+    if not os.path.exists(folder):
+      os.mkdir( folder )
+
   for j in range(int(opts.trials)):
-    if user_input == 'end':
-      break
+    # run_random(bug_type, results_dir_crt, j)
+    # run_iter_deep(bug_type, results_dir_idt, j)
+    run_hypothesis(bug_type, results_dir_pyh2, j)
 
-    run_random(bug_type, results_dir, j)
-    run_iter_deep(bug_type, results_dir, j)
-    run_hypothesis(bug_type, results_dir, j)
+    # Remove pytest and hypothesis cache
+    os.system('rm -rf .hypothesis/')
+    os.system('rm -rf .pytest/')
   

@@ -43,55 +43,59 @@ def plot(bugs, num_tests):
   # Parse data from json
   for i in range(len(bugs)):
     bug_dir = os.path.join(results_dir, bugs[i])
-    onlyfiles = [f for f in os.listdir(bug_dir) if os.path.isfile(os.path.join(bug_dir, f))]
 
-    for j in range(len(onlyfiles)):
-      if onlyfiles[j].startswith('rand') or onlyfiles[j].startswith('complete_random'):
-        filename = os.path.join(bug_dir, onlyfiles[j])
-        with open(filename, 'r') as fd2:
-          num = int(filename[-8:-5])
-          try:
-            stats = json.load(fd2)
-            rand_test      [i, num] = stats['test']
-            rand_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-            rand_clw       [i, num] = stats['clw']
-            rand_trans     [i, num] = stats['trans']
-            if 'testComplexity' in stats:
-              rand_complexity[i, num] = stats['testComplexity']
-          except:
-            pass
+    crt_dir  = os.path.join(bug_dir, 'CRT')
+    idt_dir  = os.path.join(bug_dir, 'IDT')
+    pyh2_dir = os.path.join(bug_dir, 'PyH2')
 
-    for j in range(len(onlyfiles)):
-      if onlyfiles[j].startswith('iter'):
-        filename = os.path.join(bug_dir, onlyfiles[j])
-        with open(filename, 'r') as fd2:
-          num = int(filename[-8:-5])
-          try:
-            stats = json.load(fd2)
-            iter_test      [i, num] = stats['test']
-            iter_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-            iter_clw       [i, num] = stats['clw']
-            iter_trans     [i, num] = stats['trans']
-            if 'testComplexity' in stats:
-              iter_complexity[i, num] = stats['testComplexity']
-          except:
-            pass
+    crt_files  = [f for f in os.listdir(crt_dir) if os.path.isfile(os.path.join(crt_dir, f))]
+    idt_files  = [f for f in os.listdir(idt_dir) if os.path.isfile(os.path.join(idt_dir, f))]
+    pyh2_files = [f for f in os.listdir(pyh2_dir) if os.path.isfile(os.path.join(pyh2_dir, f))]
 
-    for j in range(len(onlyfiles)):
-      if onlyfiles[j].startswith('hypothesis'):
-        filename = os.path.join(bug_dir, onlyfiles[j])
-        with open(filename, 'r') as fd2:
-          num = int(filename[-8:-5])
-          try:
-            stats = json.load(fd2)
-            hypothesis_test      [i, num] = stats['test']
-            hypothesis_cacheSize [i, num] = stats['cacheSize']/stats['clw']
-            hypothesis_clw       [i, num] = stats['clw']
-            hypothesis_trans     [i, num] = stats['trans']
-            if 'testComplexity' in stats:
-              hypothesis_complexity[i, num] = stats['testComplexity']
-          except:
-            pass
+    for j in range(len(crt_files)):
+      filename = os.path.join(crt_dir, crt_files[j])
+      with open(filename, 'r') as fd2:
+        num = int(filename[-8:-5])
+        try:
+          stats = json.load(fd2)
+          rand_test      [i, num] = stats['test']
+          rand_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          rand_clw       [i, num] = stats['clw']
+          rand_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            rand_complexity[i, num] = stats['testComplexity']
+        except:
+          pass
+
+    for j in range(len(idt_files)):
+      filename = os.path.join(idt_dir, idt_files[j])
+      with open(filename, 'r') as fd2:
+        num = int(filename[-8:-5])
+        try:
+          stats = json.load(fd2)
+          iter_test      [i, num] = stats['test']
+          iter_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          iter_clw       [i, num] = stats['clw']
+          iter_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            iter_complexity[i, num] = stats['testComplexity']
+        except:
+          pass
+
+    for j in range(len(pyh2_files)):
+      filename = os.path.join(pyh2_dir, pyh2_files[j])
+      with open(filename, 'r') as fd2:
+        num = int(filename[-8:-5])
+        try:
+          stats = json.load(fd2)
+          hypothesis_test      [i, num] = stats['test']
+          hypothesis_cacheSize [i, num] = stats['cacheSize']/stats['clw']
+          hypothesis_clw       [i, num] = stats['clw']
+          hypothesis_trans     [i, num] = stats['trans']
+          if 'testComplexity' in stats:
+            hypothesis_complexity[i, num] = stats['testComplexity']
+        except:
+          pass
 
   rand_test       = rand_test.transpose()
   rand_test       = filter_data(rand_test)
