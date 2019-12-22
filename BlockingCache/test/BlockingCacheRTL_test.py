@@ -19,7 +19,7 @@ from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
 from BlockingCache.test.DmappedTestCases import test_case_table_dmap
 from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
 from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
-from pymtl3.passes.yosys import TranslationImportPass
+# from pymtl3.passes.yosys import TranslationImportPass
 
 base_addr = 0x74
 max_cycles = 500
@@ -50,7 +50,7 @@ def test_generic( test_params ):
                          BlockingCachePRTL, GenericCacheMsg,
                          GenericMemMsg)
   harness.elaborate()
-  translate(harness)
+  # translate(harness)
   # Load memory before the test
   if test_params.mem_data_func != None:
     harness.load( mem[::2], mem[1::2] )

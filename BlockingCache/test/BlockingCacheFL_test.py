@@ -82,7 +82,7 @@ class TestHarness(Component):
 #---------------------------------------------------------------------
 def run_sim(th, max_cycles):
   # print (" -----------starting simulation----------- ")
-  th.apply( DynamicSim )
+  th.apply( SimulationPass() )
   th.sim_reset()
   curr_cyc = 0
   print("")

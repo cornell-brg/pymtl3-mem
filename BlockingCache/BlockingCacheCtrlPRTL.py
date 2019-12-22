@@ -14,6 +14,7 @@ from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from colorama import Fore, Back, Style 
 
 # Constants
 STATE_GO           = b3(0)
@@ -454,7 +455,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
 
   def line_trace( s ):
-    colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
+    # colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
     types = ["rd","wr","in"]
     msg_M0 = "  "
     if s.val_M0:
@@ -481,11 +482,13 @@ class BlockingCacheCtrlPRTL ( Component ):
       elif s.is_write_hit_clean_M1:
         msg_M1 = "wc"
       elif ~s.hit_M1 and s.cachereq_type_M1 != 2:
-        msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
+        msg_M1 = Fore.RED + types[s.cachereq_type_M1] + Style.RESET_ALL
+        # msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
       elif s.is_write_refill_M1:
         msg_M1 = "wf"
       elif s.hit_M1 and s.cachereq_type_M1 != 2:
-        msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
+        msg_M1 = Fore.GREEN + types[s.cachereq_type_M1] + Style.RESET_ALL
+        # msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
       else:
         msg_M1 = types[s.cachereq_type_M1]
 
