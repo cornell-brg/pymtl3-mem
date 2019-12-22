@@ -21,6 +21,7 @@ from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.BlockingCacheFL import BlockingCacheFL
 from BlockingCache.test.CacheMemory import CacheMemoryCL
+from mem_pclib.test.sim_utils import run_sim, translate_import
 
 from BlockingCache.test.GenericTestCases import test_case_table_generic
 from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
@@ -41,7 +42,6 @@ class TestHarness(Component):
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, CacheModel, CacheMsg, MemMsg ):
 
-    
     cacheSize = 8196 # size in bytes
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
@@ -80,19 +80,19 @@ class TestHarness(Component):
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
-def run_sim(th, max_cycles):
-  # print (" -----------starting simulation----------- ")
-  th.apply( SimulationPass() )
-  th.sim_reset()
-  curr_cyc = 0
-  print("")
-  while not th.done() and curr_cyc < max_cycles:
-    th.tick()
-    print ("{:3d}: {}".format(curr_cyc, th.line_trace()))
-    curr_cyc += 1
-  assert curr_cyc < max_cycles
-  th.tick()
-  th.tick()
+# def run_sim(th, max_cycles):
+#   # print (" -----------starting simulation----------- ")
+#   th.apply( SimulationPass() )
+#   th.sim_reset()
+#   curr_cyc = 0
+#   print("")
+#   while not th.done() and curr_cyc < max_cycles:
+#     th.tick()
+#     print ("{:3d}: {}".format(curr_cyc, th.line_trace()))
+#     curr_cyc += 1
+#   assert curr_cyc < max_cycles
+#   th.tick()
+#   th.tick()
 
 
 
