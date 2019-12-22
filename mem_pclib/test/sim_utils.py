@@ -44,7 +44,6 @@ def translate_import( model ):
   model.apply( TranslationPass() )
   # model = TranslationImportPass( )( model )
 
-
 #-------------------------------------------------------------------------
 # TestHarness
 #-------------------------------------------------------------------------

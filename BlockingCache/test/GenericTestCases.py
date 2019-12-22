@@ -13,7 +13,7 @@ import random
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
-from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
 from mem_pclib.test.sim_utils import run_sim, \
 translate_import, TestHarness
 
@@ -41,8 +41,6 @@ def resp( type_, opaque, test, len, data ):
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
 class CacheGeneric_Tests:
-
-
   def run_test( s,
   msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
   stall_prob=0, latency=1, src_delay=0, sink_delay=0):
@@ -246,26 +244,3 @@ class CacheGeneric_Tests:
     ]
     mem = [0x00010000, 0x00c0ffee]
     s.run_test( msgs, mem, CacheMsg, MemMsg )
-
-
-# #---------------------------------------------------------------------------------------------
-# # Test table for generic test
-# #---------------------------------------------------------------------------------------------
-
-# test_case_table_generic = mk_test_case_table([
-#   ( "                        msg_func               mem_data_func        stall lat src sink"),
-#   [ "read_hit_1word_clean",  read_hit_1word_clean,  None,                0.0,  1,  0,  0    ],
-#   [ "read_hit_many_clean",   read_hit_many_clean,   None,                0.0,  1,  0,  0    ],
-#   [ "read_hit_random_clean", read_hit_random_clean, None,                0.0,  1,  0,  0    ],
-#   [ "read_hit_1line_clean",  read_hit_1line_clean,  None,                0.0,  1,  0,  0    ],
-#   [ "read_hit_1word_dirty",  read_hit_1word_dirty,  None,                0.0,  1,  0,  0    ],
-#   [ "write_hit_clean",       write_hit_clean,       None,                0.0,  1,  0,  0    ],
-#   [ "write_hit_dirty",       write_hit_dirty,       None,                0.0,  1,  0,  0    ],
-#   [ "write_hit_1word_dirty", write_hit_1word_dirty, None,                0.0,  1,  0,  0    ],
-#   [ "write_hits_read_hits",  write_hits_read_hits,  None,                0.0,  1,  0,  0    ],
-#   [ "read_miss_1word_clean", read_miss_1word_clean, read_miss_1word_mem, 0.0,  1,  0,  0    ],
-#   [ "write_miss_1word_clean",write_miss_1word_clean,write_miss_1word_mem,0.0,  1,  0,  0    ],
-#   [ "write_miss_offset",     write_miss_offset,     None,                0.0,  1,  0,  0    ],
-#   [ "read_miss_dirty",       read_miss_dirty,       read_miss_dirty_mem, 0.0,  1,  0,  0    ],
-#  ])
-

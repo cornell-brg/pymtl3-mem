@@ -10,17 +10,9 @@ Date   : 15 November 2019
 
 import pytest
 from pymtl3      import *
-# from BlockingCache.test.BlockingCacheFL_test import test_case_table_generic, \
-#   TestHarness
 from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
 from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
-# from BlockingCache.test.GenericTestCases import test_case_table_generic
-# from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
-# from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
 from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
-# from BlockingCache.test.DmappedTestCases import test_case_table_dmap
-# from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
-# from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
 from mem_pclib.test.sim_utils import run_sim, translate_import,\
 TestHarness
 
@@ -35,6 +27,8 @@ class TestDirMapBlockingCacheRTL(CacheGeneric_Tests, CacheDmapped_Tests):
                            src_delay, sink_delay,
                            BlockingCachePRTL, CacheMsg,
                            MemMsg, cacheSize, associativity )  
+    # if test_verilog:
+    #   print ("verilog")
     harness.elaborate( )
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
