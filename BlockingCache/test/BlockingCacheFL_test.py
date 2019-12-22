@@ -12,124 +12,32 @@ import struct
 import random
 
 from pymtl3 import *
-from pymtl3.stdlib.cl.MemoryCL import MemoryCL
-from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL,\
-   RecvRTL2SendCL, SendIfcRTL
-from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
-from BlockingCache.BlockingCachePRTL import BlockingCachePRTL
-from BlockingCache.BlockingCacheFL import BlockingCacheFL
-from BlockingCache.test.CacheMemory import CacheMemoryCL
-from mem_pclib.test.sim_utils import run_sim, translate_import
-
-from BlockingCache.test.GenericTestCases import test_case_table_generic
-from BlockingCache.test.GenericTestCases import CacheMsg as GenericCacheMsg
-from BlockingCache.test.GenericTestCases import MemMsg   as GenericMemMsg
-from BlockingCache.test.DmappedTestCases import test_case_table_dmap
-from BlockingCache.test.DmappedTestCases import CacheMsg as DmapCacheMsg
-from BlockingCache.test.DmappedTestCases import MemMsg   as DmapMemMsg
-
-base_addr = 0x70
-max_cycles = 1000
-
-#-------------------------------------------------------------------------
-# TestHarness
-#-------------------------------------------------------------------------
-
-class TestHarness(Component):
-
-  def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg, MemMsg ):
-
-    cacheSize = 8196 # size in bytes
-    # Instantiate models
-    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, src_delay)
-    s.cache = CacheModel(cacheSize, CacheMsg, MemMsg)
-    s.mem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
-    s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
-    s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
-    s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, sink_delay)
-
-    # s.cache.yosys_translate_import = True
-
-    connect( s.src.send,  s.cache.cachereq  )
-    connect( s.sink.recv, s.cache.cacheresp )
-
-    connect( s.mem.ifc[0].resp, s.mem2cache.recv )
-    connect( s.cache.memresp, s.mem2cache.send )
-
-    connect( s.cache.memreq, s.cache2mem.recv )
-    connect( s.mem.ifc[0].req, s.cache2mem.send )
+from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
+from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
+from BlockingCache.BlockingCacheFL import ModelCache
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 
-
-  def load( s, addrs, data_ints ):
-    for addr, data_int in zip( addrs, data_ints ):
-      data_bytes_a = bytearray()
-      data_bytes_a.extend( struct.pack("<I",data_int) )
-      s.mem.write_mem( addr, data_bytes_a )
-
-  def done( s ):
-    return s.src.done() and s.sink.done()
-
-  def line_trace( s ):
-    return s.src.line_trace() + " " + s.cache.line_trace() + " " \
-           + s.mem.line_trace()  + " " + s.sink.line_trace()
-
-#----------------------------------------------------------------------
-# Run the simulation
-#---------------------------------------------------------------------
-# def run_sim(th, max_cycles):
-#   # print (" -----------starting simulation----------- ")
-#   th.apply( SimulationPass() )
-#   th.sim_reset()
-#   curr_cyc = 0
-#   print("")
-#   while not th.done() and curr_cyc < max_cycles:
-#     th.tick()
-#     print ("{:3d}: {}".format(curr_cyc, th.line_trace()))
-#     curr_cyc += 1
-#   assert curr_cyc < max_cycles
-#   th.tick()
-#   th.tick()
-
-
-
-@pytest.mark.parametrize( **test_case_table_generic )
-def test_generic( test_params):
-  msgs = test_params.msg_func( base_addr )
-  if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( base_addr )
-  # Instantiate testharness
-  th = TestHarness( msgs[::2], msgs[1::2],
-                         test_params.stall, test_params.lat,
-                         test_params.src, test_params.sink,
-                         BlockingCacheFL, GenericCacheMsg,
-                         GenericMemMsg)
-  th.elaborate()
-  # translate()
-  # Load memory before the test
-  if test_params.mem_data_func != None:
-    th.load( mem[::2], mem[1::2] )
-  # Run the test
-  run_sim( th, max_cycles )
-
-@pytest.mark.parametrize( **test_case_table_dmap )
-def test_dmap( test_params):
-  msgs = test_params.msg_func( base_addr )
-  if test_params.mem_data_func != None:
-    mem = test_params.mem_data_func( base_addr )
-  # Instantiate testharness
-  th = TestHarness( msgs[::2], msgs[1::2],
-                         test_params.stall, test_params.lat,
-                         test_params.src, test_params.sink,
-                         BlockingCacheFL, DmapCacheMsg,
-                         DmapMemMsg)
-  th.elaborate()
-  # translate()
-  # Load memory before the test
-  if test_params.mem_data_func != None:
-    th.load( mem[::2], mem[1::2] )
-  # Run the test
-  run_sim( th, max_cycles )
+class TestDirMapCacheFL(CacheGeneric_Tests, CacheDmapped_Tests):
+  
+  def run_test( s,
+   msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
+   stall_prob=0, latency=1, src_delay=0, sink_delay=0):
+    cache = ModelCache(cacheSize, associativity, 0, CacheMsg, 
+    MemMsg, mem)
+    src = msgs[::2]
+    sink = msgs[1::2]
+    for trans in src:
+      if trans.type_ == MemMsgType.READ:
+        cache.read(trans.addr, trans.opaque)
+      elif trans.type_ == MemMsgType.WRITE:
+        cache.write(trans.addr, trans.data, trans.opaque)
+      elif trans.type_ == MemMsgType.WRITE_INIT:
+        cache.init(trans.addr, trans.data, trans.opaque)
+    resps = cache.get_transactions()[1::2]
+    # print (resps)
+    for i in range(len(sink)):
+      print (f"{i}: {sink[i]} == {resps[i]}")
+      if i < len(sink):
+        assert sink[i] == resps[i]
+         

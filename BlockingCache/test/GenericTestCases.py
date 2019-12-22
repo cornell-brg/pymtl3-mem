@@ -115,9 +115,9 @@ class CacheGeneric_Tests:
   def test_write_hit_clean( s ):
     msgs = [
       #    type  opq  addr      len data                type  opq  test len data
-      req( 'in', 0x3, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x3, 0,   0,  0  ),    
-      req( 'wr', 0x4, 0x1184,    0, 55         ), resp( 'wr', 0x4, 1,   0,  0  ),
-      req( 'rd', 0x5, 0x1184,    0, 0          ), resp( 'rd', 0x5, 1,   0,  55 ),
+      req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),    
+      req( 'wr', 0x1, 0x1184,    0, 55         ), resp( 'wr', 0x1, 1,   0,  0  ),
+      req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  55 ),
     ]
     mem = None
     s.run_test( msgs, mem, CacheMsg, MemMsg )
