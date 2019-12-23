@@ -18,9 +18,9 @@ TestHarness
 
 max_cycles = 500
 
-class TestDirMapBlockingCacheRTL(CacheGeneric_Tests, CacheDmapped_Tests):
+class TestBlockingCacheRTL(CacheGeneric_Tests, CacheDmapped_Tests):
   def run_test( s,
-   msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
+   msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=256, 
    stall_prob=0, latency=1, src_delay=0, sink_delay=0):
     harness = TestHarness( msgs[::2], msgs[1::2],
                            stall_prob, latency,
