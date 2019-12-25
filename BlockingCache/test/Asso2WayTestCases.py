@@ -13,7 +13,7 @@ import struct
 import random
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from BlockingCache.ReqRespMsgTypes import ReqRespMsgTypes
+from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -39,17 +39,89 @@ def resp( type_, opaque, test, len, data ):
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
 class Cache2WayAsso_Tests:
+  def set_assoc_mem0( s ):
+    return [
+      # addr      # data (in int)
+      0x00002000, 0x00facade,
+      0x00002004, 0x05ca1ded,
+      0x00002070, 0x70facade,
+      0x00002074, 0x75ca1ded,
+    ]
+  #-------------------------------------------------------------------------
+  # Test Case: Read Hit 2 way set associative with only 1 way tested
+  #-------------------------------------------------------------------------
+  def test_2way_1way_only_read_hit( s ):
+    msgs = [
+      #    type  opq  addr       len data                type  opq  test len data
+      req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
+      # req( 'in', 0x1, 0x00001000, 0, 0x00c0ffee ), resp( 'in', 0x1, 0,   0,  0          ),
+      req( 'rd', 0x3, 0x00000000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xdeadbeef ),
+    ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+  #-------------------------------------------------------------------------
+  # Test Case: Read Miss 2 way set associative but with 1 way
+  #-------------------------------------------------------------------------
+  def test_2way_1way_only_read_miss( s ):
+    msgs = [
+      #    type  opq  addr       len data                type  opq  test len data
+      req( 'rd', 0x0, 0x00002070, 0, 0 ), resp( 'rd', 0x0, 0,   0,  0x70facade          ),
+    ]
+    mem = s.set_assoc_mem0()
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+  def test_2way_1way_only_write_hit( s ):
+    msgs = [
+      #    type  opq  addr       len data           type  opq  test len data
+      req( 'in', 0x0, 0x00002070, 0, 200 ),   resp( 'in', 0x0, 0,   0,  0          ),
+      req( 'wr', 0x1, 0x00002070, 0, 78787 ), resp( 'wr', 0x1, 1,   0,  0          ),
+      req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
+    ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+  def test_2way_1way_only_write_miss( s ):
+    msgs = [
+      #    type  opq  addr       len data           type  opq  test len data         ),
+      req( 'wr', 0x1, 0x00002070, 0, 78787 ), resp( 'wr', 0x1, 0,   0,  0          ),
+      req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
+    ]
+    mem = s.set_assoc_mem0()
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+  
+  # def test_2way_1way_only_write_miss_evict( s ):
+  #   msgs = [
+  #     #    type  opq  addr       len data           type  opq  test len data         ),
+  #     req( 'in', 0x1, 0x00002070, 0, 1     ), resp( 'in', 0x1, 0,   0,  0          ),
+  #     req( 'wr', 0x1, 0x00002070, 0, 78787 ), resp( 'wr', 0x1, 1,   0,  0          ),
+  #     req( 'rd', 0x2, 0x00002000, 0, 0 ),     resp( 'rd', 0x2, 0,   0,  0x00facade ),
+  #     req( 'rd', 0x3, 0x00002070, 0, 0 ),     resp( 'rd', 0x3, 0,   0,  78787 ),
+  #   ]
+  #   mem = s.set_assoc_mem0()
+  #   s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
   #-------------------------------------------------------------------------
   # Test Case: Read Hit 2 way set associative
   #-------------------------------------------------------------------------
   # Test case designed for direct-mapped cache where a cache line must be evicted
   def test_2way_read_hit( s ):
     msgs = [
-      #    type  opq  addr       len data                type  opq  test len data
+      #    type  opq  addr       len  data                type  opq  test len data
       req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
-      req( 'in', 0x1, 0x00001000, 0, 0x00c0ffee ), resp( 'in', 0x1, 0,   0,  0          ),
+      req( 'wr', 0x2, 0x00002000, 0, 212        ), resp( 'wr', 0x2, 0,   0,  0 ),
       req( 'rd', 0x2, 0x00000000, 0, 0          ), resp( 'rd', 0x2, 1,   0,  0xdeadbeef ),
-      req( 'rd', 0x3, 0x00001000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0x00c0ffee ),
+      req( 'rd', 0x3, 0x00002000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  212 ),
+    ]
+    mem = s.set_assoc_mem0()
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+  #-------------------------------------------------------------------------
+  # Test Case: Write Miss 2 way set associative
+  #-------------------------------------------------------------------------
+  # Test case designed for direct-mapped cache where a cache line must be evicted
+  def test_2way_write_miss( s ):
+    msgs = [
+      #    type  opq  addr       len data                type  opq  test len data
+      req( 'wr', 0x2, 0x00000000, 0, 0x8713450  ), resp( 'wr', 0x2, 0,   0,  0          ),
+      req( 'wr', 0x3, 0x00001000, 0, 0xabcde    ), resp( 'wr', 0x3, 0,   0,  0          ),
+      req( 'rd', 0x4, 0x00000000, 0, 0          ), resp( 'rd', 0x4, 1,   0,  0x8713450  ),
+      req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
     ]
     mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
@@ -60,12 +132,12 @@ class Cache2WayAsso_Tests:
   def test_2way_write_hit( s ):
     msgs = [
       #    type  opq  addr       len data                type  opq  test len data
-      req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
-      req( 'in', 0x1, 0x00001000, 0, 0x00c0ffee ), resp( 'in', 0x1, 0,   0,  0          ),
+      req( 'in', 0x1, 0x00000000, 0, 44159     ),  resp( 'in', 0x1, 0,   0,  0          ),
       req( 'wr', 0x2, 0x00000000, 0, 0x8713450  ), resp( 'wr', 0x2, 1,   0,  0          ),
-      req( 'wr', 0x3, 0x00001000, 0, 0xabcde    ), resp( 'wr', 0x3, 1,   0,  0          ),
       req( 'rd', 0x4, 0x00000000, 0, 0          ), resp( 'rd', 0x4, 1,   0,  0x8713450  ),
+      req( 'wr', 0x3, 0x00001000, 0, 0xabcde    ), resp( 'wr', 0x3, 0,   0,  0          ),
       req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
+      req( 'rd', 0x5, 0x00000000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0x8713450  ),
     ]
     mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
@@ -76,14 +148,6 @@ class Cache2WayAsso_Tests:
   # Test cases designed for two-way set-associative cache. We should set
   # check_test to False if we use it to test set-associative cache.
 
-  def set_assoc_mem0( s ):
-    return [
-      # addr      # data (in int)
-      0x00002000, 0x00facade,
-      0x00002004, 0x05ca1ded,
-      0x00002070, 0x70facade,
-      0x00002074, 0x75ca1ded,
-    ]
 
   def test_2way_msg0( s ):
     msgs = [
@@ -134,6 +198,6 @@ class Cache2WayAsso_Tests:
       # Evict way 0 again
       req( 'rd', 0x1d, 0x000a0070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # LRU:1
     ]
-  mem = s.set_assoc_mem0()
-  s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
+    mem = s.set_assoc_mem0()
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
 

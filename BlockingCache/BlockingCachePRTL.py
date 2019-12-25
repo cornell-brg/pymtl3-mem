@@ -42,7 +42,8 @@ class BlockingCachePRTL ( Component ):
     twb = int(abw+7)//8      # Tag array write byte bitwidth
     dwb = int(clw+7)//8      # Data array write byte bitwidth 
     rmx2 = clog2(clw//dbw+1) # Read word mux bitwidth
-    
+    print(f"nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
+
     #--------------------------------------------------------------------------
     # Make bits
     #--------------------------------------------------------------------------
@@ -58,9 +59,11 @@ class BlockingCachePRTL ( Component ):
     BitsTagWben   = mk_bits(twb)   # Tag array write byte enable
     BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
     BitsRdDataMux = mk_bits(rmx2)  # Read data mux M2 
-    BitsAssoclog2  = mk_bits(clog2(associativity))
     BitsAssoc     = mk_bits(associativity)
-    
+    if associativity == 1:
+      BitsAssoclog2 = Bits1
+    else:
+      BitsAssoclog2  = mk_bits(clog2(associativity))
     #--------------------------------------------------------------------------
     # Interface
     #--------------------------------------------------------------------------
@@ -75,9 +78,9 @@ class BlockingCachePRTL ( Component ):
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
     s.cacheDpath = BlockingCacheDpathPRTL(
-      abw, dbw, clw, idw, ofw, tgw, nby,
+      abw, dbw, clw, idw, ofw, tgw, nbl, nby,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2,
+      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
       associativity
     )(
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
@@ -139,22 +142,26 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
       s.cacheCtrl.evict_mux_sel_M1,     s.cacheDpath.evict_mux_sel_M1,
+      s.cacheCtrl.evict_way_mux_sel_M1, s.cacheDpath.evict_way_mux_sel_M1,
+      s.cacheCtrl.way_offset_M1,        s.cacheDpath.way_offset_M1,
+      s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
+      s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
+      s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
+      s.cacheCtrl.tag_match_way_M1,     s.cacheDpath.tag_match_way_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
       s.cacheCtrl.read_data_mux_sel_M2, s.cacheDpath.read_data_mux_sel_M2,
       s.cacheCtrl.cachereq_type_M2,     s.cacheDpath.cachereq_type_M2,
+      s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
     )
 
     # Connect ports based on associativity
     for i in range(associativity):
       s.cacheCtrl.tag_array_val_M0[i]  //= s.cacheDpath.tag_array_val_M0[i]
-      s.cacheCtrl.data_array_val_M1[i] //= s.cacheDpath.data_array_val_M1[i]
-      s.cacheCtrl.ctrl_bit_val_rd_M1[i]//= s.cacheDpath.ctrl_bit_val_rd_M1[i]
+      # s.cacheCtrl.ctrl_bit_val_rd_M1[i]//= s.cacheDpath.ctrl_bit_val_rd_M1[i]
       s.cacheCtrl.ctrl_bit_dty_rd_M1[i]//= s.cacheDpath.ctrl_bit_dty_rd_M1[i]
-      s.cacheCtrl.tag_match_M1[i]      //= s.cacheDpath.tag_match_M1[i]
-      s.cacheCtrl.offset_M1[i]         //= s.cacheDpath.offset_M1[i]
-      s.cacheCtrl.offset_M2[i]         //= s.cacheDpath.offset_M2[i]
+      # s.cacheCtrl.offset_M1[i]         //= s.cacheDpath.offset_M1[i]
       
   # Line tracing
   def line_trace( s ):
@@ -165,8 +172,10 @@ class BlockingCachePRTL ( Component ):
     if s.memreq.en:
       memreq_msg  = "{}".format(s.memreq.msg)
 
-    msg = "{}{} {} {}".format(memresp_msg, s.cacheCtrl.line_trace(),
-     memreq_msg, s.cacheDpath.line_trace())
+    msg = "{}{} {}".format(memresp_msg, \
+      s.cacheCtrl.line_trace(),
+      s.cacheDpath.line_trace())
+    #  memreq_msg, s.cacheDpath.line_trace())
     # msg = "{} {}".format(s.cacheCtrl.line_trace(),
     #  s.cacheDpath.line_trace())
     return msg

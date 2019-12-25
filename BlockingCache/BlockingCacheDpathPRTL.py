@@ -8,12 +8,16 @@ Author : Xiaoyu Yan, Eric Tang (et396)
 Date   : 15 November 2019
 """
 
-from mem_pclib.rtl.utils           import EComp
+from mem_pclib.rtl.utils            import EComp
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst
 from sram.SramPRTL                  import SramPRTL
+
+# Constants
+wr = y             = b1(1)
+rd = n = x         = b1(0)
 
 class BlockingCacheDpathPRTL (Component):
   def construct(s, 
@@ -23,7 +27,8 @@ class BlockingCacheDpathPRTL (Component):
                 idw = 5,     # Index bitwidth
                 ofw = 4,     # Offset bitwidth
                 tgw = 19,    # Tag bitwidth
-                nbl = 512,   # Number of blocks
+                nbl = 512,   # Number of blocks total
+                nby = 256,   # Number of blocks per way
                 BitsAddr      = "inv",  # address bitstruct
                 BitsOpaque    = "inv",  # opaque bitstruct
                 BitsType      = "inv",  # type bitstruct
@@ -36,6 +41,7 @@ class BlockingCacheDpathPRTL (Component):
                 BitsDataWben  = "inv",  # Data array write byte enable
                 BitsRdDataMux = "inv",  # Read data mux M2 
                 BitsAssoclog2 = "inv",  # Bits for associativity muxes
+                BitsAssoc     = "inv",  # Bits for associativity mask 1 bit for each asso
                 associativity = 1,      # Number of ways 
   ):
 	
@@ -65,8 +71,11 @@ class BlockingCacheDpathPRTL (Component):
     # Control Signals (ctrl -> dpath)
     #-------------------------------------------------------------------
 
-    # M0 Signals
-    s.tag_array_val_M0      = [InPort(Bits1) for _ in range(associativity)]
+    #--------------------------------------------------------------------------
+    # M0 Dpath Signals 
+    #--------------------------------------------------------------------------
+
+    s.tag_array_val_M0      = InPort(BitsAssoc)
     s.tag_array_type_M0     = InPort(Bits1)
     s.tag_array_wben_M0     = InPort(BitsTagWben)
     s.ctrl_bit_val_wr_M0    = InPort(Bits1) 
@@ -77,30 +86,38 @@ class BlockingCacheDpathPRTL (Component):
     s.wdata_mux_sel_M0      = InPort(Bits2)
     s.memresp_type_M0       = OutPort(BitsType)
 
-    # M1 Signals
+    #--------------------------------------------------------------------------
+    # M1 Dpath Signals
+    #--------------------------------------------------------------------------
+
     s.reg_en_M1             = InPort(Bits1)
-    s.data_array_val_M1     = [InPort(Bits1) for _ in range(associativity)]
+    s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(BitsDataWben)
     s.evict_way_mux_sel_M1  = InPort(BitsAssoclog2)
     s.evict_mux_sel_M1      = InPort(Bits1)
-    s.ctrl_bit_val_rd_M1    = [OutPort(Bits1) for _ in range(associativity)]
-    s.ctrl_bit_dty_rd_M1    = [OutPort(Bits1) for _ in range(associativity)]
-    s.tag_match_M1          = [OutPort(Bits1) for _ in range(associativity)]
+    s.way_offset_M1         = InPort(BitsAssoclog2)
+    # s.ctrl_bit_val_rd_M1    = [OutPort(Bits1) for _ in range(associativity)]
+    s.ctrl_bit_dty_rd_M1    = OutPort(BitsAssoc) 
+    s.tag_match_M1          = OutPort(Bits1) 
+    s.tag_match_way_M1      = OutPort(BitsAssoclog2)
     s.cachereq_type_M1      = OutPort(BitsType)
-    s.offset_M1             = [OutPort(BitsOffset) for _ in range(associativity)]
+    s.offset_M1             = OutPort(BitsOffset)
 
     # MSHR Signals
     s.reg_en_MSHR           = InPort (Bits1)
     s.MSHR_type             = OutPort(BitsType)
 
-    # M2 Signals
+    #---------------------------------------------------------------------------
+    # M2 Dpath Signals
+    #--------------------------------------------------------------------------
+
     s.reg_en_M2             = InPort(Bits1)
     s.read_data_mux_sel_M2  = InPort(Bits1)
     s.read_data_way_mux_sel_M2=InPort(BitsAssoclog2)
     s.read_word_mux_sel_M2  = InPort(BitsRdDataMux)
     s.cachereq_type_M2      = OutPort(BitsType)
-    s.offset_M2             = [OutPort(BitsOffset) for _ in range(associativity)]
+    s.offset_M2             = OutPort(BitsOffset)
 
     #--------------------------------------------------------------------
     # M0 Stage
@@ -189,7 +206,7 @@ class BlockingCacheDpathPRTL (Component):
     s.tag_array_wdata_M0[abw-1:abw]  //= s.ctrl_bit_val_wr_M0
     s.tag_array_wdata_M0[abw-2:abw-1]//= s.ctrl_bit_dty_wr_M0
     
-    s.tag_arrays_M1[i] = [SramPRTL(abw, nbl)(
+    s.tag_arrays_M1 = [SramPRTL(abw, nby)(
       port0_val   = s.tag_array_val_M0[i],
       port0_type  = s.tag_array_type_M0,
       port0_idx   = s.tag_array_idx_M0,
@@ -259,34 +276,49 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     s.MSHR_type //= s.MSHR_type_M0 
-
+    s.ctrl_bit_val_rd_M1 = Wire(BitsAssoc)
     # Output the valid bit
-    for i in range(associativity)
+    for i in range(associativity):
       s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][abw-1:abw] 
       s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][abw-2:abw-1] 
     s.offset_M1 //= s.cachereq_addr_M1[0:ofw]
 
+    s.match_way_M1 = Wire(BitsAssoclog2)
+    s.tag_match_way_M1 //= s.match_way_M1
     # Comparator
-    s.Comparators = [EComp(BitsTag)(
-      in0 = s.tag_array_rdata_M1[i][0:tgw],
-      in1 = s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw],
-      out = s.tag_match_M1[i]
-    ) for i in range(associativity) ]
+    @s.update
+    def Comparator_M1():
+      s.tag_match_M1 = n
+      for i in range( associativity ):
+        if ( s.ctrl_bit_val_rd_M1[i] ):
+          if s.tag_array_rdata_M1[i][0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]:
+            s.tag_match_M1 = y
+            s.match_way_M1 = BitsAssoclog2(i) # If not valid, then no comparisons
+          
+          # required and we just say it is a miss by setting this to 0
+    # s.Comparators = [EComp(BitsTag)(
+    #   in0 = s.tag_array_rdata_M1[i][0:tgw],
+    #   in1 = s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw],
+    #   out = s.tag_match_M1[i]
+    # ) for i in range(associativity) ]
 
     s.evict_way_out_M1 = Wire(BitsTag)
-    s.evict_way_mux_M1 = Mux(BitsTag, associativity)(
-      sel = s.evict_way_mux_sel_M1,
-      out = s.evict_way_out_M1
-    )
-    for i in range(associativity):
-      s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:tgw]
+    if associativity == 1:
+      s.evict_way_out_M1 //= s.tag_array_rdata_M1[i][0:tgw]
+    else:
+      s.evict_way_mux_M1 = Mux(BitsTag, associativity)(
+        sel = s.evict_way_mux_sel_M1,
+        out = s.evict_way_out_M1
+      )
+      for i in range(associativity):
+        s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:tgw]
 
     s.evict_addr_M1       = Wire(BitsAddr)
     s.cache_addr_M1       = Wire(BitsAddr)
     s.evict_addr_M1[ofw+idw:abw] //= s.evict_way_out_M1 # set the tag
     # set the idx; idx is the same as the cachereq_addr
     s.evict_addr_M1[ofw:ofw+idw] //= s.cachereq_addr_M1[ofw:ofw+idw]
-    # Zero the offset since this will be memreq
+    # Zero the offset since this will be a memreq
     s.evict_addr_M1[0:ofw]       //= BitsOffset(0) 
     s.evict_mux_M1 = Mux(BitsAddr, 2)\
     (
@@ -297,26 +329,36 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     # Data Array ( Btwn M1 and M2 )
-    s.data_array_idx_M1   = Wire(BitsIdx)
+    BitsNbl = mk_bits(clog2(nbl))
+    s.data_array_idx_M1   = Wire(BitsNbl)
     s.data_array_wdata_M1 = Wire(BitsCacheline)
-    s.data_array_rdata_M2 = [Wire(BitsCacheline) for _ in range(associativity)]
-    s.data_array_wdata_M1 //= s.cachereq_data_M1
-    s.data_array_idx_M1   //= s.cachereq_addr_M1[ofw:idw+ofw]
+    s.data_array_rdata_M2 = Wire(BitsCacheline)
+    s.data_array_wdata_M1 //= s.cachereq_data_M1  
     
-    s.data_arrays_M2 = [SramPRTL(clw, nbl)(
-      port0_val   = s.data_array_val_M1[i],
+    # s.match_way_M2     = Wire(BitsAssoclog2)
+    # s.match_way_reg_M2 = RegEnRst(BitsAssoclog2)(
+    #   en  = s.reg_en_M2,
+    #   in_ = s.match_way_M1,
+    #   out = s.match_way_M2,
+    # )
+    
+    @s.update
+    def choice_calc_M1():
+      s.data_array_idx_M1 = BitsNbl(s.cachereq_addr_M1[ofw:idw+ofw]) \
+        + BitsNbl(s.way_offset_M1) * BitsNbl(nby)
+    
+    s.data_array_M2 = SramPRTL(clw, nbl)(
+      port0_val   = s.data_array_val_M1,
       port0_type  = s.data_array_type_M1,
       port0_idx   = s.data_array_idx_M1,
       port0_wdata = s.data_array_wdata_M1,
       port0_wben  = s.data_array_wben_M1,
-      port0_rdata = s.data_array_rdata_M2[i],
-    ) for i in range(associativity)
-    ]
+      port0_rdata = s.data_array_rdata_M2,
+    )
   
     #----------------------------------------------------------------
     # M2 Stage 
     #----------------------------------------------------------------
-    
     # Pipeline registers
     s.cachereq_opaque_M2  = Wire(BitsOpaque)
     s.cachereq_opaque_reg_M2 = RegEnRst(BitsOpaque)\
@@ -348,18 +390,11 @@ class BlockingCacheDpathPRTL (Component):
       in_ = s.cachereq_data_M1,
       out = s.cachereq_data_M2,
     )
-    s.read_data_way_mux_out_M2 = Wire(BitsCacheline)
-    s.read_data_way_mux_M2 = Mux(BitsCacheline, associativity)(
-      sel = s.read_data_way_mux_sel_M2,
-      out = s.read_data_way_mux_out_M2,
-    )
-    for i in range(associativity):
-      s.read_data_way_mux_M2.in_[i] //= s.data_array_rdata_M2[i]
 
     s.read_data_M2          = Wire(BitsCacheline)
     s.read_data_mux_M2 = Mux(BitsCacheline, 2)\
     (
-      in_ = {0: s.read_data_way_mux_out_M2,
+      in_ = {0: s.data_array_rdata_M2,
              1: s.cachereq_data_M2},
       sel = s.read_data_mux_sel_M2,
       out = s.read_data_M2,
@@ -378,8 +413,14 @@ class BlockingCacheDpathPRTL (Component):
     s.offset_M2               //= s.cachereq_addr_M2[0:ofw]
     s.memreq_opaque_M2        //= s.cacheresp_opaque_M2
     s.memreq_addr_M2[ofw:abw] //= s.cachereq_addr_M2[ofw:abw]
-    s.memreq_data_M2          //= s.read_data_way_mux_out_M2
+    s.memreq_data_M2          //= s.read_data_M2
 
-      
   def line_trace( s ):
-    return ""
+    # msg = f"data v:{s.data_array_val_M1}; id:{s.data_array_idx_M1}"
+    # msg += f" wben:{s.data_array_wben_M1}"
+    # msg += f" data out:{s.data_array_rdata_M2}"
+    msg = ""
+    msg += f"Didx:{s.data_array_idx_M1}"
+    msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
+    msg+= f" {s.read_data_M2}"
+    return msg

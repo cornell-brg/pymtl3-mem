@@ -88,7 +88,7 @@ class CacheGeneric_Tests:
       msgs.append(req(  'rd', i, addr[i], 0, 0 ))
       msgs.append(resp( 'rd', i, 1,       0, data[i] ))
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg, 4096 )
+    s.run_test( msgs, mem, CacheMsg, MemMsg, cacheSize = 4096 )
 
   #----------------------------------------------------------------------
   # Test Case: Read Hits: Test for entire line hits
@@ -200,7 +200,7 @@ class CacheGeneric_Tests:
       req( 'rd', 0x3, 0x00000084, 0, 0         ), resp( 'rd', 0x3, 1,   0,  0x0e0e0e0e), # read  word 0x00000080
     ]
     mem = s.write_miss_1word_mem()
-    s.run_test( msgs, mem, CacheMsg, MemMsg, 4096 )
+    s.run_test( msgs, mem, CacheMsg, MemMsg, cacheSize = 4096 )
   
   #-------------------------------------------------------------------------
   # Test cases: Read Dirty:
