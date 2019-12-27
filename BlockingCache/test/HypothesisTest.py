@@ -90,3 +90,16 @@ class CacheHypothesis_Tests:
   )
   def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req):
     s.hypothesis_test_harness(1, clw, cacheSize, transactions, req)
+
+  @hypothesis.settings( deadline = None, max_examples=150 )
+  @hypothesis.given(
+    clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
+    cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
+    transactions  = st.integers( 1, 100 ),
+    req           = st.data(), 
+    associativity = st.sampled_from([1, 2]),
+  )
+  def test_hypothesis_cache_gen(s, clw, cacheSize, transactions, 
+    req, associativity):
+    s.hypothesis_test_harness(associativity, clw, cacheSize, \
+      transactions, req)

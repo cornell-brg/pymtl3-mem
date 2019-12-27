@@ -37,7 +37,9 @@ class TestDirMapCacheFL(CacheDmapped_Tests,
     resps = cache.get_transactions()[1::2]
     # print (resps)
     for i in range(len(sink)):
-      print (f"{i}: {src[i]} > {resps[i]} == {sink[i]}")
+      print ("{:3d}: {} > {} == {}".format(i,src[i],
+      resps[i],sink[i]))
+      # print (f"{i}: {src[i]} > {resps[i]} == {sink[i]}")
       if i < len(sink):
         assert sink[i] == resps[i]
          

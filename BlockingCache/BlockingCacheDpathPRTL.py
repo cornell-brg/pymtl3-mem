@@ -347,7 +347,6 @@ class BlockingCacheDpathPRTL (Component):
       s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-2:sbw-1] 
      
     s.offset_M1 //= s.cachereq_addr_M1[0:ofw]
-    
     # Comparator
     if associativity == 1:
       @s.update
