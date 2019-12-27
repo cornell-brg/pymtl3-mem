@@ -85,6 +85,10 @@ class BlockingCacheDpathPRTL (Component):
     s.addr_mux_sel_M0       = InPort(Bits2)
     s.wdata_mux_sel_M0      = InPort(Bits2)
     s.memresp_type_M0       = OutPort(BitsType)
+    
+    # Signals for multiway associativity
+    # if associativity > 1:
+    s.ctrl_bit_rep_wr_M0    = InPort(BitsAssoclog2)
 
     #--------------------------------------------------------------------------
     # M1 Dpath Signals
@@ -94,20 +98,25 @@ class BlockingCacheDpathPRTL (Component):
     s.data_array_val_M1     = InPort(Bits1)
     s.data_array_type_M1    = InPort(Bits1)
     s.data_array_wben_M1    = InPort(BitsDataWben)
-    s.evict_way_mux_sel_M1  = InPort(BitsAssoclog2)
     s.evict_mux_sel_M1      = InPort(Bits1)
-    s.way_offset_M1         = InPort(BitsAssoclog2)
-    # s.ctrl_bit_val_rd_M1    = [OutPort(Bits1) for _ in range(associativity)]
     s.ctrl_bit_dty_rd_M1    = OutPort(BitsAssoc) 
     s.tag_match_M1          = OutPort(Bits1) 
-    s.tag_match_way_M1      = OutPort(BitsAssoclog2)
     s.cachereq_type_M1      = OutPort(BitsType)
     s.offset_M1             = OutPort(BitsOffset)
 
     # MSHR Signals
     s.reg_en_MSHR           = InPort (Bits1)
     s.MSHR_type             = OutPort(BitsType)
-
+    
+    # Signals for multiway associativity
+    # if associativity > 1:
+    s.tag_match_way_M1      = OutPort(BitsAssoclog2)
+    s.way_offset_M1         = InPort(BitsAssoclog2)
+    s.ctrl_bit_rep_en_M1    = InPort(Bits1)
+    s.ctrl_bit_rep_rd_M1    = OutPort(BitsAssoclog2)
+    if associativity == 1: # Not necessary for Dmapped cache
+      s.tag_match_way_M1  //= BitsAssoclog2(0)
+      s.ctrl_bit_rep_rd_M1//= BitsAssoclog2(0)
     #---------------------------------------------------------------------------
     # M2 Dpath Signals
     #--------------------------------------------------------------------------
@@ -197,24 +206,80 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     # Tag Array
+    sbw  = abw #tgw + 1 + 1 
+    BitsTagSRAM = mk_bits(sbw)
     s.tag_array_idx_M0      = Wire(BitsIdx)
-    s.tag_array_wdata_M0    = Wire(BitsAddr)
-    s.tag_array_rdata_M1    = [Wire(BitsAddr) for _ in range(associativity)]
+    s.tag_array_wdata_M0    = Wire(BitsTagSRAM)
+    s.tag_array_rdata_M1    = [Wire(BitsTagSRAM) for _ in range(associativity)]
 
     s.tag_array_idx_M0               //= s.addr_M0[ofw:idw+ofw]
     s.tag_array_wdata_M0[0:tgw]      //= s.addr_M0[ofw+idw:idw+ofw+tgw]
-    s.tag_array_wdata_M0[abw-1:abw]  //= s.ctrl_bit_val_wr_M0
-    s.tag_array_wdata_M0[abw-2:abw-1]//= s.ctrl_bit_dty_wr_M0
-    
-    s.tag_arrays_M1 = [SramPRTL(abw, nby)(
-      port0_val   = s.tag_array_val_M0[i],
-      port0_type  = s.tag_array_type_M0,
-      port0_idx   = s.tag_array_idx_M0,
-      port0_wdata = s.tag_array_wdata_M0,
-      port0_wben  = s.tag_array_wben_M0,
-      port0_rdata = s.tag_array_rdata_M1[i],
-    ) for i in range(associativity)
-    ]
+    # valid bit at top
+    s.tag_array_wdata_M0[sbw-1:sbw]  //= s.ctrl_bit_val_wr_M0
+    # Dirty bit 2nd to top
+    s.tag_array_wdata_M0[sbw-2:sbw-1]//= s.ctrl_bit_dty_wr_M0
+    if associativity == 1:
+      s.tag_array_M1 = SramPRTL(sbw, nby)(
+        port0_val   = s.tag_array_val_M0,
+        port0_type  = s.tag_array_type_M0,
+        port0_idx   = s.tag_array_idx_M0,
+        port0_wdata = s.tag_array_wdata_M0,
+        port0_wben  = s.tag_array_wben_M0,
+        port0_rdata = s.tag_array_rdata_M1[0],
+      )
+    else:
+      s.ctrl_bit_rep_M1 = Wire(BitsAssoclog2) 
+      
+      # Register File to store the Replacement info
+      # Can't store in SRAM since we need to constantly access
+      # them for LRU
+      s.replacement_bits_M1 = RegisterFile( BitsAssoclog2, nby )
+      s.replacement_bits_M1.raddr[0] //= s.cachereq_addr_M1[ofw:idw+ofw]
+      s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
+      s.replacement_bits_M1.waddr[0] //= s.cachereq_addr_M1[ofw:idw+ofw]
+      s.replacement_bits_M1.wdata[0] //= s.ctrl_bit_rep_wr_M0
+      s.replacement_bits_M1.wen[0]   //= s.ctrl_bit_rep_en_M1      
+      # Can possibly store in SRAM if we use FIFO rep policy
+      s.tag_arrays_M1 = [
+        SramPRTL(sbw, nby)(
+          port0_val   = s.tag_array_val_M0[i],
+          port0_type  = s.tag_array_type_M0,
+          port0_idx   = s.tag_array_idx_M0,
+          port0_wdata = s.tag_array_wdata_M0,
+          port0_wben  = s.tag_array_wben_M0,
+          port0_rdata = s.tag_array_rdata_M1[i],
+        ) for i in range(associativity)
+      ]
+      s.ctrl_bit_rep_rd_M1 //= s.ctrl_bit_rep_M1
+      # rep_bw = clog2(associativity) # replacement bitwidth
+      # srbw = sbw + rep_bw
+      # s.tag_array_wdata_rep_M0    = Wire(mk_bits(srbw))
+      # s.tag_arrays_M1 = [None]*associativity
+      # s.tag_array_wdata_rep_M0[0:tgw]        //= s.addr_M0[ofw+idw:idw+ofw+tgw]
+      # # valid bit at top
+      # s.tag_array_wdata_rep_M0[srbw-1:srbw]  //= s.ctrl_bit_val_wr_M0
+      # # Dirty bit 2nd to top
+      # s.tag_array_wdata_rep_M0[srbw-2:srbw-1]//= s.ctrl_bit_dty_wr_M0
+      # # Replacement way stored in sram_bw
+      # s.tag_array_wdata_rep_M0[srbw-2-rep_bw:srbw-2] //= s.ctrl_bit_rep_wr_M0
+      # s.tag_arrays_M1[0] = SramPRTL(srbw, nby)(
+      #   port0_val     = s.tag_array_val_M0[0],
+      #   port0_type    = s.tag_array_type_M0,
+      #   port0_idx     = s.tag_array_idx_M0,
+      #   port0_wdata   = s.tag_array_wdata_rep_M0,
+      #   port0_wben    = s.tag_array_wben_M0,
+      #   port0_rdata   = s.tag_array_rdata_M1[0],
+      # )
+      # for i in range( 1, associativity ):
+      #   s.tag_arrays_M1[i] = SramPRTL(sbw, nby)(
+      #     port0_val   = s.tag_array_val_M0[i],
+      #     port0_type  = s.tag_array_type_M0,
+      #     port0_idx   = s.tag_array_idx_M0,
+      #     port0_wdata = s.tag_array_wdata_M0,
+      #     port0_wben  = s.tag_array_wben_M0,
+      #     port0_rdata = s.tag_array_rdata_M1[i],
+      #   )
+      # print (s.tag_arrays_M1[0], s.tag_arrays_M1[1])
 
     #--------------------------------------------------------------------
     # M1 Stage 
@@ -222,7 +287,6 @@ class BlockingCacheDpathPRTL (Component):
     
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
     s.cachereq_data_M1    = Wire(BitsCacheline)
-    
 
     # Pipeline registers
     s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)\
@@ -278,36 +342,41 @@ class BlockingCacheDpathPRTL (Component):
     s.MSHR_type //= s.MSHR_type_M0 
     s.ctrl_bit_val_rd_M1 = Wire(BitsAssoc)
     # Output the valid bit
-    for i in range(associativity):
-      s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][abw-1:abw] 
-      s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][abw-2:abw-1] 
+    for i in range( associativity ):
+      s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-1:sbw] 
+      s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-2:sbw-1] 
+     
     s.offset_M1 //= s.cachereq_addr_M1[0:ofw]
-
-    s.match_way_M1 = Wire(BitsAssoclog2)
-    s.tag_match_way_M1 //= s.match_way_M1
+    
     # Comparator
-    @s.update
-    def Comparator_M1():
-      s.tag_match_M1 = n
-      for i in range( associativity ):
-        if ( s.ctrl_bit_val_rd_M1[i] ):
-          if s.tag_array_rdata_M1[i][0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]:
+    if associativity == 1:
+      @s.update
+      def DmappedComparator_M1():
+        s.tag_match_M1 = n
+        if ( s.ctrl_bit_val_rd_M1 ):
+          if s.tag_array_rdata_M1[0][0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]:
             s.tag_match_M1 = y
-            s.match_way_M1 = BitsAssoclog2(i) # If not valid, then no comparisons
+    else: # Multiway asso
+      s.match_way_M1 = Wire(BitsAssoclog2)
+      s.tag_match_way_M1 //= s.match_way_M1
+      @s.update
+      def AssoComparator_M1():
+        s.tag_match_M1 = n
+        for i in range( associativity ):
+          if ( s.ctrl_bit_val_rd_M1[i] ):
+            if s.tag_array_rdata_M1[i][0:tgw] == s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw]:
+              s.tag_match_M1 = y
+              s.match_way_M1 = BitsAssoclog2(i) # If not valid, then no comparisons
           
           # required and we just say it is a miss by setting this to 0
-    # s.Comparators = [EComp(BitsTag)(
-    #   in0 = s.tag_array_rdata_M1[i][0:tgw],
-    #   in1 = s.cachereq_addr_M1[idw+ofw:ofw+idw+tgw],
-    #   out = s.tag_match_M1[i]
-    # ) for i in range(associativity) ]
-
+    
     s.evict_way_out_M1 = Wire(BitsTag)
+    # Mux for choosing which way to evict
     if associativity == 1:
-      s.evict_way_out_M1 //= s.tag_array_rdata_M1[i][0:tgw]
+      s.evict_way_out_M1 //= s.tag_array_rdata_M1[0][0:tgw]
     else:
       s.evict_way_mux_M1 = Mux(BitsTag, associativity)(
-        sel = s.evict_way_mux_sel_M1,
+        sel = s.ctrl_bit_rep_M1,
         out = s.evict_way_out_M1
       )
       for i in range(associativity):
@@ -329,23 +398,21 @@ class BlockingCacheDpathPRTL (Component):
     )
 
     # Data Array ( Btwn M1 and M2 )
-    BitsNbl = mk_bits(clog2(nbl))
-    s.data_array_idx_M1   = Wire(BitsNbl)
     s.data_array_wdata_M1 = Wire(BitsCacheline)
     s.data_array_rdata_M2 = Wire(BitsCacheline)
     s.data_array_wdata_M1 //= s.cachereq_data_M1  
     
-    # s.match_way_M2     = Wire(BitsAssoclog2)
-    # s.match_way_reg_M2 = RegEnRst(BitsAssoclog2)(
-    #   en  = s.reg_en_M2,
-    #   in_ = s.match_way_M1,
-    #   out = s.match_way_M2,
-    # )
-    
-    @s.update
-    def choice_calc_M1():
-      s.data_array_idx_M1 = BitsNbl(s.cachereq_addr_M1[ofw:idw+ofw]) \
-        + BitsNbl(s.way_offset_M1) * BitsNbl(nby)
+    # Index bits change depending on associativity
+    if associativity == 1:
+      s.data_array_idx_M1   = Wire(BitsIdx)
+      s.data_array_idx_M1 //= s.cachereq_addr_M1[ofw:idw+ofw]
+    else:
+      BitsNbl = mk_bits(clog2(nbl))
+      s.data_array_idx_M1   = Wire(BitsNbl)
+      @s.update
+      def choice_calc_M1():
+        s.data_array_idx_M1 = BitsNbl(s.cachereq_addr_M1[ofw:idw+ofw]) \
+          + BitsNbl(s.way_offset_M1) * BitsNbl(nby)
     
     s.data_array_M2 = SramPRTL(clw, nbl)(
       port0_val   = s.data_array_val_M1,
@@ -420,7 +487,7 @@ class BlockingCacheDpathPRTL (Component):
     # msg += f" wben:{s.data_array_wben_M1}"
     # msg += f" data out:{s.data_array_rdata_M2}"
     msg = ""
-    msg += f"Didx:{s.data_array_idx_M1}"
-    msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
-    msg+= f" {s.read_data_M2}"
+    # msg += f"Didx:{s.data_array_idx_M1}"
+    # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
+    # msg+= f" {s.read_data_M2}"
     return msg

@@ -90,16 +90,18 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
     s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
     s.reg_en_M0             = OutPort(Bits1)
-
+    
+    # if associativity > 1:
+    s.ctrl_bit_rep_wr_M0    = OutPort(BitsAssoclog2)
+    if associativity == 1: # Drive these ports with 0's
+      s.ctrl_bit_rep_wr_M0 //= BitsAssoclog2(0)
     #--------------------------------------------------------------------------
     # M1 Ctrl Signals
     #--------------------------------------------------------------------------
 
     s.cachereq_type_M1      = InPort(BitsType)
-    # s.ctrl_bit_val_rd_M1    = [InPort(Bits1) for _ in range(associativity)]
     s.ctrl_bit_dty_rd_M1    = InPort(BitsAssoc)
-    s.tag_match_M1          = InPort(Bits1)
-    s.tag_match_way_M1      = InPort(BitsAssoclog2)
+    s.tag_match_M1          = InPort(Bits1) # wheter we had a valid tag match
     s.offset_M1             = InPort(BitsOffset) 
 
     s.reg_en_M1             = OutPort(Bits1)
@@ -108,10 +110,15 @@ class BlockingCacheCtrlPRTL ( Component ):
     s.data_array_wben_M1    = OutPort(BitsDataWben)
     s.reg_en_MSHR           = OutPort(Bits1)
     s.evict_mux_sel_M1      = OutPort(Bits1)
-    s.evict_way_mux_sel_M1  = OutPort(BitsAssoclog2)
+
+    # if associativity > 1:
+    s.ctrl_bit_rep_rd_M1    = InPort(BitsAssoclog2)
+    s.ctrl_bit_rep_en_M1    = OutPort(Bits1)
+    s.tag_match_way_M1      = InPort(BitsAssoclog2) # tag match in which of the ways (asso)
     s.way_offset_M1         = OutPort(BitsAssoclog2)
-
-
+    if associativity == 1:
+      s.ctrl_bit_rep_en_M1 //= n
+      s.way_offset_M1      //= BitsAssoclog2(0)
     #---------------------------------------------------------------------------
     # M2 Ctrl Signals
     #--------------------------------------------------------------------------
@@ -202,15 +209,15 @@ class BlockingCacheCtrlPRTL ( Component ):
       out = s.is_refill_M0
     )
     
-    s.represp_ptr_M1 = Wire(BitsAssoclog2)
-    if associativity > 1:
+    if associativity > 1: # MSHR for replacement ptr
+      # This eases adaptability for nonblocking since we can
+      # Store the replacement ptr in the MSHR along all other info
       s.MSHR_ptr_M0 = Wire(BitsAssoclog2)
       s.MSHR_rep_ptr_reg_M0 = RegEnRst(BitsAssoclog2)(
         en  = s.reg_en_MSHR,
-        in_ = s.represp_ptr_M1,
+        in_ = s.ctrl_bit_rep_rd_M1,
         out = s.MSHR_ptr_M0,
       )
-      
 
     @s.update
     def cachereq_logic():
@@ -264,15 +271,24 @@ class BlockingCacheCtrlPRTL ( Component ):
       s.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
     
-    if associativity > 1:
-      s.way_ptr_M1 = Wire(BitsAssoclog2)
+    s.way_ptr_M1 = Wire(BitsAssoclog2)
+
+    if associativity == 1: #val for dmapped cache is simpler
+      @s.update
+      def Dmapped_tag_array_val_logic_M0():
+        if s.val_M0:
+          s.tag_array_val_M0 = y
+        else:
+          s.tag_array_val_M0 = n
+    else:
+      # Tag array valid logic for set asso
       s.rep_ptr_reg_M1 = RegEnRst(BitsAssoclog2)(
         en  = s.reg_en_M1,
         in_ = s.MSHR_ptr_M0,
         out = s.way_ptr_M1,
       )
       @s.update
-      def tag_array_val_logic_M0():
+      def Asso_tag_array_val_logic_M0():
         for i in range( associativity ):
           s.tag_array_val_M0[i] = n # Enable all SRAMs since we are reading
         if s.val_M0:
@@ -281,7 +297,7 @@ class BlockingCacheCtrlPRTL ( Component ):
           elif s.is_write_refill_M0:     
             s.tag_array_val_M0[s.way_ptr_M1] = y      
           elif s.cachereq_type_M0 == INIT:
-            s.tag_array_val_M0[s.represp_ptr_M1] = y
+            s.tag_array_val_M0[s.ctrl_bit_rep_rd_M1] = y
           elif s.is_write_hit_clean_M0:   
             s.tag_array_val_M0[s.tag_match_way_M1] = y
           else:
@@ -291,11 +307,7 @@ class BlockingCacheCtrlPRTL ( Component ):
               else:
                 s.tag_array_val_M0[i] = n
               
-    elif associativity == 1: #val for dmapped cache is simpler
-      if s.val_M0:
-        s.tag_array_type_M0 = y
-      else:
-        s.tag_array_type_M0 = n
+    
     #--------------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------------
@@ -328,68 +340,74 @@ class BlockingCacheCtrlPRTL ( Component ):
       in_ = s.is_write_hit_clean_M0,
       out = s.is_write_hit_clean_M1
     )
-    
-    s.repreq_en_M1      = Wire(Bits1)
-    s.repreq_rdy_M1     = Wire(Bits1)
-    s.repreq_is_hit_M1  = Wire(Bits1)
-    s.repreq_hit_ptr_M1 = Wire(BitsAssoclog2)
-    s.replacement_M1 = ReplacementPolicy(
-      BitsAssoc, BitsAssoclog2, associativity, 0
-    )(
-      repreq_en       = s.repreq_en_M1,
-      repreq_rdy      = s.repreq_rdy_M1,
-      repreq_hit_ptr  = s.repreq_hit_ptr_M1,
-      repreq_is_hit   = s.repreq_is_hit_M1,
-      represp_ptr     = s.represp_ptr_M1
-    )
+    if associativity > 1:
+      # EXTRA Logic for accounting for set associative caches
+      s.repreq_en_M1      = Wire(Bits1)
+      s.repreq_rdy_M1     = Wire(Bits1)
+      s.repreq_is_hit_M1  = Wire(Bits1)
+      s.repreq_hit_ptr_M1 = Wire(BitsAssoclog2)
+      s.represp_ptr_M1 = Wire(BitsAssoclog2)
+      s.replacement_M1 = ReplacementPolicy(
+        BitsAssoc, BitsAssoclog2, associativity, 0
+      )(
+        repreq_en       = s.repreq_en_M1,
+        repreq_rdy      = s.repreq_rdy_M1,
+        repreq_hit_ptr  = s.repreq_hit_ptr_M1,
+        repreq_is_hit   = s.repreq_is_hit_M1,
+        repreq_ptr      = s.ctrl_bit_rep_rd_M1, # Read replacement mask
+        represp_ptr     = s.represp_ptr_M1  # Write new mask
+      )
+      s.ctrl_bit_rep_wr_M0 //= s.represp_ptr_M1
+
+      @s.update
+      def Asso_replacement_logic_M1(): #logic for replacement policy module
+        s.repreq_is_hit_M1  = n
+        s.repreq_en_M1      = n 
+        s.repreq_hit_ptr_M1 = x
+        if s.val_M1:
+          if s.cachereq_type_M1 == INIT:
+            s.repreq_en_M1      = y
+            s.repreq_is_hit_M1  = n
+          elif not s.is_evict_M1 and not s.is_refill_M1 and not\
+            s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
+            # Better to update replacement bit right away
+            # because we need it for nonblocking capability
+            # For blocking, we can also update during a refill
+            # for misses
+            if s.hit_M1: 
+              s.repreq_hit_ptr_M1 = s.tag_match_way_M1
+              s.repreq_en_M1      = y
+              s.repreq_is_hit_M1  = y
+            else:
+              s.repreq_en_M1      = y
+              s.repreq_is_hit_M1  = n
+        s.ctrl_bit_rep_en_M1 = s.repreq_en_M1
+
+      @s.update
+      def Asso_data_array_offset_way_M1():
+        s.way_offset_M1 = s.tag_match_way_M1
+        if s.val_M1:
+          if s.is_refill_M1 or s.is_write_refill_M1: 
+            s.way_offset_M1 = s.way_ptr_M1
+          elif s.hit_M1 or s.cachereq_type_M1 == INIT:
+            s.way_offset_M1 = s.tag_match_way_M1
+          elif s.is_evict_M1:
+            s.way_offset_M1 = s.ctrl_bit_rep_rd_M1
+
+    # Logic for hit detection is same for both
     @s.update
-    def hit_detection_logic_M1():
-      # s.hit_M1 = s.tag_match_M1 and s.ctrl_bit_val_rd_M1 \
-      #            and s.cachereq_type_M1 != INIT or s.is_write_refill_M1
+    def hit_logic_M1():
       s.hit_M1 = n
-      if s.repreq_rdy_M1:
-        # for i in range(associativity):
-          # check for any hit at all
-          # s.hit_M1 = s.hit_M1 or s.tag_match_M1[i] \
-          #   and s.cachereq_type_M1 != INIT or s.is_write_refill_M1
-        if s.is_write_refill_M1 or (s.tag_match_M1 and s.cachereq_type_M1 != INIT):
-          s.hit_M1 = s.hit_M1 or y
+      # if s.repreq_rdy_M1: Not necessary for now...
+      if s.is_write_refill_M1 \
+        or (s.tag_match_M1 and s.cachereq_type_M1 != INIT):
+        # for some reason we also made hit refill a hit 
+        # but not actually
+        s.hit_M1 = y
+
       if s.is_write_hit_clean_M1:
         s.hit_M1 = s.hit_M1 or y
       s.hit_M2[1]= b1(0)
-
-    @s.update
-    def replacement_logic_M1(): #logic for replacement policy module
-      s.repreq_is_hit_M1  = n
-      s.repreq_en_M1      = n 
-      s.repreq_hit_ptr_M1 = x
-      if s.val_M1:
-        if s.cachereq_type_M1 == INIT:
-          s.repreq_en_M1      = y
-          s.repreq_is_hit_M1  = n
-        elif not s.is_evict_M1 and not s.is_refill_M1 and not\
-          s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
-          if s.hit_M1:
-            s.repreq_hit_ptr_M1 = s.tag_match_way_M1
-            s.repreq_en_M1      = y
-            s.repreq_is_hit_M1  = y
-          else:
-            s.repreq_en_M1      = y
-            s.repreq_is_hit_M1  = n
-
-    @s.update
-    def data_array_offset_way_M1():
-      s.way_offset_M1 = s.tag_match_way_M1
-      if s.val_M1:
-        if s.is_refill_M1 or s.is_write_refill_M1:
-          s.way_offset_M1 = s.way_ptr_M1
-        elif s.hit_M1 or s.cachereq_type_M1 == INIT:
-          s.way_offset_M1 = s.tag_match_way_M1
-
-    @s.update
-    def REPLACE():
-      s.evict_way_mux_sel_M1 = b1(0)
-      # s.choice_way_M1 = b1(0)
 
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
@@ -409,12 +427,15 @@ class BlockingCacheCtrlPRTL ( Component ):
         s.reg_en_MSHR = b1(0)
 
     s.is_dty_M1 = Wire(Bits1)
-    if associativity > 1:
-      @s.update
-      def set_dty_bit():
-        s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.tag_match_way_M1]
-    else:
+    if associativity == 1:
       s.is_dty_M1 //= s.ctrl_bit_dty_rd_M1
+    else: # Multiway set assoc
+      @s.update
+      def Asso_set_dty_bit_M1():
+        if s.hit_M1: 
+          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.tag_match_way_M1]
+        else:
+          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.ctrl_bit_rep_rd_M1]
 
     @s.update
     def is_write_hit_clean_M0_logic():
@@ -621,8 +642,8 @@ class BlockingCacheCtrlPRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     state    = " [{}]".format(msg_state)
     pipeline = stage1 + stage2 + stage3 + state
-
-    add_msgs = f" hit:{s.hit_M1}|tm:{s.tag_match_M1}"
-    add_msgs += f"|tmway:{s.tag_match_way_M1}|"
+    add_msgs = ""
+    # add_msgs += f" hit:{s.hit_M1}|LRU:{s.ctrl_bit_rep_rd_M1}|repway:{s.way_ptr_M1}"
+    # add_msgs += f"|tmway:{s.tag_match_way_M1}|"
     
-    return pipeline + add_msgs + s.replacement_M1.line_trace()
+    return pipeline + add_msgs 

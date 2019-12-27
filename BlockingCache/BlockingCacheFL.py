@@ -55,8 +55,8 @@ class HitMissTracker:
     # Compute various sizes
     self.nways = nways
     self.linesize = linesize
-    self.nlines = int(size / linesize)
-    self.nsets = int(self.nlines / self.nways)
+    self.nlines = int(size // linesize)
+    self.nsets = int(self.nlines // self.nways)
     self.nbanks = nbanks
 
     # Compute how the address is sliced

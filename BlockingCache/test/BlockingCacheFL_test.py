@@ -12,16 +12,16 @@ import struct
 import random
 
 from pymtl3 import *
-from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
 from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
+from BlockingCache.test.Asso2WayTestCases import Cache2WayAsso_Tests
 from BlockingCache.BlockingCacheFL import ModelCache
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
-
-class TestDirMapCacheFL(CacheGeneric_Tests, CacheDmapped_Tests):
+class TestDirMapCacheFL(CacheDmapped_Tests, 
+ Cache2WayAsso_Tests):
   
   def run_test( s,
-   msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
+   msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=512,
    stall_prob=0, latency=1, src_delay=0, sink_delay=0):
     cache = ModelCache(cacheSize, associativity, 0, CacheMsg, 
     MemMsg, mem)
@@ -37,7 +37,7 @@ class TestDirMapCacheFL(CacheGeneric_Tests, CacheDmapped_Tests):
     resps = cache.get_transactions()[1::2]
     # print (resps)
     for i in range(len(sink)):
-      print (f"{i}: {sink[i]} == {resps[i]}")
+      print (f"{i}: {src[i]} > {resps[i]} == {sink[i]}")
       if i < len(sink):
         assert sink[i] == resps[i]
          

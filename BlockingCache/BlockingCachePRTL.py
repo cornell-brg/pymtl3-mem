@@ -42,7 +42,7 @@ class BlockingCachePRTL ( Component ):
     twb = int(abw+7)//8      # Tag array write byte bitwidth
     dwb = int(clw+7)//8      # Data array write byte bitwidth 
     rmx2 = clog2(clw//dbw+1) # Read word mux bitwidth
-    print(f"nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
+    print(f"asso[{associativity}],nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
 
     #--------------------------------------------------------------------------
     # Make bits
@@ -134,6 +134,7 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.reg_en_M0,            s.cacheDpath.reg_en_M0,
       s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
       s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
+      s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
  
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.reg_en_M1,            s.cacheDpath.reg_en_M1,
@@ -142,12 +143,10 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
       s.cacheCtrl.evict_mux_sel_M1,     s.cacheDpath.evict_mux_sel_M1,
-      s.cacheCtrl.evict_way_mux_sel_M1, s.cacheDpath.evict_way_mux_sel_M1,
-      s.cacheCtrl.way_offset_M1,        s.cacheDpath.way_offset_M1,
       s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
       s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
       s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
-      s.cacheCtrl.tag_match_way_M1,     s.cacheDpath.tag_match_way_M1,
+      s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
@@ -156,13 +155,15 @@ class BlockingCachePRTL ( Component ):
       s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
     )
 
-    # Connect ports based on associativity
-    for i in range(associativity):
-      s.cacheCtrl.tag_array_val_M0[i]  //= s.cacheDpath.tag_array_val_M0[i]
-      # s.cacheCtrl.ctrl_bit_val_rd_M1[i]//= s.cacheDpath.ctrl_bit_val_rd_M1[i]
-      s.cacheCtrl.ctrl_bit_dty_rd_M1[i]//= s.cacheDpath.ctrl_bit_dty_rd_M1[i]
-      # s.cacheCtrl.offset_M1[i]         //= s.cacheDpath.offset_M1[i]
-      
+    # if associativity > 1:
+    connect_pairs(
+      s.cacheCtrl.ctrl_bit_rep_wr_M0,   s.cacheDpath.ctrl_bit_rep_wr_M0,
+      s.cacheCtrl.tag_match_way_M1,     s.cacheDpath.tag_match_way_M1,
+      s.cacheCtrl.way_offset_M1,        s.cacheDpath.way_offset_M1,
+      s.cacheCtrl.ctrl_bit_rep_rd_M1,   s.cacheDpath.ctrl_bit_rep_rd_M1,
+      s.cacheCtrl.ctrl_bit_rep_en_M1,   s.cacheDpath.ctrl_bit_rep_en_M1,
+    )
+
   # Line tracing
   def line_trace( s ):
     memreq_msg = memresp_msg = "{:42}".format(" ")
@@ -172,9 +173,12 @@ class BlockingCachePRTL ( Component ):
     if s.memreq.en:
       memreq_msg  = "{}".format(s.memreq.msg)
 
-    msg = "{}{} {}".format(memresp_msg, \
-      s.cacheCtrl.line_trace(),
+    msg = "{} {} {}".format(\
+      s.cacheCtrl.line_trace(),memreq_msg,
       s.cacheDpath.line_trace())
+    # msg = "{}{} {}".format(memresp_msg, \
+    #   s.cacheCtrl.line_trace(),
+    #   s.cacheDpath.line_trace())
     #  memreq_msg, s.cacheDpath.line_trace())
     # msg = "{} {}".format(s.cacheCtrl.line_trace(),
     #  s.cacheDpath.line_trace())
