@@ -35,7 +35,6 @@ class TestDirMapCacheFL(CacheGeneric_Tests, CacheDmapped_Tests):
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque)
     resps = cache.get_transactions()[1::2]
-    # print (resps)
     for i in range(len(sink)):
       print (f"{i}: {sink[i]} == {resps[i]}")
       if i < len(sink):

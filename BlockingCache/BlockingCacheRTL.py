@@ -1,6 +1,6 @@
 """
 =========================================================================
-BlockingCachePRTL.py
+BlockingCacheRTL.py
 =========================================================================
 Top level model of Pipelined Blocking Cache with instances of ctrl and 
 dpath
@@ -9,14 +9,14 @@ Author : Xiaoyu Yan, Eric Tang (et396)
 Date   : 15 November 2019
 """
 
-from BlockingCache.BlockingCacheCtrlPRTL  import BlockingCacheCtrlPRTL
-from BlockingCache.BlockingCacheDpathPRTL import BlockingCacheDpathPRTL
+from BlockingCache.BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
+from BlockingCache.BlockingCacheDpathRTL  import BlockingCacheDpathRTL
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 
-class BlockingCachePRTL ( Component ):
+class BlockingCacheRTL ( Component ):
   def construct( s,                
                  nbytes        = 4096, # cache size in bytes, nbytes
                  CacheMsg      = "",   # Cache req/resp msg type
@@ -72,7 +72,7 @@ class BlockingCachePRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    s.cacheDpath = BlockingCacheDpathPRTL(
+    s.cacheDpath = BlockingCacheDpathRTL(
       abw, dbw, clw, idw, ofw, tgw, nbl,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux,
@@ -95,7 +95,7 @@ class BlockingCachePRTL ( Component ):
       memreq_data_M2      = s.memreq.msg.data,
       
     )
-    s.cacheCtrl = BlockingCacheCtrlPRTL(
+    s.cacheCtrl = BlockingCacheCtrlRTL(
       dbw, ofw,
       BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux, 

@@ -41,17 +41,11 @@ def resp( type_, opaque, test, len, data ):
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
 class CacheDmapped_Tests:
-  def evict_mem( s ):
-    return [
-      # addr      # data (in int)
-      0x00002000, 0x00facade,
-      0x00002004, 0x05ca1ded,
-      0x000a2000, 0x70facade,
-      0x000a2004, 0x75ca1ded,
-    ]
+
   #-------------------------------------------------------------------------
   # Test Case: Direct Mapped Read Evict 
   #-------------------------------------------------------------------------
+
   def test_read_evict_1word( s ):
     msgs = [
         #    type  opq   addr      len  data               type  opq test len  data
@@ -62,10 +56,20 @@ class CacheDmapped_Tests:
     mem = s.evict_mem()
     s.run_test(msgs, mem, CacheMsg, MemMsg)
 
+  def evict_mem( s ):
+    return [
+      # addr      # data (in int)
+      0x00002000, 0x00facade,
+      0x00002004, 0x05ca1ded,
+      0x000a2000, 0x70facade,
+      0x000a2004, 0x75ca1ded,
+    ]
+
   #-------------------------------------------------------------------------
   # Test Case: Direct Mapped Write Evict 
   #-------------------------------------------------------------------------
   # Test cases designed for direct-mapped cache where we evict a cache line
+  
   def test_write_evict_1word( s ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
@@ -90,6 +94,7 @@ class CacheDmapped_Tests:
       0x00002070, 0x70facade,
       0x00002074, 0x75ca1ded,
     ]
+
   def test_dir_mapped_long0_msg( s ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
@@ -124,183 +129,3 @@ class CacheDmapped_Tests:
     ]
     mem = s.dir_mapped_long0_mem()
     s.run_test(msgs, mem, CacheMsg, MemMsg)
-
-
-  # #--------------------------------------------------------------------------------
-  # # Generate random data and addresses
-  # #--------------------------------------------------------------------------------
-
-  # def generate_data(n):
-  #   data = []
-  #   for i in range(n):
-  #     data.append(random.randint(0, 0xffffffff))
-  #   return data
-
-  # def generate_type(n):
-  #   requestTypes = ['rd', 'wr']
-  #   idx = [random.randint(0, 1) for p in range(n)]
-  #   requestSequence = []
-  #   for i in range(n):
-  #     requestSequence.append(requestTypes[idx[i]])	
-  #   return requestSequence
-
-  # def generate_address(n):
-  #   randAddr = []
-  #   tagArray = []
-  #   tag = (random.sample(range(4095),n))
-  #   for i in range(n):
-  #     #tag = random.randint(0, 4095)*256
-  #     idx = random.randint(0,15)*16 + random.randint(0, 3)*4
-  #     randAddr.append(tag[i]*256+idx)
-
-  #   return randAddr
-
-# #------------------------------------------------------------------------------
-# # Test Case: Read random data from simple address patterns 
-# #------------------------------------------------------------------------------
-
-# rand_data1 = generate_data(64)
-# def read_rand_data_dmap( base_addr ):
-# 	read_random_data_msgs = []
-# 	addr = [x*16 for x in range(16)]
-# 	for i in range(16):
-# 		test = 0 
-# 		read_random_data_msgs.append(req('rd', i, addr[i], 0, 0))
-# 		read_random_data_msgs.append(resp('rd', i, test, 0, rand_data1[i*4]))
-	
-# 	return read_random_data_msgs	
-	
-# def read_rand_data_mem( base_addr ):
-# 	rand_data_mem = [];
-# 	addr = [x*4 for x in range(64)]
-	 
-# 	for i in range(64):
-# 		rand_data_mem.append(addr[i])
-# 		rand_data_mem.append(rand_data1[i])
-	 
-# 	return rand_data_mem		
-
-# #------------------------------------------------------------------------------
-# # Test Case: Random data and request types w/ simple address patterns
-# #------------------------------------------------------------------------------
-
-# rand_data3 = generate_data(64)
-# def rand_requests_dmap( base_addr ):
-# 	rand_requests_msgs = []
-# 	addr = [x*16 for x in range(16)]
-# 	write_list = [] 
-# 	for i in range(16):
-# 		test = 0
-# 		idx = i*4
-# 		ref_memory[idx:idx+4] = rand_data3[idx:idx+4]
-
-# 		if(rand_requests[i] == 'wr'):
-# 			rand_requests_msgs.append(req('wr', i, addr[i], 0, rand_data4[i]))
-# 			rand_requests_msgs.append(resp('wr', i, test, 0, 0))
-# 			ref_memory[4*i] = rand_data4[i]
-# 			write_list.append(i)
-# 		else: #read request
-# 			rand_requests_msgs.append(req('rd', i, addr[i], 0, 0))
-# 			rand_requests_msgs.append(resp('rd', i, test, 0, ref_memory[4*i]))
-	
-# 	for i in range(len(write_list)):
-# 		rand_requests_msgs.append(req('rd', 16+i, addr[write_list[i]], 0, 0))
-# 		rand_requests_msgs.append(resp('rd', 16+i, 1, 0, ref_memory[4*write_list[i]]))	
-			
-# 	return rand_requests_msgs
-
-# def rand_requests_mem( base_addr ):
-# 	rand_data_mem = []
-# 	addr = [x*4 for x in range(64)]
-	 
-# 	for i in range(64):
-# 		rand_data_mem.append(addr[i])
-# 		rand_data_mem.append(rand_data3[i])
-	 
-# 	return rand_data_mem			
-
-# rand_requests = generate_type(64)
-# ref_memory = [None]*64;
-# rand_data4 = generate_data(64) #random data to write
-
-# #------------------------------------------------------------------------------
-# # Test Case: Unit stride with random data
-# #------------------------------------------------------------------------------
-
-# ref_memory_unit = [None]*64;
-# def unit_stride_dmap( base_addr ):
-# 	unit_stride_msgs = []
-# 	addr = [x*4 for x in range(64)]
-# 	write_list = [] 
-# 	for i in range(64):
-# 		if i % 4 == 0:
-# 			test = 0
-# 			idx = i - (i % 4);
-# 			ref_memory_unit[idx:idx+4] = rand_data3[idx:idx+4]
-# 		else:
-# 			test = 1
-		
-# 		if(rand_requests[i] == 'wr'):
-# 			unit_stride_msgs.append(req('wr', i, addr[i], 0, rand_data4[i]))
-# 			unit_stride_msgs.append(resp('wr', i, test, 0, 0))
-# 			ref_memory_unit[i] = rand_data4[i]
-# 			write_list.append(i)
-# 		else: #read request
-# 			unit_stride_msgs.append(req('rd', i, addr[i], 0, 0))
-# 			unit_stride_msgs.append(resp('rd', i, test, 0, ref_memory_unit[i]))
-	
-# 	for i in range(len(write_list)):
-# 		unit_stride_msgs.append(req('rd', 64+i, addr[write_list[i]], 0, 0))
-# 		unit_stride_msgs.append(resp('rd', 64+i, 1, 0, ref_memory_unit[write_list[i]]))	
-			
-# 	return unit_stride_msgs
-
-# #------------------------------------------------------------------------------
-# # Test Case: Stride with random data
-# #------------------------------------------------------------------------------
-
-# # Data to be loaded into memory before running the test
-# rand_data5 = generate_data(50)
-# ref_memory_stride = [None]*64;
-
-# def stride_dmap( base_addr ):
-# 	stride_msgs = []
-# 	addr = [x*16**3 for x in range(50)]
-# 	for i in range(50):
-# 		test = 0
-# 		ref_memory_stride[0] = rand_data5[i]
-				
-# 		if(rand_requests[i] == 'wr'):
-# 			stride_msgs.append(req('wr', i, addr[i], 0, rand_data5[i]))
-# 			stride_msgs.append(resp('wr', i, test, 0, 0))
-# 			ref_memory_stride[0] = rand_data5[i]
-# 		else: #read request
-# 			stride_msgs.append(req('rd', i, addr[i], 0, 0))
-# 			stride_msgs.append(resp('rd', i, test, 0, ref_memory_stride[0]))
-			
-# 	return stride_msgs	
-
-# def stride_mem( base_addr ):
-# 	rand_data_mem = []
-# 	addr = [x*16**3 for x in range(50)]
-	 
-# 	for i in range(50):
-# 		rand_data_mem.append(addr[i])
-# 		rand_data_mem.append(rand_data5[i])
-	 
-# 	return rand_data_mem
-
-# #---------------------------------------------------------------------------------------------
-# # Test table for direct mapped cache tests
-# #---------------------------------------------------------------------------------------------
-
-# test_case_table_dmap = mk_test_case_table([
-#   ( "                        msg_func               mem_data_func        stall lat src sink"),
-#   [ "read_evict",            read_evict,            evict_mem,           0.0,  1,  0,  0    ],
-#   [ "write_evict",           write_evict,           evict_mem,           0.0,  1,  0,  0    ],
-#   [ "dir_mapped_long0_msg",  dir_mapped_long0_msg,  dir_mapped_long0_mem,0.0,  1,  0,  0    ],
-#   [ "read_rand_data_dmap",   read_rand_data_dmap,   read_rand_data_mem,  0.0,  1,  0,  0    ],
-#   [ "rand_requests_mem",     rand_requests_dmap,    rand_requests_mem,   0.0,  1,  0,  0    ],
-#   [ "unit_stride_rand_data", unit_stride_dmap,      rand_requests_mem,   0.0,  1,  0,  0    ],
-#   [ "stride_rand_data",      stride_dmap,           stride_mem,          0.0,  1,  0,  0    ]
-# ])

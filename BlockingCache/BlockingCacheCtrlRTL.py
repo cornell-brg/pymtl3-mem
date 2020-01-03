@@ -1,6 +1,6 @@
 """
 =========================================================================
- BlockingCacheCtrlPRTL.py
+ BlockingCacheCtrlRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
 
@@ -24,7 +24,7 @@ STATE_REFILL_WRITE = b3(3)
 wr = y             = b1(1)
 rd = n = x         = b1(0)
 
-class BlockingCacheCtrlPRTL ( Component ):
+class BlockingCacheCtrlRTL ( Component ):
   def construct( s,
                  dbw           = 32,       # 
                  ofw           = 4,        # offset bitwidth
