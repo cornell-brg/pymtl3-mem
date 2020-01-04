@@ -9,6 +9,10 @@ from pymtl3 import *
 
 class SramGenericPRTL( Component ):
 
+  vblackbox      = True
+  vbb_modulename = "SRAM_GENERIC"
+  vbb_no_reset   = True
+  vbb_no_clk     = True
   def construct( s, num_bits = 32, num_words = 256 ):
 
     addr_width = clog2( num_words )      # address width

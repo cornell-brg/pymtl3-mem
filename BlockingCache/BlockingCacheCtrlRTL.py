@@ -1,6 +1,6 @@
 """
 =========================================================================
- BlockingCacheCtrlPRTL.py
+ BlockingCacheCtrlRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
 
@@ -14,6 +14,7 @@ from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from colorama import Fore, Back, Style 
 
 # Constants
 STATE_GO           = b3(0)
@@ -23,7 +24,7 @@ STATE_REFILL_WRITE = b3(3)
 wr = y             = b1(1)
 rd = n = x         = b1(0)
 
-class BlockingCacheCtrlPRTL ( Component ):
+class BlockingCacheCtrlRTL ( Component ):
   def construct( s,
                  dbw           = 32,       # 
                  ofw           = 4,        # offset bitwidth
@@ -168,9 +169,7 @@ class BlockingCacheCtrlPRTL ( Component ):
         else:                                  s.next_state = STATE_REFILL
       elif s.curr_state == STATE_EVICT:        s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL_WRITE: s.next_state = STATE_GO
-
-      else:
-        assert False, 'undefined state: next state block'
+      # assert False, 'undefined state: next state block' # NOT TRANSLATABLE
 
     #--------------------------------------------------------------------------
     # Y Stage 
@@ -309,23 +308,24 @@ class BlockingCacheCtrlPRTL ( Component ):
 
     @s.update
     def is_write_hit_clean_M0_logic():
-      if s.cachereq_type_M1 and \
-        s.hit_M1 and ~s.ctrl_bit_dty_rd_M1 and \
-          ~s.is_write_hit_clean_M1 and ~s.is_write_refill_M1:
+      if s.cachereq_type_M1 == WRITE and \
+        s.hit_M1 and not s.ctrl_bit_dty_rd_M1 and \
+          not s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
         s.is_write_hit_clean_M0 = b1(1)
       else:
         s.is_write_hit_clean_M0 = b1(0)
 
     @s.update
     def need_evict_M1():
-      if s.val_M1 and ~s.is_write_refill_M1 and ~s.hit_M1 and s.ctrl_bit_dty_rd_M1:
+      if s.val_M1 and not s.is_write_refill_M1 and \
+        not s.hit_M1 and s.ctrl_bit_dty_rd_M1:
         s.is_evict_M1 = b1(1)
       else:
         s.is_evict_M1 = b1(0)
 
     @s.update
     def en_M1():
-      s.reg_en_M1 = ~s.stall_M1 and ~s.is_evict_M1
+      s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
 
     CS_data_array_wben_M1   = slice( 4,  4 + dwb )
     CS_data_array_type_M1   = slice( 3,  4 )
@@ -455,7 +455,7 @@ class BlockingCacheCtrlPRTL ( Component ):
 
 
   def line_trace( s ):
-    colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
+    # colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
     types = ["rd","wr","in"]
     msg_M0 = "  "
     if s.val_M0:
@@ -482,11 +482,13 @@ class BlockingCacheCtrlPRTL ( Component ):
       elif s.is_write_hit_clean_M1:
         msg_M1 = "wc"
       elif ~s.hit_M1 and s.cachereq_type_M1 != 2:
-        msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
+        msg_M1 = Fore.RED + types[s.cachereq_type_M1] + Style.RESET_ALL
+        # msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
       elif s.is_write_refill_M1:
         msg_M1 = "wf"
       elif s.hit_M1 and s.cachereq_type_M1 != 2:
-        msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
+        msg_M1 = Fore.GREEN + types[s.cachereq_type_M1] + Style.RESET_ALL
+        # msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
       else:
         msg_M1 = types[s.cachereq_type_M1]
 
