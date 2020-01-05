@@ -1,6 +1,6 @@
 """
 =========================================================================
- BlockingCacheDpathPRTL.py
+ BlockingCacheDpathRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Datapath
 
@@ -15,11 +15,7 @@ from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst
 from sram.SramPRTL                  import SramPRTL
 
-# Constants
-wr = y             = b1(1)
-rd = n = x         = b1(0)
-
-class BlockingCacheDpathPRTL (Component):
+class BlockingCacheDpathRTL (Component):
   def construct(s, 
                 abw = 32,		 # Address bitwidth
                 dbw = 32,		 # Data bitwidth
