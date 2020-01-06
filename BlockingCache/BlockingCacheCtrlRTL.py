@@ -1,11 +1,10 @@
 """
 =========================================================================
- BlockingCacheCtrlPRTL.py
+ BlockingCacheCtrlRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
-
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
-Date   : 15 November 2019
+Date   : 1 Jan 2020
 """
 
 # import random
@@ -25,11 +24,11 @@ STATE_REFILL_WRITE = b3(3)
 wr = y             = b1(1)
 rd = n = x         = b1(0)
 
-class BlockingCacheCtrlPRTL ( Component ):
+class BlockingCacheCtrlRTL ( Component ):
   def construct( s,
-                 dbw           = 32,       # 
+                 dbw           = 32,       # data bitwidth
                  ofw           = 4,        # offset bitwidth
-                 BitsAddr      = "inv",    # address bitstruct
+                 BitsAddr      = "inv",    # address type
                  BitsOpaque    = "inv",    # opaque 
                  BitsType      = "inv",    # type
                  BitsData      = "inv",    # data 

@@ -41,10 +41,6 @@ def resp( type_, opaque, test, len, data ):
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
 class CacheGeneric_Tests:
-  def run_test( s,
-  msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
-  stall_prob=0, latency=1, src_delay=0, sink_delay=0):
-    return 0
 
   def test_read_hit_1word(s):
     msgs = [
@@ -180,6 +176,7 @@ class CacheGeneric_Tests:
       0x00000004, 0x12345678,
       0x00000008, 0xeeeeeeee
     ]
+
   def test_write_miss_1word_clean( s ):
     msgs = [
       #    type  opq  addr       len data                type  opq test len data
@@ -189,7 +186,6 @@ class CacheGeneric_Tests:
     ]
     mem = s.write_miss_1word_mem()
     s.run_test( msgs, mem, CacheMsg, MemMsg )
-
 
   def test_write_miss_offset( s ):
     msgs = [

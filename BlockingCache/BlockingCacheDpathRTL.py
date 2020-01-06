@@ -1,6 +1,6 @@
 """
 =========================================================================
- BlockingCacheDpathPRTL.py
+ BlockingCacheDpathRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Datapath
 
@@ -19,7 +19,7 @@ from sram.SramPRTL                  import SramPRTL
 wr = y             = b1(1)
 rd = n = x         = b1(0)
 
-class BlockingCacheDpathPRTL (Component):
+class BlockingCacheDpathRTL (Component):
   def construct(s, 
                 abw = 32,		 # Address bitwidth
                 dbw = 32,		 # Data bitwidth
