@@ -11,9 +11,9 @@ Date   : 11 November 2019
 import pytest
 import struct
 import random
+from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
-from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
 
 OBW  = 8   # Short name for opaque bitwidth
 ABW  = 32  # Short name for addr bitwidth
@@ -272,12 +272,7 @@ class CacheDmapped_Tests:
   # Test Case: Direct Mapped Write Evict 
   #-------------------------------------------------------------------------
   # Test cases designed for direct-mapped cache where we evict a cache line
-<<<<<<< HEAD
   def test_dmapped_write_evict_1word( s ):
-=======
-  
-  def test_write_evict_1word( s ):
->>>>>>> a8160916a55fcc70fe84a96999449aa2b8914312
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
       req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), #refill-write
@@ -334,4 +329,29 @@ class CacheDmapped_Tests:
       req( 'rd', 0x1d, 0x00000070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # Evict cacheline 0 again
     ]
     mem = s.dir_mapped_long0_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+
+  def test_dmapped_subword_read( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
+      req( 'rd', 0x01, 0x00000000, 1, 0), resp( 'rd', 0x01, 1, 1, 0x12          ), 
+      req( 'rd', 0x02, 0x00000001, 1, 0), resp( 'rd', 0x02, 1, 1, 0xef          ), 
+      req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
+      req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+    ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+  def test_dmapped_subword_write( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
+      req( 'wr', 0x01, 0x00000000, 1, 0x99),       resp( 'wr', 0x01, 1, 1, 0          ), 
+      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcdef99          ), 
+      # req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
+      # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+    ]
+    mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg)

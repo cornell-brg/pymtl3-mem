@@ -208,39 +208,39 @@ class Cache2WayAsso_Tests:
   #-------------------------------------------------------------------------
   # Multiway Test Cases
   #-------------------------------------------------------------------------
-  def test_4way_hits(s):
-    msgs = [
-      req( 'wr', 0x00, 0x0, 0, 1),  resp( 'wr', 0x00, 0, 0, 0          ),
-      req( 'wr', 0x01, 0x100, 0, 2),resp( 'wr', 0x01, 0, 0, 0          ),
-      req( 'wr', 0x02, 0x200, 0, 3),resp( 'wr', 0x02, 0, 0, 0          ),
-      req( 'wr', 0x03, 0x300, 0, 4),resp( 'wr', 0x03, 0, 0, 0          ),
-      req( 'rd', 0x04, 0, 0, 0),    resp( 'rd', 0x04, 1, 0,  1  ),
-      req( 'rd', 0x05, 0x100, 0, 0),resp( 'rd', 0x05, 1, 0,  2  ),
-      req( 'rd', 0x06, 0x200, 0, 0),resp( 'rd', 0x06, 1, 0,  3  ),
-      req( 'rd', 0x07, 0x300, 0, 0),resp( 'rd', 0x07, 1, 0,  4  ),
-    ]
-    mem = None
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 4, 512)
+  # def test_4way_hits(s):
+  #   msgs = [
+  #     req( 'wr', 0x00, 0x0, 0, 1),  resp( 'wr', 0x00, 0, 0, 0          ),
+  #     req( 'wr', 0x01, 0x100, 0, 2),resp( 'wr', 0x01, 0, 0, 0          ),
+  #     req( 'wr', 0x02, 0x200, 0, 3),resp( 'wr', 0x02, 0, 0, 0          ),
+  #     req( 'wr', 0x03, 0x300, 0, 4),resp( 'wr', 0x03, 0, 0, 0          ),
+  #     req( 'rd', 0x04, 0, 0, 0),    resp( 'rd', 0x04, 1, 0,  1  ),
+  #     req( 'rd', 0x05, 0x100, 0, 0),resp( 'rd', 0x05, 1, 0,  2  ),
+  #     req( 'rd', 0x06, 0x200, 0, 0),resp( 'rd', 0x06, 1, 0,  3  ),
+  #     req( 'rd', 0x07, 0x300, 0, 0),resp( 'rd', 0x07, 1, 0,  4  ),
+  #   ]
+  #   mem = None
+  #   MemMsg = ReqRespMsgTypes(obw, abw, 64)
+  #   s.run_test(msgs, mem, CacheMsg, MemMsg, 4, 512)
 
-  def test_4way_lru(s):
-    msgs = [
-      req( 'wr', 0x00, 0x0, 0, 1),  resp( 'wr', 0x00, 0, 0, 0          ),
-      req( 'wr', 0x01, 0x100, 0, 2),resp( 'wr', 0x01, 0, 0, 0          ),
-      req( 'wr', 0x02, 0x200, 0, 3),resp( 'wr', 0x02, 0, 0, 0          ),
-      req( 'wr', 0x03, 0x300, 0, 4),resp( 'wr', 0x03, 0, 0, 0          ),
-      req( 'rd', 0x04, 0, 0, 0),    resp( 'rd', 0x04, 1, 0,  1  ),
-      req( 'rd', 0x05, 0x100, 0, 0),resp( 'rd', 0x05, 1, 0,  2  ),
-      req( 'rd', 0x06, 0x200, 0, 0),resp( 'rd', 0x06, 1, 0,  3  ),
-      req( 'rd', 0x07, 0x300, 0, 0),resp( 'rd', 0x07, 1, 0,  4  ), # Fill up the ways LRU = 0
-      req( 'wr', 0x08, 0x400, 0, 5),resp( 'wr', 0x08, 0, 0,  0  ), # LRU = 1
-      req( 'rd', 0x09, 0x100, 0, 0),resp( 'rd', 0x09, 1, 0,  2  ), # LRU = 2
-      req( 'wr', 0x09, 0x500, 0, 6),resp( 'wr', 0x09, 0, 0,  0  ), # Replace way 2 line
-      req( 'rd', 0x09, 0x100, 0, 6),resp( 'rd', 0x09, 1, 0,  2  ), # Replace way 2 line
-    ]
-    mem = None
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 4, 512)
+  # def test_4way_lru(s):
+  #   msgs = [
+  #     req( 'wr', 0x00, 0x0, 0, 1),  resp( 'wr', 0x00, 0, 0, 0          ),
+  #     req( 'wr', 0x01, 0x100, 0, 2),resp( 'wr', 0x01, 0, 0, 0          ),
+  #     req( 'wr', 0x02, 0x200, 0, 3),resp( 'wr', 0x02, 0, 0, 0          ),
+  #     req( 'wr', 0x03, 0x300, 0, 4),resp( 'wr', 0x03, 0, 0, 0          ),
+  #     req( 'rd', 0x04, 0, 0, 0),    resp( 'rd', 0x04, 1, 0,  1  ),
+  #     req( 'rd', 0x05, 0x100, 0, 0),resp( 'rd', 0x05, 1, 0,  2  ),
+  #     req( 'rd', 0x06, 0x200, 0, 0),resp( 'rd', 0x06, 1, 0,  3  ),
+  #     req( 'rd', 0x07, 0x300, 0, 0),resp( 'rd', 0x07, 1, 0,  4  ), # Fill up the ways LRU = 0
+  #     req( 'wr', 0x08, 0x400, 0, 5),resp( 'wr', 0x08, 0, 0,  0  ), # LRU = 1
+  #     req( 'rd', 0x09, 0x100, 0, 0),resp( 'rd', 0x09, 1, 0,  2  ), # LRU = 2
+  #     req( 'wr', 0x09, 0x500, 0, 6),resp( 'wr', 0x09, 0, 0,  0  ), # Replace way 2 line
+  #     req( 'rd', 0x09, 0x100, 0, 6),resp( 'rd', 0x09, 1, 0,  2  ), # Replace way 2 line
+  #   ]
+  #   mem = None
+  #   MemMsg = ReqRespMsgTypes(obw, abw, 64)
+  #   s.run_test(msgs, mem, CacheMsg, MemMsg, 4, 512)
   #-------------------------------------------------------------------------
   # Hypothesis Test Cases
   #-------------------------------------------------------------------------

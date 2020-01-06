@@ -48,6 +48,7 @@ class BlockingCacheRTL ( Component ):
     # Make bits
     #--------------------------------------------------------------------------
     
+    BitsLen       = mk_bits(clog2(dbw//8))
     BitsOpaque    = mk_bits(obw)   # opaque
     BitsType      = mk_bits(4)     # type, always 4 bits
     BitsAddr      = mk_bits(abw)   # address 
@@ -78,8 +79,8 @@ class BlockingCacheRTL ( Component ):
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
     s.cacheDpath = BlockingCacheDpathRTL(
-      abw, dbw, clw, idw, ofw, tgw, nbl,
-      BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
+      abw, dbw, clw, idw, ofw, tgw, nbl, nby,
+      BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
       associativity
     )(
@@ -87,6 +88,7 @@ class BlockingCacheRTL ( Component ):
       cachereq_type_M0    = s.cachereq.msg.type_,
       cachereq_addr_M0    = s.cachereq.msg.addr,
       cachereq_data_M0    = s.cachereq.msg.data,
+      cachereq_len_M0     = s.cachereq.msg.len,
 
       memresp_opaque_Y    = s.memresp.msg.opaque,
       memresp_type_Y      = s.memresp.msg.type_, 
@@ -95,6 +97,7 @@ class BlockingCacheRTL ( Component ):
       cacheresp_opaque_M2 = s.cacheresp.msg.opaque,
       cacheresp_type_M2   = s.cacheresp.msg.type_,
       cacheresp_data_M2   = s.cacheresp.msg.data,
+      cacheresp_len_M2   = s.cacheresp.msg.len,
 
       memreq_opaque_M2    = s.memreq.msg.opaque,
       memreq_addr_M2      = s.memreq.msg.addr,
@@ -103,7 +106,7 @@ class BlockingCacheRTL ( Component ):
     )
     s.cacheCtrl = BlockingCacheCtrlRTL(
       dbw, ofw,
-      BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
+      BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
       twb, dwb, rmx2, 
       associativity,
@@ -135,6 +138,7 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
       s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
       s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
+      # s.cacheCtrl.len_M0,     s.cacheDpath.len_M0,
  
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.reg_en_M1,            s.cacheDpath.reg_en_M1,
@@ -143,10 +147,11 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.data_array_type_M1,   s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,   s.cacheDpath.data_array_wben_M1,
       s.cacheCtrl.evict_mux_sel_M1,     s.cacheDpath.evict_mux_sel_M1,
-      s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
       s.cacheCtrl.data_array_val_M1,    s.cacheDpath.data_array_val_M1,
       s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
       s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
+      s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
+      s.cacheCtrl.len_M1,   s.cacheDpath.len_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,

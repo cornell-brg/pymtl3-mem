@@ -13,12 +13,12 @@ from pymtl3      import *
 from BlockingCache.BlockingCacheRTL import BlockingCacheRTL
 from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
 from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
-from BlockingCache.test.BlockingCacheFL_test import TestDirMapCacheFL
+from BlockingCache.test.BlockingCacheFL_test import TestCacheFL
 from mem_pclib.test.sim_utils import run_sim, translate_import, TestHarness
 
 max_cycles = 500
 
-class TestDirMapBlockingCacheRTL( TestDirMapCacheFL ):
+class TestBlockingCacheRTL( TestCacheFL ):
 
   def run_test( s,
    msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=512, 

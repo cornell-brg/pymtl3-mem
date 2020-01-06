@@ -17,7 +17,7 @@ from BlockingCache.test.Asso2WayTestCases import Cache2WayAsso_Tests
 from BlockingCache.BlockingCacheFL import ModelCache
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
-class TestDirMapCacheFL(CacheDmapped_Tests, 
+class TestCacheFL(CacheDmapped_Tests, 
  Cache2WayAsso_Tests):
   
   def run_test( s,

@@ -15,6 +15,10 @@ from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst
 from sram.SramPRTL                  import SramPRTL
 
+# Constants
+wr = y             = b1(1)
+rd = n = x         = b1(0)
+
 class BlockingCacheDpathRTL (Component):
   def construct(s, 
                 abw = 32,		 # Address bitwidth
@@ -25,14 +29,15 @@ class BlockingCacheDpathRTL (Component):
                 tgw = 19,    # Tag bitwidth
                 nbl = 512,   # Number of blocks total
                 nby = 256,   # Number of blocks per way
-                BitsAddr      = "inv",  # address bitstruct
-                BitsOpaque    = "inv",  # opaque bitstruct
-                BitsType      = "inv",  # type bitstruct
-                BitsData      = "inv",  # data bitstruct
-                BitsCacheline = "inv",  # cacheline bitstruct
-                BitsIdx       = "inv",  # index bitstruct
-                BitsTag       = "inv",  # tag bitstruct
-                BitsOffset    = "inv",  # offset bitstruct
+                BitsLen       = "inv",  # word access type
+                BitsAddr      = "inv",  # address type
+                BitsOpaque    = "inv",  # opaque type
+                BitsType      = "inv",  # type type
+                BitsData      = "inv",  # data type
+                BitsCacheline = "inv",  # cacheline type
+                BitsIdx       = "inv",  # index type
+                BitsTag       = "inv",  # tag type
+                BitsOffset    = "inv",  # offset type
                 BitsTagWben   = "inv",  # Tag array write byte enable
                 BitsDataWben  = "inv",  # Data array write byte enable
                 BitsRdDataMux = "inv",  # Read data mux M2 
@@ -50,23 +55,22 @@ class BlockingCacheDpathRTL (Component):
     s.cachereq_type_M0    = InPort(BitsType)
     s.cachereq_addr_M0    = InPort(BitsAddr)
     s.cachereq_data_M0    = InPort(BitsData)
+    s.cachereq_len_M0     = InPort(BitsLen)
     # Mem -> Cache
     s.memresp_opaque_Y    = InPort(BitsOpaque)
     s.memresp_type_Y      = InPort(BitsType)
     s.memresp_data_Y      = InPort(BitsCacheline)
+    # s.memresp_len_Y       = InPort(BitsLen)
     # Cache -> Proc
     s.cacheresp_opaque_M2 = OutPort(BitsOpaque)
     s.cacheresp_type_M2   = OutPort(BitsType) 
     s.cacheresp_data_M2	  = OutPort(BitsData)	
+    s.cacheresp_len_M2    = OutPort(BitsLen)
     # Cache -> Mem 
     s.memreq_opaque_M2    = OutPort(BitsOpaque)
     s.memreq_addr_M2      = OutPort(BitsAddr)
     s.memreq_data_M2      = OutPort(BitsCacheline)
-   
-    #-------------------------------------------------------------------
-    # Control Signals (ctrl -> dpath)
-    #-------------------------------------------------------------------
-
+  
     #--------------------------------------------------------------------------
     # M0 Dpath Signals 
     #--------------------------------------------------------------------------
@@ -80,7 +84,9 @@ class BlockingCacheDpathRTL (Component):
     s.memresp_mux_sel_M0    = InPort(Bits1)
     s.addr_mux_sel_M0       = InPort(Bits2)
     s.wdata_mux_sel_M0      = InPort(Bits2)
+    
     s.memresp_type_M0       = OutPort(BitsType)
+    # s.len_M0                = OutPort(BitsLen)
     
     # Signals for multiway associativity
     # if associativity > 1:
@@ -99,6 +105,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_match_M1          = OutPort(Bits1) 
     s.cachereq_type_M1      = OutPort(BitsType)
     s.offset_M1             = OutPort(BitsOffset)
+    s.len_M1                = OutPort(BitsLen)
 
     # MSHR Signals
     s.reg_en_MSHR           = InPort (Bits1)
@@ -129,6 +136,8 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
     
     s.memresp_data_M0     = Wire(BitsCacheline)
+    s.len_M0              = Wire(BitsLen)
+    s.MSHR_len_M0         = Wire(BitsLen)
     s.memresp_opaque_M0   = Wire(BitsOpaque)
     s.opaque_M0           = Wire(BitsOpaque)
     s.data_array_wdata_M0 = Wire(BitsCacheline)
@@ -167,6 +176,14 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Cachereq or Memresp select muxes
+    s.len_mux_M0 = Mux(BitsLen, 2)\
+    (
+      in_ = {0: s.cachereq_len_M0,
+             1: s.MSHR_len_M0},
+      sel = s.memresp_mux_sel_M0,
+      out = s.len_M0,
+    )
+    
     s.opaque_mux_M0 = Mux(BitsOpaque, 2)\
     (
       in_ = {0: s.cachereq_opaque_M0,
@@ -202,7 +219,8 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Tag Array
-    sbw  = abw #tgw + 1 + 1 
+    sbw  = int(tgw + 1 + 1 + 7) // 8 * 8 
+
     BitsTagSRAM = mk_bits(sbw)
     s.tag_array_idx_M0      = Wire(BitsIdx)
     s.tag_array_wdata_M0    = Wire(BitsTagSRAM)
@@ -282,9 +300,17 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
     
     s.cachereq_opaque_M1  = Wire(BitsOpaque)
+    s.cachereq_len_M1     = Wire(BitsLen)
     s.cachereq_data_M1    = Wire(BitsCacheline)
-
+    s.len_M1 //= s.cachereq_len_M1
     # Pipeline registers
+    s.cachereq_len_reg_M1 = RegEnRst(BitsLen)\
+    ( # registers for subword/word acess 0 = word, 1 = byte, 2 = half-word
+      en  = s.reg_en_M1,
+      in_ = s.len_M0,
+      out = s.cachereq_len_M1,
+    )
+
     s.cachereq_opaque_reg_M1 = RegEnRst(BitsOpaque)\
     (
       en  = s.reg_en_M1,
@@ -333,6 +359,13 @@ class BlockingCacheDpathRTL (Component):
       en  = s.reg_en_MSHR,
       in_ = s.cachereq_data_M1,
       out = s.MSHR_data_M0
+    )
+
+    s.MSHR_len_reg = RegEnRst(BitsLen)\
+    (
+      en  = s.reg_en_MSHR,
+      in_ = s.cachereq_len_M1,
+      out = s.MSHR_len_M0
     )
 
     s.MSHR_type //= s.MSHR_type_M0 
@@ -422,6 +455,13 @@ class BlockingCacheDpathRTL (Component):
     # M2 Stage 
     #----------------------------------------------------------------
     # Pipeline registers
+    s.cachereq_len_reg_M2 = RegEnRst(BitsLen)\
+    (
+      en  = s.reg_en_M2,
+      in_ = s.cachereq_len_M1,
+      out = s.cacheresp_len_M2,
+    )
+    
     s.cachereq_opaque_M2  = Wire(BitsOpaque)
     s.cachereq_opaque_reg_M2 = RegEnRst(BitsOpaque)\
     (
@@ -482,7 +522,9 @@ class BlockingCacheDpathRTL (Component):
     # msg += f" wben:{s.data_array_wben_M1}"
     # msg += f" data out:{s.data_array_rdata_M2}"
     msg = ""
-    # msg += f"Didx:{s.data_array_idx_M1}"
+    msg += f"len0:{s.len_M0}"
+    msg += f"len1:{s.len_M1}"
+    msg += f"len1:{s.cacheresp_len_M2}"
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
     # msg+= f" {s.read_data_M2}"
     return msg
