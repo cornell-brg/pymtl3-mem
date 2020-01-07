@@ -38,7 +38,7 @@ def resp( type_, opaque, test, len, data ):
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
-class CacheDmapped_Tests:
+class DmappedTestCases:
   def test_dmapped_read_hit_1word(s):
     msgs = [
         #    type  opq  addr     len data                type  opq  test len data
@@ -332,24 +332,36 @@ class CacheDmapped_Tests:
     s.run_test(msgs, mem, CacheMsg, MemMsg)
 
 
-  def test_dmapped_subword_read( s ):
+  def test_dmapped_1byte_read( s ):
     msgs = [
       #    type  opq   addr      len  data                type  opq test len  data
       req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
-      req( 'rd', 0x01, 0x00000000, 1, 0), resp( 'rd', 0x01, 1, 1, 0x12          ), 
-      req( 'rd', 0x02, 0x00000001, 1, 0), resp( 'rd', 0x02, 1, 1, 0xef          ), 
-      req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
-      req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+      req( 'rd', 0x01, 0x00000000, 1, 0), resp( 'rd', 0x01, 1, 1, 0xabcdef12          ), 
+      req( 'rd', 0x02, 0x00000001, 1, 0), resp( 'rd', 0x02, 1, 1, 0xabcdef12          ), 
+      req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xabcdef12          ), 
+      req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xabcdef12          ), 
     ]
     mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg)
 
-  def test_dmapped_subword_write( s ):
+  def test_dmapped_1byte_write( s ):
     msgs = [
       #    type  opq   addr      len  data                type  opq test len  data
       req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
       req( 'wr', 0x01, 0x00000000, 1, 0x99),       resp( 'wr', 0x01, 1, 1, 0          ), 
       req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcdef99          ), 
+      # req( 'rd', 0x03, 0x00000002, 1,   0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
+      # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+    ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+  
+  def test_dmapped_halfword_write( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
+      req( 'wr', 0x01, 0x00000000, 2, 0x99),       resp( 'wr', 0x01, 1, 2, 0          ), 
+      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcd0099          ), 
       # req( 'rd', 0x03, 0x00000002, 1,   0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
       # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
     ]

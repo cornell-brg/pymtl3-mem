@@ -11,15 +11,15 @@ Date   : 23 December 2019
 import pytest
 from pymtl3      import *
 from BlockingCache.BlockingCacheRTL import BlockingCacheRTL
-from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
-from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
-from BlockingCache.test.BlockingCacheFL_test import TestCacheFL
+from BlockingCache.test.DmappedTestCases import DmappedTestCases
+from BlockingCache.test.Asso2WayTestCases import AssoTestCases
+# commented since it will also run FL tests...
+# from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests 
 from mem_pclib.test.sim_utils import run_sim, translate_import, TestHarness
 
 max_cycles = 500
 
-class TestBlockingCacheRTL( TestCacheFL ):
-
+class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases ):
   def run_test( s,
    msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=512, 
    stall_prob=0, latency=1, src_delay=0, sink_delay=0):

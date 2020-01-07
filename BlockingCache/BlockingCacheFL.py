@@ -18,12 +18,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
 
-# obw  = 8   # Short name for opaque bitwidth
-# abw  = 32  # Short name for addr bitwidth
-# dbw  = 32  # Short name for data bitwidth
-# clw  = 128
-# CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-# MemMsg = ReqRespMsgTypes(obw, abw, clw)
+# Assumes 32 bit address and 32 bit data 
 
 #-------------------------------------------------------------------------
 # make messages
@@ -160,6 +155,17 @@ class ModelCache:
     self.CacheMsg = CacheMsg
     self.MemMsg = MemMsg
 
+    self.nlines = int(size // MemMsg.dbw)
+    self.nsets = int(self.nlines // nways)
+    # Compute how the address is sliced
+    self.offset_start = 0
+    self.offset_end = self.offset_start + int(math.log(MemMsg.dbw//8, 2))
+    self.idx_start = self.offset_end
+    self.idx_end = self.idx_start + int(math.log(self.nsets, 2))
+    self.tag_start = self.idx_end
+    self.tag_end = 32
+    
+
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
     # in the "test" field of the response
@@ -185,7 +191,14 @@ class ModelCache:
     value = Bits(32, value)
     hit = self.check_hit(addr)
 
-    self.mem[addr.int()] = value
+    offset = addr[self.offset_start:self.offset_end]
+    offset = offset.int()
+    if len_ == 1: # byte access
+      self.mem[addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+    elif len_ == 2: # half word access
+      self.mem[addr.int()][offset*8:(offset+2)*8] = Bits16(value)  
+    else:
+      self.mem[addr.int()] = value
 
     # opaque = random.randint(0,255)
     self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, len_, value))
@@ -195,8 +208,13 @@ class ModelCache:
   def init(self, addr, value, opaque, len_):
     value = Bits(32, value)
     hit = self.check_hit(addr)
-    if len_ == 1:
-      self.mem[addr.int()] == self.mem[addr.int()][]
+    
+    offset = addr[self.offset_start:self.offset_end]
+    offset = offset.int()
+    if len_ == 1: # byte access
+      self.mem[addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+    elif len_ == 2: # half word access
+      self.mem[addr.int()][offset*8:(offset+2)*8] = Bits16(value)  
     else:
       self.mem[addr.int()] = value
 

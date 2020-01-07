@@ -23,8 +23,7 @@
 - `tag_width = addr_width - offset_width - idx_width`
 - `tgw = abw - ofw - idw`
 - 32-bit width SRAM with blocks equal to number of cachelines
-- Row amount is the number of cachelines or blocks (`nbl`)
-- We store valid at highest bit
+- We store valid and dirty at the highest bits
 
 #### Tag Array Bits Distribution
 ```
@@ -34,7 +33,7 @@ abw|                 tgw|    0|
 
 ### Data Array
 - Bit width is cacheline size (`clw`)
-- Row amount is the number of cachelines or blocks (`nbl`)
+
 #### Data Array Bits Distribution
 ```
    | ..data.. | ... | ..data.. |

@@ -1,6 +1,6 @@
 """
 =========================================================================
-Asso2WayTestCases.py
+AssoTestCases.py
 =========================================================================
 2 way set associative cache test cases
 
@@ -38,7 +38,7 @@ def resp( type_, opaque, test, len, data ):
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
-class Cache2WayAsso_Tests:
+class AssoTestCases:
   def set_assoc_mem0( s ):
     return [
       # addr      # data (in int)
@@ -208,6 +208,8 @@ class Cache2WayAsso_Tests:
   #-------------------------------------------------------------------------
   # Multiway Test Cases
   #-------------------------------------------------------------------------
+  # Commented because we don't have a replacement policy in place (yet) 
+  # TODO find a replacement policy
   # def test_4way_hits(s):
   #   msgs = [
   #     req( 'wr', 0x00, 0x0, 0, 1),  resp( 'wr', 0x00, 0, 0, 0          ),
