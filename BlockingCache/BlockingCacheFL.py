@@ -168,7 +168,7 @@ class ModelCache:
     else:
       return 0
 
-  def read(self, addr, opaque):
+  def read(self, addr, opaque, len_):
     hit = self.check_hit(addr)
 
     if addr.int() in self.mem:
@@ -177,28 +177,31 @@ class ModelCache:
       value = Bits(32, 0)
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'rd', opaque, addr, 0, 0))
-    self.transactions.append(resp(self.CacheMsg,'rd', opaque, hit, 0, value))
+    self.transactions.append(req(self.CacheMsg,'rd', opaque, addr, len_, 0))
+    self.transactions.append(resp(self.CacheMsg,'rd', opaque, hit, len_, value))
     self.opaque += 1
 
-  def write(self, addr, value, opaque):
+  def write(self, addr, value, opaque, len_):
     value = Bits(32, value)
     hit = self.check_hit(addr)
 
     self.mem[addr.int()] = value
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheMsg,'wr', opaque, hit, 0, 0))
+    self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheMsg,'wr', opaque, hit, len_, 0))
     self.opaque += 1
   
-  def init(self, addr, value, opaque):
+  def init(self, addr, value, opaque, len_):
     value = Bits(32, value)
     hit = self.check_hit(addr)
-    self.mem[addr.int()] = value
+    if len_ == 1:
+      self.mem[addr.int()] == self.mem[addr.int()][]
+    else:
+      self.mem[addr.int()] = value
 
-    self.transactions.append(req(self.CacheMsg,'in', opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, 0, 0))
+    self.transactions.append(req(self.CacheMsg,'in', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
   def get_transactions(self):

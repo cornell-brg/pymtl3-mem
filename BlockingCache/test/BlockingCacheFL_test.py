@@ -29,11 +29,11 @@ class TestCacheFL(CacheDmapped_Tests,
     sink = msgs[1::2]
     for trans in src:
       if trans.type_ == MemMsgType.READ:
-        cache.read(trans.addr, trans.opaque)
+        cache.read(trans.addr, trans.opaque, trans.len)
       elif trans.type_ == MemMsgType.WRITE:
-        cache.write(trans.addr, trans.data, trans.opaque)
+        cache.write(trans.addr, trans.data, trans.opaque, trans.len)
       elif trans.type_ == MemMsgType.WRITE_INIT:
-        cache.init(trans.addr, trans.data, trans.opaque)
+        cache.init(trans.addr, trans.data, trans.opaque, trans.len)
     resps = cache.get_transactions()[1::2]
     for i in range(len(sink)):
       print ("{:3d}: {} > {} == {}".format(i,src[i],

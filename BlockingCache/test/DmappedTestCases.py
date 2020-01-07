@@ -350,7 +350,7 @@ class CacheDmapped_Tests:
       req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
       req( 'wr', 0x01, 0x00000000, 1, 0x99),       resp( 'wr', 0x01, 1, 1, 0          ), 
       req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcdef99          ), 
-      # req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
+      # req( 'rd', 0x03, 0x00000002, 1,   0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
       # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
     ]
     mem = None
