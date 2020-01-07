@@ -10,12 +10,9 @@ Date   : 21 Decemeber 2019
 
 import pytest
 import random
-from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
-from mem_pclib.test.sim_utils import run_sim, \
-translate_import, TestHarness
 
 OBW  = 8   # Short name for opaque bitwidth
 ABW  = 32  # Short name for addr bitwidth
@@ -40,7 +37,7 @@ def resp( type_, opaque, test, len, data ):
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
-class CacheGeneric_Tests:
+class GenericTestCases:
 
   def test_read_hit_1word(s):
     msgs = [

@@ -15,7 +15,6 @@ import random
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
-from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
 
 OBW  = 8   # Short name for opaque bitwidth
 ABW  = 32  # Short name for addr bitwidth
@@ -40,7 +39,7 @@ def resp( type_, opaque, test, len, data ):
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   return CacheMsg.Resp( type_, opaque, test, len, data )
 
-class CacheDmapped_Tests:
+class DmappedTestCases:
 
   #-------------------------------------------------------------------------
   # Test Case: Direct Mapped Read Evict 

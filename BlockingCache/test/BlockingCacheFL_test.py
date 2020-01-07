@@ -12,13 +12,13 @@ import struct
 import random
 
 from pymtl3 import *
-from BlockingCache.test.GenericTestCases import CacheGeneric_Tests
-from BlockingCache.test.DmappedTestCases import CacheDmapped_Tests
+from BlockingCache.test.GenericTestCases import GenericTestCases
+from BlockingCache.test.DmappedTestCases import DmappedTestCases
 from BlockingCache.BlockingCacheFL import ModelCache
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 
-class TestDirMapCacheFL(CacheGeneric_Tests, CacheDmapped_Tests):
+class DirMapCacheFL_Tests(GenericTestCases, DmappedTestCases):
   
   def run_test( s,
    msgs, mem, CacheMsg, MemMsg, cacheSize=256, associativity=1,
