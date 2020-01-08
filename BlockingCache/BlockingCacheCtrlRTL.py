@@ -37,21 +37,28 @@ class BlockingCacheCtrlRTL ( Component ):
                  BitsIdx       = "inv",    # index 
                  BitsTag       = "inv",    # tag 
                  BitsOffset    = "inv",    # offset 
-                 BitsTagWben   = "inv",    # Tag array write byte enable
+                 BitsTagwben   = "inv",    # Tag array write byte enable
                  BitsDataWben  = "inv",    # Data array write byte enable
-                 BitsRdDataMux = "inv",    # Read data mux M2 
+                 BitsRdWordMuxSel = "inv",    # Read data mux M2 
+                 BitsRdByteMuxSel = "inv",    # Read data mux M2 
+                 BitsRdHwordMuxSel = "inv",    # Read data mux M2 
                  BitsAssoclog2 = "inv",    # Bits for associativity
                  BitsAssoc     = "inv",    # Bits for associativity
                  twb           = 4,        # Tag array write byte enable bitwidth
                  dwb           = 16,       # Data array write byte enable bitwidth
-                 rmx2          = 3,        # Read word mux bitwidth
+                 wdmx          = 3,        # Read word mux bitwidth
+                 btmx          = 2,        # Read byte mux bitwidth
+                 hwmx          = 1,        # Read hald word mux bitwidth
                  associativity = 1,        # Number of ways 
   ):
 
-    mxsel0 = BitsRdDataMux(0)
+    wdmx0 = BitsRdWordMuxSel(0)
+    btmx0 = BitsRdByteMuxSel(0)
+    hwmx0 = BitsRdHwordMuxSel(0)
+    acmx0 = Bits2(0) # access select 0
     wben0 = BitsDataWben(0)
     wbenf = BitsDataWben(-1)
-    tg_wbenf = BitsTagWben(-1)
+    tg_wbenf = BitsTagwben(-1)
     data_array_double_mask    = 0xff
     data_array_word_mask      = 0xf
     data_array_half_word_mask = 0x3
@@ -90,7 +97,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.wdata_mux_sel_M0      = OutPort(Bits2)
     s.tag_array_val_M0      = OutPort(BitsAssoc)
     s.tag_array_type_M0     = OutPort(Bits1)
-    s.tag_array_wben_M0     = OutPort(BitsTagWben)
+    s.tag_array_wben_M0     = OutPort(BitsTagwben)
     s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
     s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
     s.reg_en_M0             = OutPort(Bits1)
@@ -130,9 +137,13 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.cachereq_type_M2      = InPort(BitsType)
     s.offset_M2             = InPort(BitsOffset)
+    s.len_M2                = InPort(BitsLen)
     s.reg_en_M2             = OutPort(Bits1)
     s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
-    s.read_word_mux_sel_M2  = OutPort(BitsRdDataMux)
+    s.read_word_mux_sel_M2  = OutPort(BitsRdWordMuxSel)
+    s.read_byte_mux_sel_M2  = OutPort(BitsRdByteMuxSel)
+    s.read_half_word_mux_sel_M2 = OutPort(BitsRdHwordMuxSel)
+    s.subword_access_mux_sel_M2 = OutPort(Bits2)
 
     # Output Signals
     s.hit_M2                = OutPort(Bits2)
@@ -564,34 +575,34 @@ class BlockingCacheCtrlRTL ( Component ):
     def en_M2():
       s.reg_en_M2 = ~s.stall_M2
 
-    CS_read_word_mux_sel_M2 = slice( 8,  8 + rmx2 )
+    CS_read_word_mux_sel_M2 = slice( 8,  8 + wdmx )
     CS_read_data_mux_sel_M2 = slice( 7,  8 )
     CS_ostall_M2            = slice( 6,  7 )
     CS_memreq_type          = slice( 2,  6 )
     CS_memreq_en            = slice( 1,  2 )
     CS_cacheresp_en         = slice( 0,  1 )
-    s.cs2 = Wire( mk_bits( 8 + rmx2 ) )
-    s.msel = Wire(BitsRdDataMux)
+    s.cs2 = Wire( mk_bits( 8 + wdmx ) )
+    s.msel = Wire(BitsRdWordMuxSel)
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = BitsRdDataMux(s.offset_M2[2:ofw]) + BitsRdDataMux(1)  
+      s.msel = BitsRdWordMuxSel(s.offset_M2[2:ofw]) + BitsRdWordMuxSel(1)  
+      s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
       if s.val_M2:                                     #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
-        if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(mxsel0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
-        elif s.is_evict_M2:                  s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   WRITE   ,    y ,     n   )
+        if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
+        elif s.is_evict_M2:                  s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   WRITE   ,    y ,     n   )
         elif s.is_refill_M2:
-          if s.cachereq_type_M2 == READ:     s.cs2 = concat(s.msel,   b1(1) ,  n   ,   READ    ,    n ,     y   )
-          elif s.cachereq_type_M2 == WRITE:  s.cs2 = concat(mxsel0,   b1(1) ,  n   ,   READ    ,    n ,     y   )
-        elif s.is_write_hit_clean_M2:        s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
+          if s.cachereq_type_M2 == READ:     s.cs2 = concat(s.msel,  b1(1) ,  n   ,   READ    ,    n ,     y   )
+          elif s.cachereq_type_M2 == WRITE:  s.cs2 = concat(wdmx0,   b1(1) ,  n   ,   READ    ,    n ,     y   )
+        elif s.is_write_hit_clean_M2:        s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
         else:
-          if s.cachereq_type_M2 == INIT:     s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
+          if s.cachereq_type_M2 == INIT:     s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
           elif s.cachereq_type_M2 == READ:
-            if    s.hit_M2[0]:               s.cs2 = concat(s.msel,   b1(0) ,  n   ,   READ    ,    n ,     y   )
-            elif ~s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
+            if    s.hit_M2[0]:               s.cs2 = concat(s.msel,  b1(0) ,  n   ,   READ    ,    n ,     y   )
+            elif ~s.hit_M2[0]:               s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
           elif s.cachereq_type_M2 == WRITE:
-            if s.is_write_refill_M2:         s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
-            elif  s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
-            elif ~s.hit_M2[0]:               s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
-      else:                                  s.cs2 = concat(mxsel0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
+            if s.is_write_refill_M2:         s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
+            elif  s.hit_M2[0]:               s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
+            elif ~s.hit_M2[0]:               s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
 
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
@@ -600,6 +611,19 @@ class BlockingCacheCtrlRTL ( Component ):
       s.memreq_type               = s.cs2[ CS_memreq_type          ]
       s.ostall_M2                 = s.cs2[ CS_ostall_M2            ]
       s.stall_M2  = s.ostall_M2
+
+    @s.update
+    def subword_access_mux_sel_logic_M2():
+      s.read_byte_mux_sel_M2  = btmx0
+      s.read_half_word_mux_sel_M2 = hwmx0
+      s.subword_access_mux_sel_M2 = acmx0
+      if s.cachereq_type_M2 == READ:
+        if s.hit_M2[0] or s.is_refill_M2:
+          s.subword_access_mux_sel_M2 = s.len_M2
+          if s.len_M2 == 1:
+            s.read_byte_mux_sel_M2 = s.offset_M2[0:2]
+          elif s.len_M2 == 2:
+            s.read_half_word_mux_sel_M2 = s.offset_M2[1:2]
 
 
   def line_trace( s ):

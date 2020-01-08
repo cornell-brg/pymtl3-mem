@@ -5,7 +5,7 @@ HypothesisTest.py
 Hypothesis test with cache
 
 Author : Xiaoyu Yan, Eric Tang (et396)
-Date   : 25 December 2019  Merry Christmas!!
+Date   : 25 December 2019  Merry Christmas!! UWU
 """
 
 from pymtl3 import *
@@ -38,12 +38,22 @@ def rand_mem(addr_min=0, addr_max=0xfff):
 
 @st.composite
 def gen_reqs( draw ):
+  len_ = draw( st.integers(0, 2), label="len" )
   addr = draw( st.integers(addr_min, addr_max), label="addr" )
   type_ = draw( st.integers(0, 1), label="type" )
   data = draw( st.integers(0, 0xffffffff), label="data" )
-  return (addr,type_,data)
+  if len_ == 0:
+    addr = addr & Bits32(0xfffffffc)
+  elif len_ == 1:
+    addr = addr & Bits32(0xffffffff)
+  elif len_ == 2:
+    addr = addr & Bits32(0xfffffffe)
+  else:
+    addr = addr & Bits32(0xffffffff)
 
-class CacheHypothesis_Tests:
+  return (addr, type_, data, len_)
+
+class HypothesisTests:
   
   def hypothesis_test_harness(s, associativity, clw, cacheSize,
     transactions, req):
@@ -61,12 +71,12 @@ class CacheHypothesis_Tests:
       label= "requests"
     )
     for i in range(len(reqs_lst)):
-      addr, type_, data = reqs_lst[i]
+      addr, type_, data, len_ = reqs_lst[i]
       if type_ == MemMsgType.WRITE:
-        model.write(addr & Bits32(0xfffffffc), data, i)
+        model.write(addr, data, i, len_)
       else:
         # Read something
-        model.read(addr & Bits32(0xfffffffc), i)
+        model.read(addr, i, len_)
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
     s.run_test(msgs, mem, CacheMsg, MemMsg, associativity, cacheSize)

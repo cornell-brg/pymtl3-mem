@@ -332,38 +332,131 @@ class DmappedTestCases:
     s.run_test(msgs, mem, CacheMsg, MemMsg)
 
 
-  def test_dmapped_1byte_read( s ):
+  def test_dmapped_1byte_read_hit( s ):
     msgs = [
       #    type  opq   addr      len  data                type  opq test len  data
       req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
-      req( 'rd', 0x01, 0x00000000, 1, 0), resp( 'rd', 0x01, 1, 1, 0xabcdef12          ), 
-      req( 'rd', 0x02, 0x00000001, 1, 0), resp( 'rd', 0x02, 1, 1, 0xabcdef12          ), 
-      req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0xabcdef12          ), 
-      req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xabcdef12          ), 
-    ]
-    mem = None
-    s.run_test(msgs, mem, CacheMsg, MemMsg)
-
-  def test_dmapped_1byte_write( s ):
-    msgs = [
-      #    type  opq   addr      len  data                type  opq test len  data
-      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
-      req( 'wr', 0x01, 0x00000000, 1, 0x99),       resp( 'wr', 0x01, 1, 1, 0          ), 
-      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcdef99          ), 
-      # req( 'rd', 0x03, 0x00000002, 1,   0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
-      # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+      req( 'rd', 0x01, 0x00000000, 1, 0), resp( 'rd', 0x01, 1, 1, 0x00000012          ), 
+      req( 'rd', 0x02, 0x00000001, 1, 0), resp( 'rd', 0x02, 1, 1, 0x000000ef          ), 
+      req( 'rd', 0x03, 0x00000002, 1, 0), resp( 'rd', 0x03, 1, 1, 0x000000cd          ), 
+      req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0x000000ab          ), 
     ]
     mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg)
   
-  def test_dmapped_halfword_write( s ):
+  def test_dmapped_1byte_write_hit( s ):
     msgs = [
       #    type  opq   addr      len  data                type  opq test len  data
-      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0 ), 
-      req( 'wr', 0x01, 0x00000000, 2, 0x99),       resp( 'wr', 0x01, 1, 2, 0          ), 
-      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xabcd0099          ), 
-      # req( 'rd', 0x03, 0x00000002, 1,   0), resp( 'rd', 0x03, 1, 1, 0xcd          ), 
-      # req( 'rd', 0x04, 0x00000003, 1, 0), resp( 'rd', 0x04, 1, 1, 0xab          ), 
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0          ), 
+      req( 'wr', 0x01, 0x00000000, 1, 0x99),       resp( 'wr', 0x01, 1, 1, 0          ), 
+      req( 'wr', 0x01, 0x00000001, 1, 0x66),       resp( 'wr', 0x01, 1, 1, 0          ), 
+      req( 'wr', 0x01, 0x00000002, 1, 0x33),       resp( 'wr', 0x01, 1, 1, 0          ), 
+      req( 'wr', 0x01, 0x00000003, 1, 0x11),       resp( 'wr', 0x01, 1, 1, 0          ), 
+      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0x11336699 ), 
     ]
     mem = None
     s.run_test(msgs, mem, CacheMsg, MemMsg)
+  
+  def dir_mapped_subword_mem( s ):
+    return [
+      # addr      # data (in int)
+      0x00000000, 0x00facade,
+      0x00001000, 0x01234567,
+      0x00002000, 0x05ca1ded,
+      0x00003000, 0xdeadbeef,
+      0x00000100, 0x70facade,
+      0x00002100, 0x75ca1ded,
+    ]
+
+  def test_dmapped_1byte_read_miss( s ):
+
+    msgs = [
+      #    type  opq   addr      len  data      type  opq test len  data    ), 
+      req( 'rd', 0x00, 0x00000000, 1, 0), resp( 'rd', 0x00, 0, 1, 0xde ), 
+      req( 'rd', 0x01, 0x00001001, 1, 0), resp( 'rd', 0x01, 0, 1, 0x45 ), 
+      req( 'rd', 0x02, 0x00002002, 1, 0), resp( 'rd', 0x02, 0, 1, 0xca ), 
+      req( 'rd', 0x03, 0x00003003, 1, 0), resp( 'rd', 0x03, 0, 1, 0xde ), 
+    ]
+    mem = s.dir_mapped_subword_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+  
+  def test_dmapped_1byte_write_miss( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'wr', 0x00, 0x00000000, 1, 0x11), resp( 'wr', 0x00, 0, 1, 0          ), 
+      req( 'wr', 0x01, 0x00001001, 1, 0x22), resp( 'wr', 0x01, 0, 1, 0          ), 
+      req( 'wr', 0x02, 0x00002002, 1, 0x33), resp( 'wr', 0x02, 0, 1, 0 ), 
+      req( 'wr', 0x03, 0x00003003, 1, 0x44), resp( 'wr', 0x03, 0, 1, 0 ), 
+      req( 'rd', 0x00, 0x00000000, 0, 0), resp( 'rd', 0x00, 0, 0, 0x00faca11 ), 
+      req( 'rd', 0x01, 0x00001000, 0, 0), resp( 'rd', 0x01, 0, 0, 0x01232267 ), 
+      req( 'rd', 0x02, 0x00002000, 0, 0), resp( 'rd', 0x02, 0, 0, 0x05331ded ), 
+      req( 'rd', 0x03, 0x00003000, 0, 0), resp( 'rd', 0x03, 0, 0, 0x44adbeef ),
+    ]
+    mem = s.dir_mapped_subword_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+  def test_dmapped_halfword_read_hit( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0          ), 
+      req( 'rd', 0x01, 0x00000000, 2, 0),          resp( 'rd', 0x01, 1, 2, 0x0000ef12 ), 
+      req( 'rd', 0x02, 0x00000002, 2, 0),          resp( 'rd', 0x02, 1, 2, 0x0000abcd ), 
+      ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+  def test_dmapped_halfword_write_hit( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'in', 0x00, 0x00000000, 0, 0xabcdef12), resp( 'in', 0x00, 0, 0, 0          ), 
+      req( 'wr', 0x01, 0x00000000, 2, 0x99),       resp( 'wr', 0x01, 1, 2, 0          ), 
+      req( 'wr', 0x01, 0x00000002, 2, 0xac13),     resp( 'wr', 0x01, 1, 2, 0          ), 
+      req( 'rd', 0x02, 0x00000000, 0, 0),          resp( 'rd', 0x02, 1, 0, 0xac130099 ),
+    ]
+    mem = None
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+  def test_dmapped_halfword_read_miss( s ):
+
+    msgs = [
+      #    type  opq   addr      len  data      type  opq test len  data    ), 
+      req( 'rd', 0x00, 0x00000000, 2, 0), resp( 'rd', 0x00, 0, 2, 0xcade ), 
+      req( 'rd', 0x02, 0x00002002, 2, 0), resp( 'rd', 0x02, 0, 2, 0x05ca ), 
+    ]
+    mem = s.dir_mapped_subword_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+  
+  def test_dmapped_halfword_write_miss( s ):
+    msgs = [
+      #    type  opq   addr      len  data                type  opq test len  data
+      req( 'wr', 0x00, 0x00000000, 2, 0x11), resp( 'wr', 0x00, 0, 2, 0          ), 
+      req( 'wr', 0x02, 0x00002002, 2, 0x33), resp( 'wr', 0x02, 0, 2, 0 ), 
+      req( 'rd', 0x00, 0x00000000, 0, 0), resp( 'rd', 0x00, 0, 0, 0x00fa0011 ), 
+      req( 'rd', 0x02, 0x00002000, 0, 0), resp( 'rd', 0x02, 0, 0, 0x00331ded ), 
+    ]
+    mem = s.dir_mapped_subword_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+
+  def hypo_mem( s ):
+    return [
+      0x00000004, 0xc0ffee88
+    ]
+
+  def test_dmapped_hypo1( s ):
+    msgs = [
+      #    type  opq   addr      len  data      type  opq test len  data
+      req( 'rd', 0x04, 0x00000006, 1, 0), resp( 'rd', 0x04, 0, 1, 0x000000ff          ), 
+      req( 'rd', 0x04, 0x00000007, 1, 0), resp( 'rd', 0x04, 1, 1, 0x000000c0          ), 
+    ]
+    mem = s.hypo_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+  
+  def test_dmapped_hypo2( s ):
+    msgs = [
+      #    type  opq   addr      len  data      type  opq test len  data
+      req( 'rd', 0x04, 0x00000006, 2, 0), resp( 'rd', 0x04, 0, 2, 0x0000c0ff          ), 
+      req( 'rd', 0x04, 0x00000004, 2, 0), resp( 'rd', 0x04, 1, 2, 0x0000ee88          ), 
+    ]
+    mem = s.hypo_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg)
+

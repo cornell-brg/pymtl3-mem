@@ -34,10 +34,13 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases):
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque, trans.len)
     resps = cache.get_transactions()[1::2]
+    print("")
     for i in range(len(sink)):
       print ("{:3d}: {} > {} == {}".format(i,src[i],
       resps[i],sink[i]))
       # print (f"{i}: {src[i]} > {resps[i]} == {sink[i]}")
       if i < len(sink):
-        assert sink[i] == resps[i]
+        assert sink[i] == resps[i], "\n  actual:{}\nexpected:{}".format(
+          sink[i], resps[i]
+        )
          

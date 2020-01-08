@@ -38,11 +38,15 @@ class BlockingCacheDpathRTL (Component):
                 BitsIdx       = "inv",  # index type
                 BitsTag       = "inv",  # tag type
                 BitsOffset    = "inv",  # offset type
-                BitsTagWben   = "inv",  # Tag array write byte enable
+                BitsTagArray  = "inv",  # Tag array write byte enable
+                BitsTagwben   = "inv",
                 BitsDataWben  = "inv",  # Data array write byte enable
-                BitsRdDataMux = "inv",  # Read data mux M2 
+                BitsRdWordMuxSel = "inv",  # Read data mux M2 
+                BitsRdByteMuxSel = "inv",  # Read data mux M2 
+                BitsRdHwordMuxSel = "inv",  # Read data mux M2 
                 BitsAssoclog2 = "inv",  # Bits for associativity muxes
                 BitsAssoc     = "inv",  # Bits for associativity mask 1 bit for each asso
+                sbw = 32,    # SRAM bit width
                 associativity = 1,      # Number of ways 
   ):
 	
@@ -77,7 +81,7 @@ class BlockingCacheDpathRTL (Component):
 
     s.tag_array_val_M0      = InPort(BitsAssoc)
     s.tag_array_type_M0     = InPort(Bits1)
-    s.tag_array_wben_M0     = InPort(BitsTagWben)
+    s.tag_array_wben_M0     = InPort(BitsTagwben)
     s.ctrl_bit_val_wr_M0    = InPort(Bits1) 
     s.ctrl_bit_dty_wr_M0    = InPort(Bits1) 
     s.reg_en_M0             = InPort(Bits1)
@@ -126,10 +130,13 @@ class BlockingCacheDpathRTL (Component):
 
     s.reg_en_M2             = InPort(Bits1)
     s.read_data_mux_sel_M2  = InPort(Bits1)
-    s.read_data_way_mux_sel_M2=InPort(BitsAssoclog2)
-    s.read_word_mux_sel_M2  = InPort(BitsRdDataMux)
+    s.read_word_mux_sel_M2  = InPort(BitsRdWordMuxSel)
+    s.read_byte_mux_sel_M2  = InPort(BitsRdByteMuxSel)
+    s.read_half_word_mux_sel_M2 = InPort(BitsRdHwordMuxSel)
+    s.subword_access_mux_sel_M2 = InPort(Bits2)
     s.cachereq_type_M2      = OutPort(BitsType)
     s.offset_M2             = OutPort(BitsOffset)
+    s.len_M2                = OutPort(BitsLen)
 
     #--------------------------------------------------------------------
     # M0 Stage
@@ -150,8 +157,17 @@ class BlockingCacheDpathRTL (Component):
     s.rep_out_M0          = Wire(BitsCacheline)
 
     # Replicator
-    for i in range(0,clw,dbw):
-      connect(s.rep_out_M0[i:i+dbw], s.cachereq_data_M0)
+    @s.update
+    def replicator(): # replicates based on word access
+      if s.len_M0 == 1: 
+        for i in range(0,clw,8): # byte
+          s.rep_out_M0[i:i+8] = s.cachereq_data_M0
+      elif s.len_M0 == 2:
+        for i in range(0,clw,16): #hald word
+          s.rep_out_M0[i:i+16] = s.cachereq_data_M0
+      else:
+        for i in range(0,clw,dbw):
+          s.rep_out_M0[i:i+dbw] = s.cachereq_data_M0
    
     # Pipeline Registers
     s.memresp_data_reg_M0 = RegEnRst(BitsCacheline)\
@@ -219,12 +235,10 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Tag Array
-    sbw  = int(tgw + 1 + 1 + 7) // 8 * 8 
 
-    BitsTagSRAM = mk_bits(sbw)
     s.tag_array_idx_M0      = Wire(BitsIdx)
-    s.tag_array_wdata_M0    = Wire(BitsTagSRAM)
-    s.tag_array_rdata_M1    = [Wire(BitsTagSRAM) for _ in range(associativity)]
+    s.tag_array_wdata_M0    = Wire(BitsTagArray)
+    s.tag_array_rdata_M1    = [Wire(BitsTagArray) for _ in range(associativity)]
 
     s.tag_array_idx_M0               //= s.addr_M0[ofw:idw+ofw]
     s.tag_array_wdata_M0[0:tgw]      //= s.addr_M0[ofw+idw:idw+ofw+tgw]
@@ -455,12 +469,15 @@ class BlockingCacheDpathRTL (Component):
     # M2 Stage 
     #----------------------------------------------------------------
     # Pipeline registers
+    s.cachereq_len_M2 = Wire(BitsLen)
     s.cachereq_len_reg_M2 = RegEnRst(BitsLen)\
     (
       en  = s.reg_en_M2,
       in_ = s.cachereq_len_M1,
-      out = s.cacheresp_len_M2,
+      out = s.cachereq_len_M2,
     )
+    s.cacheresp_len_M2 //= s.cachereq_len_M2
+    s.len_M2           //= s.cachereq_len_M2
     
     s.cachereq_opaque_M2  = Wire(BitsOpaque)
     s.cachereq_opaque_reg_M2 = RegEnRst(BitsOpaque)\
@@ -501,15 +518,57 @@ class BlockingCacheDpathRTL (Component):
       sel = s.read_data_mux_sel_M2,
       out = s.read_data_M2,
     )
-
+    
+    # WORD SELECT MUX
+    s.read_word_mux_out_M2 = Wire(BitsData)
     s.read_word_mux_M2 = Mux(BitsData, clw//dbw+1)\
     (
       sel = s.read_word_mux_sel_M2,
-      out = s.cacheresp_data_M2,
+      out = s.read_word_mux_out_M2,
     )
     s.read_word_mux_M2.in_[0] //= BitsData(0) 
     for i in range(1, clw//dbw+1):
       s.read_word_mux_M2.in_[i] //= s.read_data_M2[(i-1)*dbw:i*dbw]
+    
+    # Bytes are always 8 bits
+    # BYTE SELECT MUX
+    s.byte_read_mux_out_M2 = Wire(Bits8)
+    s.read_byte_mux_M2 = Mux(Bits8, dbw//8)(
+      sel = s.read_byte_mux_sel_M2,
+      out = s.byte_read_mux_out_M2
+    )
+    # Parameterization
+    for i in range(dbw//8):
+      s.read_byte_mux_M2.in_[i] //= s.read_word_mux_out_M2[i*8:(i+1)*8]
+    # must zero extend the output to dbw (16 -> 32 bits)
+    s.byte_read_zero_extended_M2 = Wire(BitsData)
+    s.byte_read_zero_extended_M2[8:dbw] //= 0
+    s.byte_read_zero_extended_M2[0:8]    //= s.byte_read_mux_out_M2
+    
+    # half word mux always 16 bits
+    # HALF WORD SELECT MUX
+    s.half_word_read_mux_out_M2 = Wire(Bits16)
+    s.read_half_word_mux_M2 = Mux(Bits16, dbw//16)(
+      sel = s.read_half_word_mux_sel_M2 ,
+      out = s.half_word_read_mux_out_M2
+    )
+    for i in range(dbw//16):
+      s.read_half_word_mux_M2.in_[i] //= s.read_word_mux_out_M2[i*16:(i+1)*16]
+
+    s.half_word_read_zero_extended_M2 = Wire(BitsData)
+    s.half_word_read_zero_extended_M2[16:dbw] //= 0
+    s.half_word_read_zero_extended_M2[0:16]   //= s.half_word_read_mux_out_M2
+
+    # Subword Access Mux
+    s.subword_access_mux = Mux(BitsData, 3)(
+      in_ = {
+        0: s.read_word_mux_out_M2,
+        1: s.byte_read_zero_extended_M2,
+        2: s.half_word_read_zero_extended_M2
+      },
+      sel = s.subword_access_mux_sel_M2,
+      out = s.cacheresp_data_M2,
+    )
 
     s.cacheresp_type_M2       //= s.cachereq_type_M2
     s.offset_M2               //= s.cachereq_addr_M2[0:ofw]
@@ -522,9 +581,6 @@ class BlockingCacheDpathRTL (Component):
     # msg += f" wben:{s.data_array_wben_M1}"
     # msg += f" data out:{s.data_array_rdata_M2}"
     msg = ""
-    msg += f"len0:{s.len_M0}"
-    msg += f"len1:{s.len_M1}"
-    msg += f"len1:{s.cacheresp_len_M2}"
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
-    # msg+= f" {s.read_data_M2}"
+    # msg+= f" wdata[{s.data_array_wdata_M1}]"
     return msg

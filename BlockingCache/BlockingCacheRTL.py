@@ -39,9 +39,12 @@ class BlockingCacheRTL ( Component ):
     idw = clog2(nby)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
-    twb = int(abw+7)//8      # Tag array write byte bitwidth
+    sbw  = int(tgw + 1 + 1 + 7) // 8 * 8 
+    twb = int(sbw+7)//8      # Tag array write byte bitwidth
     dwb = int(clw+7)//8      # Data array write byte bitwidth 
-    rmx2 = clog2(clw//dbw+1) # Read word mux bitwidth
+    wdmx = clog2(clw//dbw+1) # Read word mux bitwidth
+    btmx  = clog2(dbw//8)     # Read byte mux sel bitwidth
+    hwmx = clog2(dbw//16)    # Read half word mux sel bitwidth
     print(f"asso[{associativity}],nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
 
     #--------------------------------------------------------------------------
@@ -57,9 +60,12 @@ class BlockingCacheRTL ( Component ):
     BitsIdx       = mk_bits(idw)   # index 
     BitsTag       = mk_bits(tgw)   # tag 
     BitsOffset    = mk_bits(ofw)   # offset 
-    BitsTagWben   = mk_bits(twb)   # Tag array write byte enable
+    BitsTagArray  = mk_bits(sbw)   # Tag array write byte enable
+    BitsTagwben   = mk_bits(twb)   # Tag array write byte enable
     BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
-    BitsRdDataMux = mk_bits(rmx2)  # Read data mux M2 
+    BitsRdWordMuxSel = mk_bits(wdmx)  # Read data mux M2 
+    BitsRdByteMuxSel = mk_bits(btmx)
+    BitsRdHwordMuxSel = mk_bits(hwmx)
     BitsAssoc     = mk_bits(associativity)
     if associativity == 1:
       BitsAssoclog2 = Bits1
@@ -79,10 +85,11 @@ class BlockingCacheRTL ( Component ):
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
     s.cacheDpath = BlockingCacheDpathRTL(
-      abw, dbw, clw, idw, ofw, tgw, nbl, nby,
+      abw, dbw, clw, idw, ofw, tgw, nbl, nby, 
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
-      associativity
+      BitsTagArray, BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel,
+      BitsRdHwordMuxSel, BitsAssoclog2, BitsAssoc,
+      sbw, associativity
     )(
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
       cachereq_type_M0    = s.cachereq.msg.type_,
@@ -107,8 +114,9 @@ class BlockingCacheRTL ( Component ):
     s.cacheCtrl = BlockingCacheCtrlRTL(
       dbw, ofw,
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagWben, BitsDataWben, BitsRdDataMux, BitsAssoclog2, BitsAssoc,
-      twb, dwb, rmx2, 
+      BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRdHwordMuxSel, 
+      BitsAssoclog2, BitsAssoc,
+      twb, dwb, wdmx, btmx, hwmx,
       associativity,
     )(
       cachereq_en           = s.cachereq.en,
@@ -155,9 +163,13 @@ class BlockingCacheRTL ( Component ):
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
+      s.cacheCtrl.read_byte_mux_sel_M2, s.cacheDpath.read_byte_mux_sel_M2,
+      s.cacheCtrl.read_half_word_mux_sel_M2, s.cacheDpath.read_half_word_mux_sel_M2,
+      s.cacheCtrl.subword_access_mux_sel_M2, s.cacheDpath.subword_access_mux_sel_M2,
       s.cacheCtrl.read_data_mux_sel_M2, s.cacheDpath.read_data_mux_sel_M2,
       s.cacheCtrl.cachereq_type_M2,     s.cacheDpath.cachereq_type_M2,
       s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
+      s.cacheCtrl.len_M2,               s.cacheDpath.len_M2,
     )
 
     # if associativity > 1:
@@ -178,10 +190,10 @@ class BlockingCacheRTL ( Component ):
     if s.memreq.en:
       memreq_msg  = "{}".format(s.memreq.msg)
 
-    msg = "{} {} {}".format(\
-      s.cacheCtrl.line_trace(),memreq_msg,
+    msg = "{} {} {}{}".format(\
+      s.cacheCtrl.line_trace(),memreq_msg,memresp_msg,
       s.cacheDpath.line_trace())
-    # msg = "{}{} {}".format(memresp_msg, \
+    # msg += "{}{} {}".format(memresp_msg, \
     #   s.cacheCtrl.line_trace(),
     #   s.cacheDpath.line_trace())
     #  memreq_msg, s.cacheDpath.line_trace())

@@ -175,10 +175,19 @@ class ModelCache:
       return 0
 
   def read(self, addr, opaque, len_):
-    hit = self.check_hit(addr)
+    offset = addr[self.offset_start:self.offset_end]
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
 
-    if addr.int() in self.mem:
-      value = self.mem[addr.int()]
+    if new_addr.int() in self.mem:
+      if len_ == 1: # byte access
+        offset = offset[0:2].uint()
+        value = self.mem[new_addr.int()][(offset*8):((offset+1)*8)]
+      elif len_ == 2: # half word access
+        offset = offset[1:2].uint()
+        value = self.mem[new_addr.int()][offset*16:(offset+1)*16]  
+      else:
+        value = self.mem[new_addr.int()]
     else:
       value = Bits(32, 0)
 
@@ -189,16 +198,20 @@ class ModelCache:
 
   def write(self, addr, value, opaque, len_):
     value = Bits(32, value)
-    hit = self.check_hit(addr)
 
     offset = addr[self.offset_start:self.offset_end]
-    offset = offset.int()
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
+
     if len_ == 1: # byte access
-      self.mem[addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+     
+      offset = offset[0:2].uint()
+      self.mem[new_addr.int()][(offset*8):((offset+1)*8)] = Bits8(value)
     elif len_ == 2: # half word access
-      self.mem[addr.int()][offset*8:(offset+2)*8] = Bits16(value)  
+      offset = offset[1:2].uint()
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
     else:
-      self.mem[addr.int()] = value
+      self.mem[new_addr.int()] = value
 
     # opaque = random.randint(0,255)
     self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, len_, value))
@@ -207,16 +220,19 @@ class ModelCache:
   
   def init(self, addr, value, opaque, len_):
     value = Bits(32, value)
-    hit = self.check_hit(addr)
     
     offset = addr[self.offset_start:self.offset_end]
-    offset = offset.int()
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
+
     if len_ == 1: # byte access
-      self.mem[addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+      offset = offset[0:2].uint()
+      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
     elif len_ == 2: # half word access
-      self.mem[addr.int()][offset*8:(offset+2)*8] = Bits16(value)  
+      offset = offset[1:2].uint()
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
     else:
-      self.mem[addr.int()] = value
+      self.mem[new_addr.int()] = value
 
     self.transactions.append(req(self.CacheMsg,'in', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, len_, 0))
