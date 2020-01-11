@@ -12,7 +12,7 @@ from mem_pclib.rtl.utils            import EComp
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
-from pymtl3.stdlib.rtl.registers    import RegEnRst
+from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from sram.SramPRTL                  import SramPRTL
 
 # Constants
@@ -115,6 +115,8 @@ class BlockingCacheDpathRTL (Component):
     s.reg_en_MSHR           = InPort (Bits1)
     s.MSHR_type             = OutPort(BitsType)
     
+    s.stall_mux_sel_M1    = InPort(Bits1)
+    s.stall_reg_en_M1    = InPort(Bits1)
     # Signals for multiway associativity
     # if associativity > 1:
     s.tag_match_way_M1      = OutPort(BitsAssoclog2)
@@ -137,6 +139,8 @@ class BlockingCacheDpathRTL (Component):
     s.cachereq_type_M2      = OutPort(BitsType)
     s.offset_M2             = OutPort(BitsOffset)
     s.len_M2                = OutPort(BitsLen)
+    s.stall_reg_en_M2                = InPort(Bits1)
+    s.stall_mux_sel_M2                = InPort(Bits1)
 
     #--------------------------------------------------------------------
     # M0 Stage
@@ -247,13 +251,28 @@ class BlockingCacheDpathRTL (Component):
     # Dirty bit 2nd to top
     s.tag_array_wdata_M0[sbw-2:sbw-1]//= s.ctrl_bit_dty_wr_M0
     if associativity == 1:
+      s.tag_array_out_M1 = Wire(BitsTagArray)
       s.tag_array_M1 = SramPRTL(sbw, nby)(
         port0_val   = s.tag_array_val_M0,
         port0_type  = s.tag_array_type_M0,
         port0_idx   = s.tag_array_idx_M0,
         port0_wdata = s.tag_array_wdata_M0,
         port0_wben  = s.tag_array_wben_M0,
-        port0_rdata = s.tag_array_rdata_M1[0],
+        port0_rdata = s.tag_array_out_M1,
+      )
+      s.stall_out_M1 = Wire(BitsTagArray)
+      s.stall_reg_M1 = RegEn( BitsTagArray )(
+        en  = s.stall_reg_en_M1,
+        in_ = s.tag_array_out_M1,
+        out = s.stall_out_M1 
+      )
+      s.stall_mux_M1 = Mux( BitsTagArray, 2 )(
+        in_ = {
+          0: s.tag_array_out_M1,
+          1: s.stall_out_M1 
+        },
+        sel = s.stall_mux_sel_M1,
+        out = s.tag_array_rdata_M1[0],
       )
     else:
       s.ctrl_bit_rep_M1 = Wire(BitsAssoclog2) 
@@ -268,6 +287,7 @@ class BlockingCacheDpathRTL (Component):
       s.replacement_bits_M1.wdata[0] //= s.ctrl_bit_rep_wr_M0
       s.replacement_bits_M1.wen[0]   //= s.ctrl_bit_rep_en_M1      
       # Can possibly store in SRAM if we use FIFO rep policy
+      s.tag_array_out_M1 = [Wire(BitsTagArray) for _ in range(associativity)]
       s.tag_arrays_M1 = [
         SramPRTL(sbw, nby)(
           port0_val   = s.tag_array_val_M0[i],
@@ -275,10 +295,27 @@ class BlockingCacheDpathRTL (Component):
           port0_idx   = s.tag_array_idx_M0,
           port0_wdata = s.tag_array_wdata_M0,
           port0_wben  = s.tag_array_wben_M0,
-          port0_rdata = s.tag_array_rdata_M1[i],
+          port0_rdata = s.tag_array_out_M1[i],
         ) for i in range(associativity)
       ]
       s.ctrl_bit_rep_rd_M1 //= s.ctrl_bit_rep_M1
+
+      s.stall_out_M1 = [Wire(BitsTagArray) for _ in range(associativity)]
+      
+      s.stall_reg_M1 = [RegEn( BitsTagArray )( # Saves output of the SRAM during stall
+        en  = s.stall_reg_en_M1,               # which is only saved for 1 cycle
+        in_ = s.tag_array_out_M1[i],
+        out = s.stall_out_M1[i] 
+      ) for i in range(associativity)]
+      
+      s.stall_mux_M1 = [Mux( BitsTagArray, 2 )(
+        in_ = {
+          0: s.tag_array_out_M1[i],
+          1: s.stall_out_M1[i] 
+        },
+        sel = s.stall_mux_sel_M1,
+        out = s.tag_array_rdata_M1[i],
+      ) for i in range(associativity)]
       # rep_bw = clog2(associativity) # replacement bitwidth
       # srbw = sbw + rep_bw
       # s.tag_array_wdata_rep_M0    = Wire(mk_bits(srbw))
@@ -456,13 +493,28 @@ class BlockingCacheDpathRTL (Component):
         s.data_array_idx_M1 = BitsNbl(s.cachereq_addr_M1[ofw:idw+ofw]) \
           + BitsNbl(s.way_offset_M1) * BitsNbl(nby)
     
+    s.data_array_out_M2 = Wire(BitsCacheline)
     s.data_array_M2 = SramPRTL(clw, nbl)(
       port0_val   = s.data_array_val_M1,
       port0_type  = s.data_array_type_M1,
       port0_idx   = s.data_array_idx_M1,
       port0_wdata = s.data_array_wdata_M1,
       port0_wben  = s.data_array_wben_M1,
-      port0_rdata = s.data_array_rdata_M2,
+      port0_rdata = s.data_array_out_M2,
+    )
+    s.stall_out_M2 = Wire(BitsCacheline)
+    s.stall_reg_M2 = RegEn( BitsCacheline )(
+      en  = s.stall_reg_en_M2,
+      in_ = s.data_array_out_M2,
+      out = s.stall_out_M2
+    )
+    s.stall_mux_M2 = Mux( BitsCacheline, 2 )(
+      in_ = {
+        0: s.data_array_out_M2,
+        1: s.stall_out_M2 
+      },
+      sel = s.stall_mux_sel_M2,
+      out = s.data_array_rdata_M2,
     )
   
     #----------------------------------------------------------------
@@ -581,6 +633,7 @@ class BlockingCacheDpathRTL (Component):
     # msg += f" wben:{s.data_array_wben_M1}"
     # msg += f" data out:{s.data_array_rdata_M2}"
     msg = ""
+    # msg += f"[{s.tag_array_rdata_M1[0]}][{s.stall_out_M1}]"
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
-    # msg+= f" wdata[{s.data_array_wdata_M1}]"
+    msg+= f" ptr[{s.ctrl_bit_rep_rd_M1}]"
     return msg

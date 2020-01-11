@@ -278,3 +278,14 @@ class AssoTestCases:
     mem = s.hypothesis_mem()
     MemMsg = ReqRespMsgTypes(obw, abw, 64)
     s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256)
+
+  def test_2way_hyp1_lat( s ):
+    msgs = [
+      req( 'wr', 0x00, 0, 0, 0), resp( 'wr', 0x00, 0, 0, 0     ),
+      req( 'rd', 0x01, 0x10, 0, 0), resp( 'rd', 0x01, 0, 0, 3  ),
+      req( 'rd', 0x03, 0x20, 0, 0), resp( 'rd', 0x03, 0, 0, 4  ),
+      req( 'rd', 0x04, 0, 0, 0), resp( 'rd', 0x04, 0, 0,  0    ),
+    ]
+    mem = s.hypothesis_mem()
+    MemMsg = ReqRespMsgTypes(obw, abw, 64)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, 0,1,0,1)

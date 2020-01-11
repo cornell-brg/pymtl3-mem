@@ -3,6 +3,7 @@
 HypothesisTest.py
 =========================================================================
 Hypothesis test with cache
+Now with Latencies!!
 
 Author : Xiaoyu Yan, Eric Tang (et396)
 Date   : 25 December 2019  Merry Christmas!! UWU
@@ -56,7 +57,7 @@ def gen_reqs( draw ):
 class HypothesisTests:
   
   def hypothesis_test_harness(s, associativity, clw, cacheSize,
-    transactions, req):
+    transactions, req, stall_prob, latency, src_delay, sink_delay):
     if cacheSize < 2*clw*associativity:
       cacheSize = 2*clw*associativity
     mem = rand_mem(addr_min, addr_max)
@@ -79,7 +80,8 @@ class HypothesisTests:
         model.read(addr, i, len_)
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
-    s.run_test(msgs, mem, CacheMsg, MemMsg, associativity, cacheSize)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, associativity, cacheSize, \
+    stall_prob, latency, src_delay, sink_delay)
 
   
   @hypothesis.settings( deadline = None, max_examples=150 )
@@ -88,18 +90,31 @@ class HypothesisTests:
     cacheSize     = st.sampled_from([256,512,1024,4096,8192]),
     transactions  = st.integers( 1, 100 ),
     req           = st.data(), 
+    stall_prob    = st.integers( 0, 2 ), 
+    latency       = st.integers( 1, 5 ), 
+    src_delay     = st.integers( 0, 5 ), 
+    sink_delay    = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way(s, clw, cacheSize, transactions, req):
-    s.hypothesis_test_harness(2, clw, cacheSize, transactions, req)
+  def test_hypothesis_2way(s, clw, cacheSize, transactions, req,
+    stall_prob, latency, src_delay, sink_delay):
+    s.hypothesis_test_harness(2, clw, cacheSize, transactions, req, \
+      stall_prob, latency, src_delay, sink_delay)
   
+  @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
     clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
-    cacheSize     = st.sampled_from([128,256,512,1024,4096,8192]),
+    cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
     transactions  = st.integers( 1, 100 ),
     req           = st.data(), 
+    stall_prob    = st.integers( 0, 1 ), 
+    latency       = st.integers( 1, 5 ), 
+    src_delay     = st.integers( 0, 5 ), 
+    sink_delay    = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req):
-    s.hypothesis_test_harness(1, clw, cacheSize, transactions, req)
+  def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req, 
+    stall_prob, latency, src_delay, sink_delay):
+    s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, \
+      stall_prob, latency, src_delay, sink_delay)
 
   @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
@@ -108,8 +123,12 @@ class HypothesisTests:
     transactions  = st.integers( 1, 100 ),
     req           = st.data(), 
     associativity = st.sampled_from([1, 2]),
+    stall_prob    = st.integers( 0, 2 ), 
+    latency       = st.integers( 1, 5 ), 
+    src_delay     = st.integers( 0, 5 ), 
+    sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_cache_gen(s, clw, cacheSize, transactions, 
-    req, associativity):
+    req, associativity, stall_prob, latency, src_delay, sink_delay):
     s.hypothesis_test_harness(associativity, clw, cacheSize, \
-      transactions, req)
+      transactions, req, stall_prob, latency, src_delay, sink_delay)

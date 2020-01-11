@@ -20,6 +20,7 @@ from mem_pclib.test.sim_utils import run_sim, translate_import, TestHarness
 
 max_cycles = 500
 
+# class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases):
 class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases,
 HypothesisTests ):
   def run_test( s,

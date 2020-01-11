@@ -123,6 +123,9 @@ class BlockingCacheCtrlRTL ( Component ):
     s.reg_en_MSHR           = OutPort(Bits1)
     s.evict_mux_sel_M1      = OutPort(Bits1)
 
+    s.stall_mux_sel_M1 = OutPort(Bits1)
+    s.stall_reg_en_M1 = OutPort(Bits1)
+
     # if associativity > 1:
     s.ctrl_bit_rep_rd_M1    = InPort(BitsAssoclog2)
     s.ctrl_bit_rep_en_M1    = OutPort(Bits1)
@@ -144,6 +147,8 @@ class BlockingCacheCtrlRTL ( Component ):
     s.read_byte_mux_sel_M2  = OutPort(BitsRdByteMuxSel)
     s.read_half_word_mux_sel_M2 = OutPort(BitsRdHwordMuxSel)
     s.subword_access_mux_sel_M2 = OutPort(Bits2)
+    s.stall_reg_en_M2 = OutPort(Bits1)
+    s.stall_mux_sel_M2 = OutPort(Bits1)
 
     # Output Signals
     s.hit_M2                = OutPort(Bits2)
@@ -168,6 +173,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.ostall_M0 = Wire(Bits1)
     s.ostall_M1 = Wire(Bits1)
     s.ostall_M2 = Wire(Bits1)
+    s.is_stall = Wire(Bits1)
 
     #---------------------------------------------------------------------------
     # Cache-wide FSM
@@ -188,7 +194,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # We should not change the FSM stage from any other stage
     @s.update
     def next_state_block():
-      s.next_state = STATE_GO
+      s.next_state = s.curr_state
       if s.curr_state == STATE_GO:
         if s.val_M1 and not s.is_refill_M1 and s.cachereq_type_M1 != INIT:
          if s.is_evict_M1:                     s.next_state = STATE_EVICT 
@@ -198,7 +204,8 @@ class BlockingCacheCtrlRTL ( Component ):
           if s.MSHR_type == WRITE:             s.next_state = STATE_REFILL_WRITE
           else:                                s.next_state = STATE_GO
         else:                                  s.next_state = STATE_REFILL
-      elif s.curr_state == STATE_EVICT:        s.next_state = STATE_REFILL
+      elif s.curr_state == STATE_EVICT:        
+        if not s.is_stall:                     s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL_WRITE: s.next_state = STATE_GO
       # assert False, 'undefined state: next state block' # NOT TRANSLATABLE
 
@@ -339,23 +346,37 @@ class BlockingCacheCtrlRTL ( Component ):
       out = s.val_M1,
     )
 
-    s.is_refill_reg_M1 = RegRst(Bits1)\
+    s.is_refill_reg_M1 = RegEnRst(Bits1)\
     (
+      en  = s.reg_en_M1,
       in_ = s.is_refill_M0,
       out = s.is_refill_M1
     )
 
-    s.is_write_refill_reg_M1 = RegRst(Bits1)\
+    s.is_write_refill_reg_M1 = RegEnRst(Bits1)\
     (
+      en  = s.reg_en_M1,
       in_ = s.is_write_refill_M0,
       out = s.is_write_refill_M1
     )
 
-    s.is_write_hit_clean_reg_M1 = RegRst(Bits1)\
+    s.is_write_hit_clean_reg_M1 = RegEnRst(Bits1)\
     (
+      en  = s.reg_en_M1,
       in_ = s.is_write_hit_clean_M0,
       out = s.is_write_hit_clean_M1
     )
+    
+    s.is_stall_reg_M1 = RegRst(Bits1)(
+      in_ = s.stall_M2,
+      out = s.is_stall
+    )
+
+    @s.update
+    def stall_logic_M1():
+      s.stall_mux_sel_M1 = s.is_stall
+      s.stall_reg_en_M1  = not s.is_stall
+
     if associativity > 1:
       # EXTRA Logic for accounting for set associative caches
       s.repreq_en_M1      = Wire(Bits1)
@@ -397,7 +418,8 @@ class BlockingCacheCtrlRTL ( Component ):
             else:
               s.repreq_en_M1      = y
               s.repreq_is_hit_M1  = n
-        s.ctrl_bit_rep_en_M1 = s.repreq_en_M1
+        if not s.stall_M1:
+          s.ctrl_bit_rep_en_M1 = s.repreq_en_M1
 
       @s.update
       def Asso_data_array_offset_way_M1():
@@ -447,10 +469,10 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def en_MSHR_M1(): # TEMPORARY; NOT SURE WHAT TO DO WITH THAT SIGNAL YET
-      if not s.hit_M1 and not s.curr_state == STATE_REFILL and not s.is_evict_M1:
-        s.reg_en_MSHR = b1(1)
+      if s.val_M1 and not s.hit_M1 and not s.curr_state == STATE_REFILL and not s.is_evict_M1:
+        s.reg_en_MSHR = y
       else:
-        s.reg_en_MSHR = b1(0)
+        s.reg_en_MSHR = n
 
     s.is_dty_M1 = Wire(Bits1)
     if associativity == 1:
@@ -468,23 +490,21 @@ class BlockingCacheCtrlRTL ( Component ):
       if s.cachereq_type_M1 == WRITE and \
         s.hit_M1 and not s.is_dty_M1 and \
           not s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
-        s.is_write_hit_clean_M0 = b1(1)
+        s.is_write_hit_clean_M0 = y
       else:
-        s.is_write_hit_clean_M0 = b1(0)
+        s.is_write_hit_clean_M0 = n
 
     @s.update
     def need_evict_M1():
       if s.val_M1 and not s.is_write_refill_M1 and \
         not s.hit_M1 and s.is_dty_M1:
-        s.is_evict_M1 = b1(1)
+        s.is_evict_M1 = y
       else:
-        s.is_evict_M1 = b1(0)
+        s.is_evict_M1 = n
 
     @s.update
     def en_M1():
       s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
-
-
 
     CS_data_array_wben_M1   = slice( 4,  4 + dwb )
     CS_data_array_type_M1   = slice( 3,  4 )
@@ -553,22 +573,25 @@ class BlockingCacheCtrlRTL ( Component ):
       out = s.hit_M2[0]
     )
 
-    s.is_refill_reg_M2 = RegRst(Bits1)\
+    s.is_refill_reg_M2 = RegEnRst(Bits1)\
     (
+      en  = s.reg_en_M2,
       in_ = s.is_refill_M1,
       out = s.is_refill_M2
     )
 
-    s.is_write_refill_reg_M2 = RegRst(Bits1)\
+    s.is_write_refill_reg_M2 = RegEnRst(Bits1)\
     (
+      en  = s.reg_en_M2,
       in_ = s.is_write_refill_M1,
       out = s.is_write_refill_M2
     )
 
-    s.is_write_hit_clean_reg_M2 = RegRst(Bits1)\
+    s.is_write_hit_clean_reg_M2 = RegEnRst(Bits1)\
     (
-        in_ = s.is_write_hit_clean_M1,
-        out = s.is_write_hit_clean_M2
+      en  = s.reg_en_M2,
+      in_ = s.is_write_hit_clean_M1,
+      out = s.is_write_hit_clean_M2
     )
 
     @s.update
@@ -624,6 +647,13 @@ class BlockingCacheCtrlRTL ( Component ):
             s.read_byte_mux_sel_M2 = s.offset_M2[0:2]
           elif s.len_M2 == 2:
             s.read_half_word_mux_sel_M2 = s.offset_M2[1:2]
+    
+
+    @s.update
+    def stall_logic_M2():
+      s.stall_mux_sel_M2 = s.is_stall
+      s.stall_reg_en_M2 = not s.is_stall
+      
 
 
   def line_trace( s ):
@@ -685,6 +715,6 @@ class BlockingCacheCtrlRTL ( Component ):
     pipeline = stage1 + stage2 + stage3 + state
     add_msgs = ""
     # add_msgs += f" hit:{s.hit_M1}|LRU:{s.ctrl_bit_rep_rd_M1}|repway:{s.way_ptr_M1}"
-    add_msgs += f"|mask:{s.wben_out}|"
+    add_msgs += f"|is_stall:{s.is_stall}|mshr:{s.MSHR_type}|mx:{s.reg_en_MSHR}"
     
     return pipeline + add_msgs 

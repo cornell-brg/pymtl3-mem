@@ -228,7 +228,7 @@ class DmappedTestCases:
   # Test cases: Write Dirty:
   #-------------------------------------------------------------------------
 
-  def test_dmapped_read_miss_dirty( s ):
+  def test_dmapped_read_miss_dirty( s , stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       #    type  opq   addr                 len data               type  opq   test len data
       req( 'wr', 0x0, 0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ), 
@@ -236,7 +236,7 @@ class DmappedTestCases:
       req( 'rd', 0x2, 0x00000000,  0, 0          ), resp('rd', 0x2,   0,   0, 0xbeefbeeb ) 
     ]
     mem = [0x00010000, 0x00c0ffee]
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheMsg, MemMsg, 1, 512, stall_prob, latency, src_delay, sink_delay)
   
   def evict_mem( s ):
     return [
@@ -249,7 +249,7 @@ class DmappedTestCases:
   #-------------------------------------------------------------------------
   # Test Case: Direct Mapped Read Evict 
   #-------------------------------------------------------------------------
-  def test_dmapped_read_evict_1word( s ):
+  def test_dmapped_read_evict_1word( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
         #    type  opq   addr      len  data               type  opq test len  data
       req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), # write something
@@ -257,7 +257,7 @@ class DmappedTestCases:
       req( 'rd', 0x02, 0x00002000, 0, 0         ), resp( 'rd', 0x02, 0, 0, 0xffffff00 ), # read evicted address
     ]
     mem = s.evict_mem()
-    s.run_test(msgs, mem, CacheMsg, MemMsg)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 512, stall_prob, latency, src_delay, sink_delay)
 
   def evict_mem( s ):
     return [
@@ -272,7 +272,7 @@ class DmappedTestCases:
   # Test Case: Direct Mapped Write Evict 
   #-------------------------------------------------------------------------
   # Test cases designed for direct-mapped cache where we evict a cache line
-  def test_dmapped_write_evict_1word( s ):
+  def test_dmapped_write_evict_1word( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
       req( 'wr', 0x00, 0x00002000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), #refill-write
@@ -281,7 +281,7 @@ class DmappedTestCases:
       req( 'rd', 0x04, 0x00002000, 0, 0         ), resp( 'rd', 0x04, 0, 0, 0xffffff00 ), #read-evicted data
     ]
     mem = s.evict_mem()
-    s.run_test(msgs, mem, CacheMsg, MemMsg)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 512, stall_prob, latency, src_delay, sink_delay)
 
   #-------------------------------------------------------------------------
   # Test Case: test direct-mapped
@@ -296,7 +296,7 @@ class DmappedTestCases:
       0x00002070, 0x70facade,
       0x00002074, 0x75ca1ded,
     ]
-  def test_dmapped_dir_mapped_long0_msg( s ):
+  def test_dmapped_long0_msg( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
       req( 'wr', 0x00, 0x00000000, 0, 0xffffff00), resp( 'wr', 0x00, 0, 0, 0          ), # Write to cacheline 0
@@ -329,7 +329,7 @@ class DmappedTestCases:
       req( 'rd', 0x1d, 0x00000070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # Evict cacheline 0 again
     ]
     mem = s.dir_mapped_long0_mem()
-    s.run_test(msgs, mem, CacheMsg, MemMsg)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 512, stall_prob, latency, src_delay, sink_delay)
 
 
   def test_dmapped_1byte_read_hit( s ):
@@ -439,6 +439,7 @@ class DmappedTestCases:
 
   def hypo_mem( s ):
     return [
+      0x00000000, 0xa0b0c0d0,
       0x00000004, 0xc0ffee88
     ]
 
@@ -460,3 +461,21 @@ class DmappedTestCases:
     mem = s.hypo_mem()
     s.run_test(msgs, mem, CacheMsg, MemMsg)
 
+  def test_dmapped_read_evict_1word_lat( s ):
+    s.test_dmapped_read_evict_1word( 5, 5, 5, 5 )
+  
+  def test_dmapped_write_evict_1word_lat( s ):
+    s.test_dmapped_write_evict_1word( 5, 5, 5, 5 )
+
+  def test_dmapped_long0_msg_lat( s ):
+    s.test_dmapped_long0_msg( 5, 5, 5, 5 )
+
+  def test_hypo_lat1(s):
+    msgs = [
+      #    type  opq   addr    len  data     type  opq test len  data
+      req( 'rd', 0, 0x00000000, 0, 0), resp( 'rd', 0x0, 0, 0, 0xa0b0c0d0          ), 
+      req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xa0b0c0d0          ), 
+    ]
+    mem = s.hypo_mem()
+    MemMsg = ReqRespMsgTypes(OBW, ABW, 64)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 128, 0,1,0,1)

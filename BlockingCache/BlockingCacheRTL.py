@@ -160,6 +160,8 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
       s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
       s.cacheCtrl.len_M1,   s.cacheDpath.len_M1,
+      s.cacheCtrl.stall_mux_sel_M1,   s.cacheDpath.stall_mux_sel_M1,
+      s.cacheCtrl.stall_reg_en_M1,   s.cacheDpath.stall_reg_en_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
@@ -170,6 +172,8 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.cachereq_type_M2,     s.cacheDpath.cachereq_type_M2,
       s.cacheCtrl.offset_M2,            s.cacheDpath.offset_M2,
       s.cacheCtrl.len_M2,               s.cacheDpath.len_M2,
+      s.cacheCtrl.stall_reg_en_M2,               s.cacheDpath.stall_reg_en_M2,
+      s.cacheCtrl.stall_mux_sel_M2,               s.cacheDpath.stall_mux_sel_M2,
     )
 
     # if associativity > 1:
