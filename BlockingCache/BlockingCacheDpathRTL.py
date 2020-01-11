@@ -635,5 +635,5 @@ class BlockingCacheDpathRTL (Component):
     msg = ""
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.stall_out_M1}]"
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
-    msg+= f" ptr[{s.ctrl_bit_rep_rd_M1}]"
+    # msg+= f" ptr[{s.ctrl_bit_rep_rd_M1}]"
     return msg

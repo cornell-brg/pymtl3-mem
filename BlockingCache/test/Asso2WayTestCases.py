@@ -254,6 +254,7 @@ class AssoTestCases:
       0x8,  2,
       0x10, 3,
       0x20, 4,
+      0x28, 5,
     ]
 
   def test_2way_hyp1( s ):
@@ -267,7 +268,7 @@ class AssoTestCases:
     MemMsg = ReqRespMsgTypes(obw, abw, 64)
     s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
   
-  def test_2way_hyp2( s ):
+  def test_2way_hyp2( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       req( 'wr', 0x00, 0, 0, 0), resp( 'wr', 0x00, 0, 0, 0     ),
       req( 'rd', 0x01, 0x10, 0, 0), resp( 'rd', 0x01, 0, 0, 3  ),
@@ -277,15 +278,32 @@ class AssoTestCases:
     ]
     mem = s.hypothesis_mem()
     MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, \
+      stall_prob, latency, src_delay, sink_delay)
 
-  def test_2way_hyp1_lat( s ):
+
+  def test_2way_hyp1_lat(s):
+    s.test_2way_hyp2(1,1,1,1)
+
+  def test_2way_hyp2_lat( s ):
     msgs = [
-      req( 'wr', 0x00, 0, 0, 0), resp( 'wr', 0x00, 0, 0, 0     ),
-      req( 'rd', 0x01, 0x10, 0, 0), resp( 'rd', 0x01, 0, 0, 3  ),
-      req( 'rd', 0x03, 0x20, 0, 0), resp( 'rd', 0x03, 0, 0, 4  ),
-      req( 'rd', 0x04, 0, 0, 0), resp( 'rd', 0x04, 0, 0,  0    ),
+      req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
+      req( 'rd', 0x01, 0x00, 0, 0), resp( 'rd', 0x01, 1, 0, 1  ),
+      req( 'rd', 0x02, 0x08, 0, 0), resp( 'rd', 0x02, 0, 0, 2  ),
+      req( 'rd', 0x03, 0x28, 0, 0), resp( 'rd', 0x03, 0, 0, 5  ),
+      req( 'rd', 0x04, 0x08, 0, 0), resp( 'rd', 0x04, 1, 0, 2  ),
     ]
     mem = s.hypothesis_mem()
     MemMsg = ReqRespMsgTypes(obw, abw, 64)
     s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, 0,1,0,1)
+  def test_2way_hyp2_lat2( s ):
+    msgs = [
+      req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
+      req( 'rd', 0x01, 0x00, 0, 0), resp( 'rd', 0x01, 1, 0, 1  ),
+      req( 'rd', 0x02, 0x08, 0, 0), resp( 'rd', 0x02, 0, 0, 2  ),
+      req( 'rd', 0x03, 0x28, 0, 0), resp( 'rd', 0x03, 0, 0, 5  ),
+      req( 'rd', 0x04, 0x08, 0, 0), resp( 'rd', 0x04, 1, 0, 2  ),
+    ]
+    mem = s.hypothesis_mem()
+    MemMsg = ReqRespMsgTypes(obw, abw, 64)
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, 0,1,0,0)

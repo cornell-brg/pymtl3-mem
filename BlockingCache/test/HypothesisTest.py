@@ -22,7 +22,7 @@ abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 max_cycles = 500
 addr_min = 0
-addr_max = 300 # 400 words
+addr_max = 300 # 4-byte words
 
 def rand_mem(addr_min=0, addr_max=0xfff):
   '''
@@ -50,7 +50,7 @@ def gen_reqs( draw ):
   elif len_ == 2:
     addr = addr & Bits32(0xfffffffe)
   else:
-    addr = addr & Bits32(0xffffffff)
+    addr = addr & Bits32(0xfffffffc)
 
   return (addr, type_, data, len_)
 
@@ -86,11 +86,11 @@ class HypothesisTests:
   
   @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
+    clw           = st.sampled_from([64,128,256,512,1024]), 
     cacheSize     = st.sampled_from([256,512,1024,4096,8192]),
     transactions  = st.integers( 1, 100 ),
     req           = st.data(), 
-    stall_prob    = st.integers( 0, 2 ), 
+    stall_prob    = st.integers( 0, 1 ), 
     latency       = st.integers( 1, 5 ), 
     src_delay     = st.integers( 0, 5 ), 
     sink_delay    = st.integers( 0, 5 )
@@ -102,7 +102,7 @@ class HypothesisTests:
   
   @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
+    clw           = st.sampled_from([64,128,256,512,1024]), 
     cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
     transactions  = st.integers( 1, 100 ),
     req           = st.data(), 
@@ -116,14 +116,14 @@ class HypothesisTests:
     s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, \
       stall_prob, latency, src_delay, sink_delay)
 
-  @hypothesis.settings( deadline = None, max_examples=150 )
+  @hypothesis.settings( deadline = None, max_examples=400 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), #sample_from | pass in parameters
-    cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
-    transactions  = st.integers( 1, 100 ),
+    clw           = st.sampled_from([64,128,256,512,1024]), 
+    cacheSize     = st.sampled_from([256,512,1024,4096,8192,16384,32768]),
+    transactions  = st.integers( 1, 200 ),
     req           = st.data(), 
     associativity = st.sampled_from([1, 2]),
-    stall_prob    = st.integers( 0, 2 ), 
+    stall_prob    = st.integers( 0, 1 ), 
     latency       = st.integers( 1, 5 ), 
     src_delay     = st.integers( 0, 5 ), 
     sink_delay    = st.integers( 0, 5 )

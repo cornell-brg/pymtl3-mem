@@ -401,6 +401,7 @@ class BlockingCacheCtrlRTL ( Component ):
         s.repreq_is_hit_M1  = n
         s.repreq_en_M1      = n 
         s.repreq_hit_ptr_M1 = x
+        s.ctrl_bit_rep_en_M1 = n
         if s.val_M1:
           if s.cachereq_type_M1 == INIT:
             s.repreq_en_M1      = y
@@ -469,7 +470,8 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def en_MSHR_M1(): # TEMPORARY; NOT SURE WHAT TO DO WITH THAT SIGNAL YET
-      if s.val_M1 and not s.hit_M1 and not s.curr_state == STATE_REFILL and not s.is_evict_M1:
+      if s.val_M1 and not s.hit_M1 and not s.curr_state == STATE_REFILL and not s.is_evict_M1\
+        and not s.is_refill_M1:
         s.reg_en_MSHR = y
       else:
         s.reg_en_MSHR = n
@@ -715,6 +717,6 @@ class BlockingCacheCtrlRTL ( Component ):
     pipeline = stage1 + stage2 + stage3 + state
     add_msgs = ""
     # add_msgs += f" hit:{s.hit_M1}|LRU:{s.ctrl_bit_rep_rd_M1}|repway:{s.way_ptr_M1}"
-    add_msgs += f"|is_stall:{s.is_stall}|mshr:{s.MSHR_type}|mx:{s.reg_en_MSHR}"
-    
+    # add_msgs += f"|is_stall:{s.is_stall}|way:{s.represp_ptr_M1}|rprd:{s.ctrl_bit_rep_rd_M1}"
+    # add_msgs += f"|way_ptr{s.way_ptr_M1}"
     return pipeline + add_msgs 
