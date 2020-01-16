@@ -145,6 +145,15 @@ def plot(bugs, num_tests):
   axs[3, 1].boxplot(iter_trans)
   axs[4, 1].boxplot(iter_complexity)
 
+  # Yanghui: There are some 1s for the write_hit bug which is really
+  # suspicious... I have to manually prune them away. Please take a look
+  # later.
+
+  # for i in range( len( hypothesis_trans[2] ) ):
+  #   if hypothesis_trans[2][i] == 1:
+  #     hypothesis_trans[2][i] = 4
+  # print( hypothesis_trans[2] )
+
   axs[0, 2].boxplot(hypothesis_test)
   axs[1, 2].boxplot(hypothesis_cacheSize)
   axs[2, 2].boxplot(hypothesis_clw)
