@@ -46,7 +46,9 @@ class BlockingCacheDpathRTL (Component):
                 BitsRdHwordMuxSel = "inv",  # Read data mux M2 
                 BitsAssoclog2 = "inv",  # Bits for associativity muxes
                 BitsAssoc     = "inv",  # Bits for associativity mask 1 bit for each asso
+                BitsDirty     = "inv",  # dirty bit bitwidth
                 sbw = 32,    # SRAM bit width
+                dyb = 4,     # number of dirty bits clw//dbw; per word (32 bits)
                 associativity = 1,      # Number of ways 
   ):
 	
@@ -83,13 +85,14 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_type_M0     = InPort(Bits1)
     s.tag_array_wben_M0     = InPort(BitsTagwben)
     s.ctrl_bit_val_wr_M0    = InPort(Bits1) 
-    s.ctrl_bit_dty_wr_M0    = InPort(Bits1) 
+    s.ctrl_bit_dty_wr_M0    = InPort(BitsDirty) 
     s.reg_en_M0             = InPort(Bits1)
     s.memresp_mux_sel_M0    = InPort(Bits1)
     s.addr_mux_sel_M0       = InPort(Bits2)
     s.wdata_mux_sel_M0      = InPort(Bits2)
     
     s.memresp_type_M0       = OutPort(BitsType)
+    s.offset_M0             = OutPort(BitsOffset)
     # s.len_M0                = OutPort(BitsLen)
     
     # Signals for multiway associativity
@@ -244,12 +247,13 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_wdata_M0    = Wire(BitsTagArray)
     s.tag_array_rdata_M1    = [Wire(BitsTagArray) for _ in range(associativity)]
 
+    s.offset_M0                      //= s.addr_M0[0:ofw]
     s.tag_array_idx_M0               //= s.addr_M0[ofw:idw+ofw]
     s.tag_array_wdata_M0[0:tgw]      //= s.addr_M0[ofw+idw:idw+ofw+tgw]
     # valid bit at top
     s.tag_array_wdata_M0[sbw-1:sbw]  //= s.ctrl_bit_val_wr_M0
     # Dirty bit 2nd to top
-    s.tag_array_wdata_M0[sbw-2:sbw-1]//= s.ctrl_bit_dty_wr_M0
+    s.tag_array_wdata_M0[tgw:tgw+dyb]//= s.ctrl_bit_dty_wr_M0
     if associativity == 1:
       s.tag_array_out_M1 = Wire(BitsTagArray)
       s.tag_array_M1 = SramPRTL(sbw, nby)(
@@ -423,8 +427,13 @@ class BlockingCacheDpathRTL (Component):
     s.ctrl_bit_val_rd_M1 = Wire(BitsAssoc)
     # Output the valid bit
     for i in range( associativity ):
-      s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-1:sbw] 
-      s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-2:sbw-1] 
+      s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][sbw-1:sbw]
+    
+    @s.update
+    def read_dty_M1():
+      for j in range( associativity ): 
+        off = BitsAddr(s.cachereq_addr_M1[2:ofw])
+        s.ctrl_bit_dty_rd_M1[j] = s.tag_array_rdata_M1[j][tgw+off]
      
     s.offset_M1 //= s.cachereq_addr_M1[0:ofw]
     # Comparator
@@ -633,7 +642,7 @@ class BlockingCacheDpathRTL (Component):
     # msg += f" wben:{s.data_array_wben_M1}"
     # msg += f" data out:{s.data_array_rdata_M2}"
     msg = ""
-    # msg += f"[{s.tag_array_rdata_M1[0]}][{s.stall_out_M1}]"
+    msg += f"[{s.tag_array_rdata_M1[0]}][{s.stall_out_M1}]"
     # msg += f"[{s.tag_array_rdata_M1[0]}][{s.tag_array_rdata_M1[1]}]"
     # msg+= f" ptr[{s.ctrl_bit_rep_rd_M1}]"
     return msg

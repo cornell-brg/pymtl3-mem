@@ -35,15 +35,16 @@ class BlockingCacheRTL ( Component ):
     obw = MemMsg.obw
     dbw = CacheMsg.dbw
     nbl = nbytes//clw        # number of cache blocks; 8192*8/128 = 512
-    nby = nbl//associativity  # blocks per way; 1
+    nby = nbl//associativity # blocks per way; 1
     idw = clog2(nby)         # index width; clog2(512) = 9
     ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
     tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
-    sbw  = int(tgw + 1 + 1 + 7) // 8 * 8 
+    dyb = clw // dbw         # dirty bits; one per word (32 bits)
+    sbw  = int(tgw + dyb + 1 + 7) // 8 * 8 # tag array bitwidth
     twb = int(sbw+7)//8      # Tag array write byte bitwidth
     dwb = int(clw+7)//8      # Data array write byte bitwidth 
     wdmx = clog2(clw//dbw+1) # Read word mux bitwidth
-    btmx  = clog2(dbw//8)     # Read byte mux sel bitwidth
+    btmx  = clog2(dbw//8)    # Read byte mux sel bitwidth
     hwmx = clog2(dbw//16)    # Read half word mux sel bitwidth
     print(f"asso[{associativity}],nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
 
@@ -60,8 +61,9 @@ class BlockingCacheRTL ( Component ):
     BitsIdx       = mk_bits(idw)   # index 
     BitsTag       = mk_bits(tgw)   # tag 
     BitsOffset    = mk_bits(ofw)   # offset 
-    BitsTagArray  = mk_bits(sbw)   # Tag array write byte enable
+    BitsTagArray  = mk_bits(sbw)   # Tag array bitwidth
     BitsTagwben   = mk_bits(twb)   # Tag array write byte enable
+    BitsDirty     = mk_bits(dyb)   # dirty bit bitwidth
     BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
     BitsRdWordMuxSel = mk_bits(wdmx)  # Read data mux M2 
     BitsRdByteMuxSel = mk_bits(btmx)
@@ -88,8 +90,8 @@ class BlockingCacheRTL ( Component ):
       abw, dbw, clw, idw, ofw, tgw, nbl, nby, 
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagArray, BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel,
-      BitsRdHwordMuxSel, BitsAssoclog2, BitsAssoc,
-      sbw, associativity
+      BitsRdHwordMuxSel, BitsAssoclog2, BitsAssoc, BitsDirty,
+      sbw, dyb, associativity
     )(
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
       cachereq_type_M0    = s.cachereq.msg.type_,
@@ -115,7 +117,7 @@ class BlockingCacheRTL ( Component ):
       dbw, ofw,
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRdHwordMuxSel, 
-      BitsAssoclog2, BitsAssoc,
+      BitsAssoclog2, BitsAssoc, BitsDirty,
       twb, dwb, wdmx, btmx, hwmx,
       associativity,
     )(
@@ -146,6 +148,7 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
       s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
       s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
+      s.cacheCtrl.offset_M0,     s.cacheDpath.offset_M0,
       # s.cacheCtrl.len_M0,     s.cacheDpath.len_M0,
  
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
@@ -159,9 +162,9 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
       s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
       s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
-      s.cacheCtrl.len_M1,   s.cacheDpath.len_M1,
-      s.cacheCtrl.stall_mux_sel_M1,   s.cacheDpath.stall_mux_sel_M1,
-      s.cacheCtrl.stall_reg_en_M1,   s.cacheDpath.stall_reg_en_M1,
+      s.cacheCtrl.len_M1,               s.cacheDpath.len_M1,
+      s.cacheCtrl.stall_mux_sel_M1,     s.cacheDpath.stall_mux_sel_M1,
+      s.cacheCtrl.stall_reg_en_M1,      s.cacheDpath.stall_reg_en_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
@@ -184,6 +187,10 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.ctrl_bit_rep_rd_M1,   s.cacheDpath.ctrl_bit_rep_rd_M1,
       s.cacheCtrl.ctrl_bit_rep_en_M1,   s.cacheDpath.ctrl_bit_rep_en_M1,
     )
+
+    # for i in range(associativity):
+    #   s.cacheCtrl.ctrl_bit_dty_rd_M1[i] //= s.cacheDpath.ctrl_bit_dty_rd_M1[i]
+
 
   # Line tracing
   def line_trace( s ):

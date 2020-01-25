@@ -42,8 +42,9 @@ class BlockingCacheCtrlRTL ( Component ):
                  BitsRdWordMuxSel = "inv",    # Read data mux M2 
                  BitsRdByteMuxSel = "inv",    # Read data mux M2 
                  BitsRdHwordMuxSel = "inv",    # Read data mux M2 
-                 BitsAssoclog2 = "inv",    # Bits for associativity
+                 BitsAssoclog2 = "inv",    # Bits for associativity log 2 ceil
                  BitsAssoc     = "inv",    # Bits for associativity
+                 BitsDirty     = "inv",    # dirty bit bitwidth
                  twb           = 4,        # Tag array write byte enable bitwidth
                  dwb           = 16,       # Data array write byte enable bitwidth
                  wdmx          = 3,        # Read word mux bitwidth
@@ -90,6 +91,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.cachereq_type_M0      = InPort (BitsType)
     s.memresp_type_M0       = InPort (BitsType)
     s.MSHR_type             = InPort (BitsType)
+    s.offset_M0             = InPort (BitsOffset)
     # s.len_M0                = InPort(BitsLen)
 
     s.memresp_mux_sel_M0    = OutPort(Bits1)
@@ -99,7 +101,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.tag_array_type_M0     = OutPort(Bits1)
     s.tag_array_wben_M0     = OutPort(BitsTagwben)
     s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
-    s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
+    s.ctrl_bit_dty_wr_M0    = OutPort(BitsDirty)
     s.reg_en_M0             = OutPort(Bits1)
     
     # if associativity > 1:
@@ -268,6 +270,8 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
     s.cs0 = Wire( mk_bits( 9 + twb ) ) # Bits for control signal table
+
+    s.dty_wr_M0 = Wire(Bits1)
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or (s.is_refill_M0 and s.memresp_type_M0 != WRITE) or s.is_write_refill_M0 or s.is_write_hit_clean_M0
@@ -291,9 +295,13 @@ class BlockingCacheCtrlRTL ( Component ):
       s.wdata_mux_sel_M0       = s.cs0[ CS_wdata_mux_sel_M0   ]
       s.memresp_mux_sel_M0     = s.cs0[ CS_memresp_mux_sel_M0 ]
       s.addr_mux_sel_M0        = s.cs0[ CS_addr_mux_sel_M0    ]
-      s.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
+      s.dty_wr_M0              = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
-    
+
+      # s.ctrl_bit_dty_wr_M0 = BitsDirty(0) #reset dty bits
+      s.ctrl_bit_dty_wr_M0[s.offset_M0[2:ofw]] = s.dty_wr_M0 #set which word is dirty
+      #TODO Need to change the mask to write to the correct bits such as tag and dty?
+
     s.way_ptr_M1 = Wire(BitsAssoclog2)
 
     if associativity == 1: #val for dmapped cache is simpler
@@ -477,15 +485,19 @@ class BlockingCacheCtrlRTL ( Component ):
         s.reg_en_MSHR = n
 
     s.is_dty_M1 = Wire(Bits1)
+    s.offset_w_M1 = Wire(BitsOffset)
+    s.offset_w_M1 //= s.offset_M1
     if associativity == 1:
-      s.is_dty_M1 //= s.ctrl_bit_dty_rd_M1
+      # s.ctrl_dty_rd_M1 = Wire(Bits)
+      # s.ctrl_dty_rd_M1 //= s.ctrl_bit_dty_rd_M1[0]
+      s.is_dty_M1      //= s.ctrl_bit_dty_rd_M1[0]
     else: # Multiway set assoc
       @s.update
       def Asso_set_dty_bit_M1():
         if s.hit_M1: 
-          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.tag_match_way_M1]
+          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.tag_match_way_M1][s.offset_M1[2:ofw]]
         else:
-          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.ctrl_bit_rep_rd_M1]
+          s.is_dty_M1 = s.ctrl_bit_dty_rd_M1[s.ctrl_bit_rep_rd_M1][s.offset_M1[2:ofw]]
 
     @s.update
     def is_write_hit_clean_M0_logic():
