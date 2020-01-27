@@ -77,7 +77,8 @@ class CacheMemoryCL( Component ):
 
     s.req_qs  = [ DelayPipeDeqCL( req_latency )( enq = s.ifc[i].req ) for i in range(nports) ]
     s.resp_qs = [ DelayPipeSendCL( resp_latency )( send = s.ifc[i].resp ) for i in range(nports) ]
-
+    s.resp = resp_classes[0]
+    s.req  = req_classes[0]
     @s.update
     def up_mem():
       for i in range(s.nports):
@@ -88,26 +89,28 @@ class CacheMemoryCL( Component ):
           if not len_: len_ = req_classes[i].data_nbits >> 3
 
           if   req.type_ == MemMsgType.READ:
-            resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
+            s.resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
                                     s.mem.read( req.addr, len_ ) )
 
           elif req.type_ == MemMsgType.WRITE:
             s.mem.write( req.addr, len_, req.data )
             # FIXME do we really set len=0 in response when doing subword wr?
             # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
-            resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
+            s.resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
 
           else: # AMOS
-            resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
+            s.resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
                s.mem.amo( req.type_, req.addr, len_, req.data ) )
 
-          s.resp_qs[i].enq( resp )
+          s.resp_qs[i].enq( s.resp )
+          s.req = req
 
   #-----------------------------------------------------------------------
   # line_trace
   #-----------------------------------------------------------------------
 
   def line_trace( s ):
-    msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
-    # msg = msg + "{}".format(s.mem.line_trace())resp)
+    # msg = "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    # msg = "<{}<>{}>".format(s.resp,s.req)
+    msg = ""
     return msg

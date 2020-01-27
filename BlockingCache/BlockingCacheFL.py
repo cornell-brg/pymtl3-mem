@@ -18,12 +18,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
 
-# obw  = 8   # Short name for opaque bitwidth
-# abw  = 32  # Short name for addr bitwidth
-# dbw  = 32  # Short name for data bitwidth
-# clw  = 128
-# CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-# MemMsg = ReqRespMsgTypes(obw, abw, clw)
+# Assumes 32 bit address and 32 bit data 
 
 #-------------------------------------------------------------------------
 # make messages
@@ -55,8 +50,8 @@ class HitMissTracker:
     # Compute various sizes
     self.nways = nways
     self.linesize = linesize
-    self.nlines = int(size / linesize)
-    self.nsets = int(self.nlines / self.nways)
+    self.nlines = int(size // linesize)
+    self.nsets = int(self.nlines // self.nways)
     self.nbanks = nbanks
 
     # Compute how the address is sliced
@@ -160,6 +155,17 @@ class ModelCache:
     self.CacheMsg = CacheMsg
     self.MemMsg = MemMsg
 
+    self.nlines = int(size // MemMsg.dbw)
+    self.nsets = int(self.nlines // nways)
+    # Compute how the address is sliced
+    self.offset_start = 0
+    self.offset_end = self.offset_start + int(math.log(MemMsg.dbw//8, 2))
+    self.idx_start = self.offset_end
+    self.idx_end = self.idx_start + int(math.log(self.nsets, 2))
+    self.tag_start = self.idx_end
+    self.tag_end = 32
+    
+
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
     # in the "test" field of the response
@@ -168,37 +174,68 @@ class ModelCache:
     else:
       return 0
 
-  def read(self, addr, opaque):
-    hit = self.check_hit(addr)
+  def read(self, addr, opaque, len_):
+    offset = addr[self.offset_start:self.offset_end]
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
 
-    if addr.int() in self.mem:
-      value = self.mem[addr.int()]
+    if new_addr.int() in self.mem:
+      if len_ == 1: # byte access
+        offset = offset[0:2].uint()
+        value = self.mem[new_addr.int()][(offset*8):((offset+1)*8)]
+      elif len_ == 2: # half word access
+        offset = offset[1:2].uint()
+        value = self.mem[new_addr.int()][offset*16:(offset+1)*16]  
+      else:
+        value = self.mem[new_addr.int()]
     else:
       value = Bits(32, 0)
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'rd', opaque, addr, 0, 0))
-    self.transactions.append(resp(self.CacheMsg,'rd', opaque, hit, 0, value))
+    self.transactions.append(req(self.CacheMsg,'rd', opaque, addr, len_, 0))
+    self.transactions.append(resp(self.CacheMsg,'rd', opaque, hit, len_, value))
     self.opaque += 1
 
-  def write(self, addr, value, opaque):
+  def write(self, addr, value, opaque, len_):
     value = Bits(32, value)
-    hit = self.check_hit(addr)
 
-    self.mem[addr.int()] = value
+    offset = addr[self.offset_start:self.offset_end]
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
+
+    if len_ == 1: # byte access
+     
+      offset = offset[0:2].uint()
+      self.mem[new_addr.int()][(offset*8):((offset+1)*8)] = Bits8(value)
+    elif len_ == 2: # half word access
+      offset = offset[1:2].uint()
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
+    else:
+      self.mem[new_addr.int()] = value
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheMsg,'wr', opaque, hit, 0, 0))
+    self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheMsg,'wr', opaque, hit, len_, 0))
     self.opaque += 1
   
-  def init(self, addr, value, opaque):
+  def init(self, addr, value, opaque, len_):
     value = Bits(32, value)
-    hit = self.check_hit(addr)
-    self.mem[addr.int()] = value
+    
+    offset = addr[self.offset_start:self.offset_end]
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
 
-    self.transactions.append(req(self.CacheMsg,'in', opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, 0, 0))
+    if len_ == 1: # byte access
+      offset = offset[0:2].uint()
+      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+    elif len_ == 2: # half word access
+      offset = offset[1:2].uint()
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
+    else:
+      self.mem[new_addr.int()] = value
+
+    self.transactions.append(req(self.CacheMsg,'in', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
   def get_transactions(self):
