@@ -21,16 +21,16 @@ def mk_MSHR_msg( addr, data, opq, replacement):
 
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}".format(
-      MemMsgType.str[ int( self.type_ ) ],
+      MemMsgType.str[ int( self.type ) ],
       OpqType( self.opaque ),
       AddrType( self.addr ),
       LenType( self.len ),
-      DataType( self.data ) if self.type_ != MemMsgType.READ else
+      DataType( self.data ) if self.type != MemMsgType.READ else
       " " * ( data//4 ),
     )
 
   req_cls = mk_bitstruct( cls_name, {
-    'type_':  Bits4,
+    'type':  Bits4,
     'opaque': OpqType,
     'addr':   AddrType,
     'len':    LenType,

@@ -43,7 +43,7 @@ class MSHRTestHarness(Component):
        +" "+ s.MSHR.line_trace() + " A|"+s.alloc_sink.line_trace() + " D|" + \
          s.dealloc_sink.line_trace()
 
-MSHRMsg = mk_MSHR_msg(32, 32, 8, 0)
+MSHRMsg = mk_MSHR_msg(32, 32, 8, 1)
 def msg( type_, opaque, addr, len, data, rep ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
