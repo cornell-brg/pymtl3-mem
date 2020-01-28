@@ -16,8 +16,8 @@ commands will create and activate the virtual environment:
 ```
 
  [5]: https://virtualenv.pypa.io/en/latest/
+
 ### Install PyMTL3
-On a Python3 virtual environment:
 ```
 % git clone git@github.com:cornell-brg/pymtl3.git
 % pip install --editable ./pymtl3
@@ -31,4 +31,3 @@ On a Python3 virtual environment:
 % mkdir build && cd build
 % pytest ../BlockingCache/test/BlockingCacheRTL_test.py -v
 ```
-pytest warnings occur as a result of classes with "test" in its name
