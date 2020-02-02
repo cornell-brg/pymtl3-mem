@@ -668,8 +668,6 @@ class BlockingCacheCtrlRTL ( Component ):
       s.stall_mux_sel_M2 = s.is_stall
       s.stall_reg_en_M2 = not s.is_stall
       
-
-
   def line_trace( s ):
     # colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
     types = ["rd","wr","in"]

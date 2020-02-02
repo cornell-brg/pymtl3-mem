@@ -39,9 +39,9 @@ class MSHRTestHarness(Component):
     and s.dealloc_sink.done()
 
   def line_trace( s ):
-    return "A|"+s.alloc_src.line_trace() + " D|"+s.dealloc_src.line_trace()\
-       +" "+ s.MSHR.line_trace() + " A|"+s.alloc_sink.line_trace() + " D|" + \
-         s.dealloc_sink.line_trace()
+    return "A>"+s.alloc_src.line_trace() + " D>"+s.dealloc_src.line_trace()\
+       +" "+ s.MSHR.line_trace() + " "+s.alloc_sink.line_trace() + ">A " + \
+         s.dealloc_sink.line_trace() + ">D"
 
 MSHRMsg = mk_MSHR_msg(32, 32, 8, 1)
 def msg( type_, opaque, addr, len, data, rep ):
@@ -64,9 +64,48 @@ class MSHR_Tests:
 
   def test_simple(s):
     alloc_msgs = [
-      msg( "rd", 0, 0, 0, 0, 0), Bits8(0)
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0)
     ]
     dealloc_msgs = [
-      Bits8(0), msg( "rd", 0, 0, 0, 0, 0 )
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 )
     ]
     s.run_test( alloc_msgs, dealloc_msgs, 2, 0,0,0,0,1 )
+
+  def test_full(s):
+    alloc_msgs = [
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0),
+      msg( "wr",    2,   0xffff, 1,2020,    0), Bits8(1),
+    ]
+    dealloc_msgs = [
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 ),
+      Bits8(1),  msg( "wr", 2, 0xffff, 1, 2020, 0 ),
+    ]
+    s.run_test( alloc_msgs, dealloc_msgs, 2, 0,0,0,0,2 )
+  
+  def test_full_alloc(s):
+    alloc_msgs = [
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0),
+      msg( "wr",    2,   0xffff, 1,2020,    0), Bits8(1),
+      msg( "wr",    3,   0xabcd, 1, 314,    1), Bits8(0),
+    ]
+    dealloc_msgs = [
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 ),
+      Bits8(1),  msg( "wr", 2, 0xffff, 1, 2020, 0 ),
+      Bits8(0),  msg( "wr", 3,   0xabcd, 1, 314,    1 ),
+    ]
+    s.run_test( alloc_msgs, dealloc_msgs, 2, 0,0,0,0,2 )
+ 
+  def test_alloc_same_line(s):
+    alloc_msgs = [
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0),
+      msg( "wr",    2,   0x124,  1,2020,    0), Bits8(0),
+    ]
+    dealloc_msgs = [
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 ),
+      "r",  msg( "wr", 2, 0x124, 1, 2020, 0 ),
+    ]
+    s.run_test( alloc_msgs, dealloc_msgs, 2, 0,0,0,0,2 )

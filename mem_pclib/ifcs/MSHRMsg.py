@@ -20,13 +20,14 @@ def mk_MSHR_msg( addr, data, opq, replacement):
   cls_name = f"MSHRMsg_{opq}_{addr}_{data}"
 
   def req_to_str( self ):
-    return "{}:{}:{}:{}:{}".format(
+    return "{}:{}:{}:{}:{}:{}".format(
       MemMsgType.str[ int( self.type ) ],
       OpqType( self.opaque ),
       AddrType( self.addr ),
       LenType( self.len ),
       DataType( self.data ) if self.type != MemMsgType.READ else
       " " * ( data//4 ),
+      RepType( self.rep )
     )
 
   req_cls = mk_bitstruct( cls_name, {
