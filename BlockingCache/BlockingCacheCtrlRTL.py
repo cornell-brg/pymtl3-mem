@@ -11,7 +11,7 @@ Date   : 1 Jan 2020
 
 from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.rtl.arithmetics import LShifter
+from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 from .ReplacementPolicy import ReplacementPolicy
 from colorama import Fore, Back, Style 
@@ -460,7 +460,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
     s.wben_out = Wire(BitsDataWben)
     s.wben_in  = Wire(BitsDataWben)
-    s.WbenGen = LShifter( BitsDataWben, clog2(dwb) )(
+    s.WbenGen = LeftLogicalShifter( BitsDataWben, clog2(dwb) )(
       in_ = s.wben_in,
       shamt = s.offset_M1,
       out = s.wben_out

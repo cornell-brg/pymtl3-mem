@@ -7,7 +7,9 @@
 ## TODO
 - Translate to Verilog
 - Push through flow
-- Associativity
+- Associativity > 2; alternative replacement to LRU?
+- Support for SCC
+- Code clean up and commenting
 
 ## Datapath
 ![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache.svg)
