@@ -8,8 +8,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 2 Feb 2020
 """
 
-from mem_pclib.rtl.utils            import EComp
 from pymtl3                         import *
+from mem_pclib.rtl.utils            import EComp
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn

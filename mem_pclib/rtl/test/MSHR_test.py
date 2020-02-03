@@ -54,7 +54,7 @@ max_cycles = 50
 class MSHR_Tests:
   
   def run_test(s, alloc_msgs, dealloc_msgs, entries, alloc_src_delay, 
-  alloc_sink_delay, dealloc_src_delay, dealloc_sink_delay,dealloc_init_delay ):
+  alloc_sink_delay, dealloc_src_delay, dealloc_sink_delay, dealloc_init_delay ):
     harness = MSHRTestHarness(alloc_msgs[::2], alloc_msgs[1::2], 
     dealloc_msgs[::2], dealloc_msgs[1::2],
     alloc_src_delay, alloc_sink_delay, dealloc_src_delay,
@@ -109,3 +109,40 @@ class MSHR_Tests:
       "r",  msg( "wr", 2, 0x124, 1, 2020, 0 ),
     ]
     s.run_test( alloc_msgs, dealloc_msgs, 2, 0,0,0,0,2 )
+  
+  def test_size_4(s, alloc_src_delay=0, 
+  alloc_sink_delay=0, dealloc_src_delay=0, dealloc_sink_delay=0):
+    alloc_msgs = [
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0),
+      msg( "wr",    2,   0x124,  1,2020,    0), Bits8(0),
+      msg( "wr",    3,   0x666,  1,14220,   0), Bits8(1),
+      msg( "wr",    4,   0x999,  1,0xafcd,  0), Bits8(2),
+    ]
+    dealloc_msgs = [
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 ),
+      Bits8(-1),  msg( "wr", 2, 0x124, 1, 2020, 0 ),
+      Bits8(1),  msg( "wr", 3, 0x666, 1, 14220, 0 ),
+      Bits8(2),  msg( "wr", 4, 0x999, 1, 0xafcd, 0 ),
+    ]
+    s.run_test( alloc_msgs, dealloc_msgs, 4, alloc_src_delay,\
+      alloc_sink_delay,dealloc_src_delay,dealloc_sink_delay,4 )
+
+  def test_size_4_lat(s):
+    s.test_size_4(0,2,0,2)
+
+  def test_same_line_dealloc(s):
+    alloc_msgs = [
+          #type_, opaque, addr, len, data, rep
+      msg( "rd",    1,   0x120,  2,   4,    1), Bits8(0),
+      msg( "wr",    2,   0x124,  1,2020,    0), Bits8(0),
+      msg( "wr",    3,   0x128,  1,14220,   0), Bits8(0),
+      msg( "wr",    4,   0x124,  1,0xafcd,  0), Bits8(0),
+    ]
+    dealloc_msgs = [
+      Bits8(0),  msg( "rd", 1, 0x120, 2, 4, 1 ),
+      Bits8(-1),  msg( "wr", 2, 0x124, 1, 2020, 0 ),
+      Bits8(-1),  msg( "wr", 3, 0x128, 1, 14220, 0 ),
+      Bits8(-1),  msg( "wr", 4, 0x124, 1, 0xafcd, 0 ),
+    ]
+    s.run_test( alloc_msgs, dealloc_msgs, 4, 0,0,0,0,4 )

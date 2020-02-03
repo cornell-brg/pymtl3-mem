@@ -9,12 +9,12 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 2 Feb 2020
 """
 
-from pymtl3      import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
-from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
-from .ReplacementPolicy import ReplacementPolicy
-from colorama import Fore, Back, Style 
+from pymtl3                           import *
+from pymtl3.stdlib.ifcs.MemMsg        import MemMsgType
+from pymtl3.stdlib.rtl.arithmetics    import LeftLogicalShifter
+from pymtl3.stdlib.rtl.registers      import RegEnRst, RegRst
+from BlockingCache.ReplacementPolicy  import ReplacementPolicy
+from colorama                         import Fore, Back, Style 
 
 # Constants
 STATE_GO           = b3(0)

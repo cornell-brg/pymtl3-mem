@@ -9,12 +9,12 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 2 Feb 2020
 """
 
-from BlockingCache.NonBlockingCacheCtrlRTL   import NonBlockingCacheCtrlRTL
-from BlockingCache.NonBlockingCacheDpathRTL  import NonBlockingCacheDpathRTL
-from pymtl3                               import *
-from pymtl3.stdlib.connects               import connect_pairs
-from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
+from NonBlockingCache.NonBlockingCacheCtrlRTL   import NonBlockingCacheCtrlRTL
+from NonBlockingCache.NonBlockingCacheDpathRTL  import NonBlockingCacheDpathRTL
+from pymtl3                                     import *
+from pymtl3.stdlib.connects                     import connect_pairs
+from pymtl3.stdlib.ifcs.MemMsg                  import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.ifcs.SendRecvIfc             import RecvIfcRTL, SendIfcRTL
 
 class NonBlockingCacheRTL ( Component ):
   def construct( s,                
@@ -84,7 +84,7 @@ class NonBlockingCacheRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    s.cacheDpath = BlockingCacheDpathRTL(
+    s.cacheDpath = NonBlockingCacheDpathRTL(
       abw, dbw, clw, idw, ofw, tgw, nbl, nby, 
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagArray, BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel,
@@ -111,7 +111,7 @@ class NonBlockingCacheRTL ( Component ):
       memreq_data_M2      = s.memreq.msg.data,
       
     )
-    s.cacheCtrl = BlockingCacheCtrlRTL(
+    s.cacheCtrl = NonBlockingCacheCtrlRTL(
       dbw, ofw,
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRdHwordMuxSel, 
