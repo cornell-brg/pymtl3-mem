@@ -116,7 +116,7 @@ class HypothesisTests:
     s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, \
       stall_prob, latency, src_delay, sink_delay)
 
-  @hypothesis.settings( deadline = None, max_examples=400 )
+  @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
     clw           = st.sampled_from([64,128,256,512,1024]), 
     cacheSize     = st.sampled_from([256,512,1024,4096,8192,16384,32768]),
