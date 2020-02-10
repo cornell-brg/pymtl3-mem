@@ -5,7 +5,7 @@ BlockingCacheRTL.py
 Top level model of Pipelined Blocking Cache with instances of ctrl and 
 dpath
 
-Author : Xiaoyu Yan, Eric Tang (et396)
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 15 November 2019
 """
 
@@ -23,50 +23,48 @@ class BlockingCacheRTL ( Component ):
                  MemMsg        = "",   # Memory req/resp msg type
                  associativity = 1     # Associativity
   ):
-    s.explicit_modulename = 'PipelinedBlockingCache'
-
+    
     #--------------------------------------------------------------------------
     # Bitwidths
     #--------------------------------------------------------------------------
     
-    # assert MemMsg.abw == CacheMsg.abw, "abw not the same"  # Translation not implemnted error
-    clw = MemMsg.dbw
-    abw = MemMsg.abw
-    obw = MemMsg.obw
-    dbw = CacheMsg.dbw
-    nbl = nbytes//clw        # number of cache blocks; 8192*8/128 = 512
-    nby = nbl//associativity  # blocks per way; 1
-    idw = clog2(nby)         # index width; clog2(512) = 9
-    ofw = clog2(clw//8)      # offset bitwidth; clog2(128/8) = 4
-    tgw = abw - ofw - idw    # tag bitwidth; 32 - 4 - 9 = 19
-    sbw  = int(tgw + 1 + 1 + 7) // 8 * 8 
-    twb = int(sbw+7)//8      # Tag array write byte bitwidth
-    dwb = int(clw+7)//8      # Data array write byte bitwidth 
-    wdmx = clog2(clw//dbw+1) # Read word mux bitwidth
-    btmx  = clog2(dbw//8)     # Read byte mux sel bitwidth
-    hwmx = clog2(dbw//16)    # Read half word mux sel bitwidth
-    print(f"asso[{associativity}],nbl[{nbl}],nby[{nby}],idw[{idw}],tgw[{tgw}],ofw[{ofw}]")
+    # assert MemMsg.bitwidth_addr == CacheMsg.bitwidth_addr, "bitwidth_addr not the same"  # Translation not implemnted error
+    bitwidth_cacheline        = MemMsg.bitwidth_data
+    bitwidth_addr             = MemMsg.bitwidth_addr
+    bitwidth_opaque           = MemMsg.bitwidth_opaque
+    bitwidth_data             = CacheMsg.bitwidth_data
+    nblocks                   = nbytes // bitwidth_cacheline        # number of cache blocks; 8192*8/128 = 512
+    nblocks_per_way           = nblocks // associativity            # blocks per way; 1
+    bitwidth_index            = clog2( nblocks_per_way )            # index width; clog2(512) = 9
+    bitwidth_offset           = clog2( bitwidth_cacheline // 8 )    # offset bitwidth; clog2(128/8) = 4
+    bitwidth_tag              = bitwidth_addr - bitwidth_offset - bitwidth_index    # tag bitwidth; 32 - 4 - 9 = 19
+    bitwidth_tag_array        = int( bitwidth_tag + 1 + 1 + 7 ) // 8 * 8 
+    bitwidth_tag_wben         = int( bitwidth_tag_array + 7 ) // 8      # Tag array write byte bitwidth
+    bitwidth_data_wben        = int( bitwidth_cacheline + 7 ) // 8      # Data array write byte bitwidth 
+    bitwidth_rd_wd_mux_sel    = clog2( bitwidth_cacheline // bitwidth_data + 1 ) # Read word mux bitwidth
+    bitwidth_rd_byte_mux_sel  = clog2( bitwidth_data // 8 )     # Read byte mux sel bitwidth
+    bitwidth_rd_2byte_mux_sel = clog2( bitwidth_data // 16 )    # Read half word mux sel bitwidth
 
     #--------------------------------------------------------------------------
     # Make bits
     #--------------------------------------------------------------------------
     
-    BitsLen       = mk_bits(clog2(dbw//8))
-    BitsOpaque    = mk_bits(obw)   # opaque
-    BitsType      = mk_bits(4)     # type, always 4 bits
-    BitsAddr      = mk_bits(abw)   # address 
-    BitsData      = mk_bits(dbw)   # data 
-    BitsCacheline = mk_bits(clw)   # cacheline 
-    BitsIdx       = mk_bits(idw)   # index 
-    BitsTag       = mk_bits(tgw)   # tag 
-    BitsOffset    = mk_bits(ofw)   # offset 
-    BitsTagArray  = mk_bits(sbw)   # Tag array write byte enable
-    BitsTagwben   = mk_bits(twb)   # Tag array write byte enable
-    BitsDataWben  = mk_bits(dwb)   # Data array write byte enable
-    BitsRdWordMuxSel = mk_bits(wdmx)  # Read data mux M2 
-    BitsRdByteMuxSel = mk_bits(btmx)
-    BitsRdHwordMuxSel = mk_bits(hwmx)
-    BitsAssoc     = mk_bits(associativity)
+    BitsLen           = mk_bits(clog2(bitwidth_data//8))
+    BitsOpaque        = mk_bits(bitwidth_opaque)   # opaque
+    BitsType          = mk_bits(4)     # type, always 4 bits
+    BitsAddr          = mk_bits(bitwidth_addr)   # address 
+    BitsData          = mk_bits(bitwidth_data)   # data 
+    BitsCacheline     = mk_bits(bitwidth_cacheline)   # cacheline 
+    BitsIdx           = mk_bits(bitwidth_index)   # index 
+    BitsTag           = mk_bits(bitwidth_tag)   # tag 
+    BitsOffset        = mk_bits(bitwidth_offset)   # offset 
+    BitsTagArray      = mk_bits(bitwidth_tag_array)   # Tag array write byte enable
+    BitsTagwben       = mk_bits(bitwidth_tag_wben)   # Tag array write byte enable
+    BitsDataWben      = mk_bits(bitwidth_data_wben)   # Data array write byte enable
+    BitsRdWordMuxSel  = mk_bits(bitwidth_rd_wd_mux_sel)  # Read data mux M2 
+    BitsRdByteMuxSel  = mk_bits(bitwidth_rd_byte_mux_sel)
+    BitsRd2ByteMuxSel = mk_bits(bitwidth_rd_2byte_mux_sel)
+    BitsAssoc         = mk_bits(associativity)
     if associativity == 1:
       BitsAssoclog2 = Bits1
     else:
@@ -85,11 +83,11 @@ class BlockingCacheRTL ( Component ):
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
     s.cacheDpath = BlockingCacheDpathRTL(
-      abw, dbw, clw, idw, ofw, tgw, nbl, nby, 
+      bitwidth_addr, bitwidth_data, bitwidth_cacheline, bitwidth_index, bitwidth_offset, bitwidth_tag, nblocks, nblocks_per_way, 
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
       BitsTagArray, BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel,
-      BitsRdHwordMuxSel, BitsAssoclog2, BitsAssoc,
-      sbw, associativity
+      BitsRd2ByteMuxSel, BitsAssoclog2, BitsAssoc,
+      bitwidth_tag_array, associativity
     )(
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
       cachereq_type_M0    = s.cachereq.msg.type_,
@@ -112,11 +110,11 @@ class BlockingCacheRTL ( Component ):
       
     )
     s.cacheCtrl = BlockingCacheCtrlRTL(
-      dbw, ofw,
+      bitwidth_data, bitwidth_offset,
       BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRdHwordMuxSel, 
+      BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRd2ByteMuxSel, 
       BitsAssoclog2, BitsAssoc,
-      twb, dwb, wdmx, btmx, hwmx,
+      bitwidth_tag_wben, bitwidth_data_wben, bitwidth_rd_wd_mux_sel, bitwidth_rd_byte_mux_sel, bitwidth_rd_2byte_mux_sel,
       associativity,
     )(
       cachereq_en           = s.cachereq.en,
@@ -146,7 +144,6 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.addr_mux_sel_M0,      s.cacheDpath.addr_mux_sel_M0,
       s.cacheCtrl.memresp_type_M0,      s.cacheDpath.memresp_type_M0,     
       s.cacheCtrl.tag_array_val_M0,     s.cacheDpath.tag_array_val_M0,
-      # s.cacheCtrl.len_M0,     s.cacheDpath.len_M0,
  
       s.cacheCtrl.cachereq_type_M1,     s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.reg_en_M1,            s.cacheDpath.reg_en_M1,
@@ -159,9 +156,9 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.tag_match_M1,         s.cacheDpath.tag_match_M1,
       s.cacheCtrl.ctrl_bit_dty_rd_M1,   s.cacheDpath.ctrl_bit_dty_rd_M1,
       s.cacheCtrl.offset_M1,            s.cacheDpath.offset_M1,
-      s.cacheCtrl.len_M1,   s.cacheDpath.len_M1,
-      s.cacheCtrl.stall_mux_sel_M1,   s.cacheDpath.stall_mux_sel_M1,
-      s.cacheCtrl.stall_reg_en_M1,   s.cacheDpath.stall_reg_en_M1,
+      s.cacheCtrl.len_M1,               s.cacheDpath.len_M1,
+      s.cacheCtrl.stall_mux_sel_M1,     s.cacheDpath.stall_mux_sel_M1,
+      s.cacheCtrl.stall_reg_en_M1,      s.cacheDpath.stall_reg_en_M1,
       
       s.cacheCtrl.reg_en_M2,            s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2, s.cacheDpath.read_word_mux_sel_M2,
