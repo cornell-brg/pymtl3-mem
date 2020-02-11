@@ -1,15 +1,7 @@
-
 # Pipelined Blocking Cache 
 1. Written in PyMTL3 and tested using new method based testing.
 2. NOPE support (eventually?)
 3. SRAM tag array and data array 
-
-## TODO
-- Translate to Verilog
-- Push through flow
-- Associativity > 2; alternative replacement to LRU?
-- Support for SCC
-- Code clean up and commenting
 
 ## Datapath
 ![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache.svg)

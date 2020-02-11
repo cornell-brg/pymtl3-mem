@@ -7,14 +7,12 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 Jan 2020
 """
 
-# import random
-
+from .ReplacementPolicy import ReplacementPolicy
+from colorama import Fore, Back, Style 
 from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
-from .ReplacementPolicy import ReplacementPolicy
-from colorama import Fore, Back, Style 
 
 # Constants
 STATE_GO           = b3(0)
@@ -25,47 +23,22 @@ wr = y             = b1(1)
 rd = n = x         = b1(0)
 
 class BlockingCacheCtrlRTL ( Component ):
-  def construct( s,
-                 dbw           = 32,       # data bitwidth
-                 ofw           = 4,        # offset bitwidth
-                 BitsLen       = "inv",    # word access type
-                 BitsAddr      = "inv",    # address type
-                 BitsOpaque    = "inv",    # opaque 
-                 BitsType      = "inv",    # type
-                 BitsData      = "inv",    # data 
-                 BitsCacheline = "inv",    # cacheline 
-                 BitsIdx       = "inv",    # index 
-                 BitsTag       = "inv",    # tag 
-                 BitsOffset    = "inv",    # offset 
-                 BitsTagwben   = "inv",    # Tag array write byte enable
-                 BitsDataWben  = "inv",    # Data array write byte enable
-                 BitsRdWordMuxSel = "inv",    # Read data mux M2 
-                 BitsRdByteMuxSel = "inv",    # Read data mux M2 
-                 BitsRdHwordMuxSel = "inv",    # Read data mux M2 
-                 BitsAssoclog2 = "inv",    # Bits for associativity
-                 BitsAssoc     = "inv",    # Bits for associativity
-                 twb           = 4,        # Tag array write byte enable bitwidth
-                 dwb           = 16,       # Data array write byte enable bitwidth
-                 wdmx          = 3,        # Read word mux bitwidth
-                 btmx          = 2,        # Read byte mux bitwidth
-                 hwmx          = 1,        # Read hald word mux bitwidth
-                 associativity = 1,        # Number of ways 
-  ):
+  def construct( s, param ):
 
-    wdmx0 = BitsRdWordMuxSel(0)
-    btmx0 = BitsRdByteMuxSel(0)
-    hwmx0 = BitsRdHwordMuxSel(0)
+    wdmx0 = param.BitsRdWordMuxSel(0)
+    btmx0 = param.BitsRdByteMuxSel(0)
+    hwmx0 = param.BitsRdHwordMuxSel(0)
     acmx0 = Bits2(0) # access select 0
-    wben0 = BitsDataWben(0)
-    wbenf = BitsDataWben(-1)
-    tg_wbenf = BitsTagwben(-1)
+    wben0 = param.BitsDataWben(0)
+    wbenf = param.BitsDataWben(-1)
+    tg_wbenf = param.BitsTagwben(-1)
     data_array_double_mask    = 0xff
     data_array_word_mask      = 0xf
     data_array_half_word_mask = 0x3
     data_array_byte_mask      = 0x1
-    READ  = BitsType(MemMsgType.READ)
-    WRITE = BitsType(MemMsgType.WRITE)
-    INIT  = BitsType(MemMsgType.WRITE_INIT)
+    READ  = param.BitsType(MemMsgType.READ)
+    WRITE = param.BitsType(MemMsgType.WRITE)
+    INIT  = param.BitsType(MemMsgType.WRITE_INIT)
 
     #--------------------------------------------------------------------------
     # Interface
@@ -87,72 +60,70 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 Ctrl Signals 
     #--------------------------------------------------------------------------
 
-    s.cachereq_type_M0      = InPort (BitsType)
-    s.memresp_type_M0       = InPort (BitsType)
-    s.MSHR_type             = InPort (BitsType)
-    # s.len_M0                = InPort(BitsLen)
+    s.cachereq_type_M0      = InPort (param.BitsType)
+    s.memresp_type_M0       = InPort (param.BitsType)
+    s.MSHR_type             = InPort (param.BitsType)
 
     s.memresp_mux_sel_M0    = OutPort(Bits1)
     s.addr_mux_sel_M0       = OutPort(Bits2)
     s.wdata_mux_sel_M0      = OutPort(Bits2)
-    s.tag_array_val_M0      = OutPort(BitsAssoc)
+    s.tag_array_val_M0      = OutPort(param.BitsAssoc)
     s.tag_array_type_M0     = OutPort(Bits1)
-    s.tag_array_wben_M0     = OutPort(BitsTagwben)
+    s.tag_array_wben_M0     = OutPort(param.BitsTagwben)
     s.ctrl_bit_val_wr_M0    = OutPort(Bits1)
     s.ctrl_bit_dty_wr_M0    = OutPort(Bits1)
     s.reg_en_M0             = OutPort(Bits1)
     
-    # if associativity > 1:
-    s.ctrl_bit_rep_wr_M0    = OutPort(BitsAssoclog2)
+    s.ctrl_bit_rep_wr_M0    = OutPort(param.BitsAssoclog2)
     if associativity == 1: # Drive these ports with 0's
-      s.ctrl_bit_rep_wr_M0 //= BitsAssoclog2(0)
+      s.ctrl_bit_rep_wr_M0 //= param.BitsAssoclog2(0)
+
     #--------------------------------------------------------------------------
     # M1 Ctrl Signals
     #--------------------------------------------------------------------------
 
-    s.cachereq_type_M1      = InPort(BitsType)
-    s.ctrl_bit_dty_rd_M1    = InPort(BitsAssoc)
-    s.tag_match_M1          = InPort(Bits1) # wheter we had a valid tag match
-    s.offset_M1             = InPort(BitsOffset) 
-    s.len_M1                = InPort(BitsLen)
+    s.cachereq_type_M1      = InPort(param.BitsType)
+    s.ctrl_bit_dty_rd_M1    = InPort(param.BitsAssoc)
+    s.tag_match_M1          = InPort(Bits1) # tag match
+    s.offset_M1             = InPort(param.BitsOffset) 
+    s.len_M1                = InPort(param.BitsLen)
 
     s.reg_en_M1             = OutPort(Bits1)
     s.data_array_val_M1     = OutPort(Bits1) 
     s.data_array_type_M1    = OutPort(Bits1)
-    s.data_array_wben_M1    = OutPort(BitsDataWben)
+    s.data_array_wben_M1    = OutPort(param.BitsDataWben)
     s.reg_en_MSHR           = OutPort(Bits1)
     s.evict_mux_sel_M1      = OutPort(Bits1)
 
-    s.stall_mux_sel_M1 = OutPort(Bits1)
-    s.stall_reg_en_M1 = OutPort(Bits1)
+    s.stall_mux_sel_M1      = OutPort(Bits1)
+    s.stall_reg_en_M1       = OutPort(Bits1)
 
     # if associativity > 1:
-    s.ctrl_bit_rep_rd_M1    = InPort(BitsAssoclog2)
+    s.ctrl_bit_rep_rd_M1    = InPort(param.BitsAssoclog2)
     s.ctrl_bit_rep_en_M1    = OutPort(Bits1)
-    s.tag_match_way_M1      = InPort(BitsAssoclog2) # tag match in which of the ways (asso)
-    s.way_offset_M1         = OutPort(BitsAssoclog2)
-    if associativity == 1:
+    s.tag_match_way_M1      = InPort(param.BitsAssoclog2) # tag match in which of the ways (asso)
+    s.way_offset_M1         = OutPort(param.BitsAssoclog2)
+    if param.associativity == 1:
       s.ctrl_bit_rep_en_M1 //= n
-      s.way_offset_M1      //= BitsAssoclog2(0)
+      s.way_offset_M1      //= param.BitsAssoclog2(0)
+
     #---------------------------------------------------------------------------
     # M2 Ctrl Signals
     #--------------------------------------------------------------------------
 
-    s.cachereq_type_M2      = InPort(BitsType)
-    s.offset_M2             = InPort(BitsOffset)
-    s.len_M2                = InPort(BitsLen)
-    s.reg_en_M2             = OutPort(Bits1)
-    s.read_data_mux_sel_M2  = OutPort(mk_bits(clog2(2)))
-    s.read_word_mux_sel_M2  = OutPort(BitsRdWordMuxSel)
-    s.read_byte_mux_sel_M2  = OutPort(BitsRdByteMuxSel)
-    s.read_half_word_mux_sel_M2 = OutPort(BitsRdHwordMuxSel)
+    s.cachereq_type_M2          = InPort (param.BitsType)
+    s.offset_M2                 = InPort (param.BitsOffset)
+    s.len_M2                    = InPort (param.BitsLen)
+    s.reg_en_M2                 = OutPort(Bits1)
+    s.read_data_mux_sel_M2      = OutPort(mk_bits(clog2(2))) # What is this?
+    s.read_word_mux_sel_M2      = OutPort(param.BitsRdWordMuxSel)
+    s.read_byte_mux_sel_M2      = OutPort(param.BitsRdByteMuxSel)
+    s.read_half_word_mux_sel_M2 = OutPort(param.BitsRdHwordMuxSel)
     s.subword_access_mux_sel_M2 = OutPort(Bits2)
-    s.stall_reg_en_M2 = OutPort(Bits1)
-    s.stall_mux_sel_M2 = OutPort(Bits1)
-
-    # Output Signals
-    s.hit_M2                = OutPort(Bits2)
-    s.memreq_type           = OutPort(BitsType)
+    s.stall_reg_en_M2           = OutPort(Bits1)
+    s.stall_mux_sel_M2          = OutPort(Bits1)
+    s.hit_M2                    = OutPort(Bits2)
+    s.memreq_type               = OutPort(param.BitsType)
 
     #--------------------------------------------------------------------------
     # Connection Wires
@@ -161,7 +132,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.is_refill_M0 = Wire(Bits1)
     s.is_refill_M1 = Wire(Bits1)
     s.is_refill_M2 = Wire(Bits1)
-    s.hit_M1 = Wire(Bits1)
+    s.hit_M1       = Wire(Bits1)
 
     #--------------------------------------------------------------------------
     # Stall and Ostall Signals
@@ -173,15 +144,15 @@ class BlockingCacheCtrlRTL ( Component ):
     s.ostall_M0 = Wire(Bits1)
     s.ostall_M1 = Wire(Bits1)
     s.ostall_M2 = Wire(Bits1)
-    s.is_stall = Wire(Bits1)
+    s.is_stall  = Wire(Bits1)
 
     #---------------------------------------------------------------------------
     # Cache-wide FSM
     #--------------------------------------------------------------------------
 
     # FSM to control refill and evict tranaction conditions. 
-    s.curr_state = Wire(Bits3)
-    s.next_state = Wire(Bits3)
+    s.curr_state  = Wire(Bits3)
+    s.next_state  = Wire(Bits3)
     s.is_evict_M1 = Wire(Bits1)    
 
     s.state_transition_block = RegRst(Bits3, STATE_GO)\
@@ -207,7 +178,6 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.curr_state == STATE_EVICT:        
         if not s.is_stall:                     s.next_state = STATE_REFILL
       elif s.curr_state == STATE_REFILL_WRITE: s.next_state = STATE_GO
-      # assert False, 'undefined state: next state block' # NOT TRANSLATABLE
 
     #--------------------------------------------------------------------------
     # Y Stage 
@@ -235,8 +205,8 @@ class BlockingCacheCtrlRTL ( Component ):
     if associativity > 1: # MSHR for replacement ptr
       # This eases adaptability for nonblocking since we can
       # Store the replacement ptr in the MSHR along all other info
-      s.MSHR_ptr_M0 = Wire(BitsAssoclog2)
-      s.MSHR_rep_ptr_reg_M0 = RegEnRst(BitsAssoclog2)(
+      s.MSHR_ptr_M0 = Wire(param.BitsAssoclog2)
+      s.MSHR_rep_ptr_reg_M0 = RegEnRst(param.BitsAssoclog2)(
         en  = s.reg_en_MSHR,
         in_ = s.ctrl_bit_rep_rd_M1,
         out = s.MSHR_ptr_M0,
@@ -259,7 +229,7 @@ class BlockingCacheCtrlRTL ( Component ):
       else:
         s.is_write_refill_M0 = n
 
-    CS_tag_array_wben_M0  = slice( 8, 8 + twb )
+    CS_tag_array_wben_M0  = slice( 8, 8 + param.bitwidth_tag )
     CS_wdata_mux_sel_M0   = slice( 6, 8 )
     CS_addr_mux_sel_M0    = slice( 4, 6 )
     CS_memresp_mux_sel_M0 = slice( 3, 4 )
@@ -267,7 +237,7 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_ctrl_bit_dty_wr_M0 = slice( 1, 2 )
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
-    s.cs0 = Wire( mk_bits( 9 + twb ) ) # Bits for control signal table
+    s.cs0 = Wire( mk_bits( 9 + param.bitwidth_tag ) ) # Bits for control signal table
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or (s.is_refill_M0 and s.memresp_type_M0 != WRITE) or s.is_write_refill_M0 or s.is_write_hit_clean_M0
@@ -294,9 +264,9 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
     
-    s.way_ptr_M1 = Wire(BitsAssoclog2)
+    s.way_ptr_M1 = Wire(param.BitsAssoclog2)
 
-    if associativity == 1: #val for dmapped cache is simpler
+    if param.associativity == 1: #val for dmapped cache is simpler
       @s.update
       def Dmapped_tag_array_val_logic_M0():
         if s.val_M0:
@@ -305,14 +275,14 @@ class BlockingCacheCtrlRTL ( Component ):
           s.tag_array_val_M0 = n
     else:
       # Tag array valid logic for set asso
-      s.rep_ptr_reg_M1 = RegEnRst(BitsAssoclog2)(
+      s.rep_ptr_reg_M1 = RegEnRst(param.BitsAssoclog2)(
         en  = s.reg_en_M1,
         in_ = s.MSHR_ptr_M0,
         out = s.way_ptr_M1,
       )
       @s.update
       def Asso_tag_array_val_logic_M0():
-        for i in range( associativity ):
+        for i in range( param.associativity ):
           s.tag_array_val_M0[i] = n # Enable all SRAMs since we are reading
         if s.val_M0:
           if s.is_refill_M0:
@@ -324,7 +294,7 @@ class BlockingCacheCtrlRTL ( Component ):
           elif s.is_write_hit_clean_M0:   
             s.tag_array_val_M0[s.tag_match_way_M1] = y
           else:
-            for i in range( associativity ):
+            for i in range( param.associativity ):
               if s.cachereq_type_M0 == READ or s.cachereq_type_M0 == WRITE: 
                 s.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
               else:
@@ -382,10 +352,11 @@ class BlockingCacheCtrlRTL ( Component ):
       s.repreq_en_M1      = Wire(Bits1)
       s.repreq_rdy_M1     = Wire(Bits1)
       s.repreq_is_hit_M1  = Wire(Bits1)
-      s.repreq_hit_ptr_M1 = Wire(BitsAssoclog2)
-      s.represp_ptr_M1 = Wire(BitsAssoclog2)
+      s.repreq_hit_ptr_M1 = Wire(param.BitsAssoclog2)
+      s.represp_ptr_M1    = Wire(param.BitsAssoclog2)
+
       s.replacement_M1 = ReplacementPolicy(
-        BitsAssoc, BitsAssoclog2, associativity, 0
+        param.BitsAssoc, param.BitsAssoclog2, param.associativity, 0
       )(
         repreq_en       = s.repreq_en_M1,
         repreq_rdy      = s.repreq_rdy_M1,
@@ -450,9 +421,9 @@ class BlockingCacheCtrlRTL ( Component ):
 
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
-    s.wben_out = Wire(BitsDataWben)
-    s.wben_in  = Wire(BitsDataWben)
-    s.WbenGen = LeftLogicalShifter( BitsDataWben, clog2(dwb) )(
+    s.wben_out = Wire(param.BitsDataWben)
+    s.wben_in  = Wire(param.BitsDataWben)
+    s.WbenGen = LeftLogicalShifter( param.BitsDataWben, clog2(param.bitwidth_data) )(
       in_ = s.wben_in,
       shamt = s.offset_M1,
       out = s.wben_out
@@ -460,13 +431,13 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def mask_select_M1():
       if s.len_M1 == 0:
-        s.wben_in = BitsDataWben(data_array_word_mask)
+        s.wben_in = param.BitsDataWben(data_array_word_mask)
       elif s.len_M1 == 1:
-        s.wben_in = BitsDataWben(data_array_byte_mask)
+        s.wben_in = param.BitsDataWben(data_array_byte_mask)
       elif s.len_M1 == 2:
-        s.wben_in = BitsDataWben(data_array_half_word_mask)
+        s.wben_in = param.BitsDataWben(data_array_half_word_mask)
       else:
-        s.wben_in = BitsDataWben(data_array_word_mask)
+        s.wben_in = param.BitsDataWben(data_array_word_mask)
 
     @s.update
     def en_MSHR_M1(): # TEMPORARY; NOT SURE WHAT TO DO WITH THAT SIGNAL YET
@@ -477,7 +448,7 @@ class BlockingCacheCtrlRTL ( Component ):
         s.reg_en_MSHR = n
 
     s.is_dty_M1 = Wire(Bits1)
-    if associativity == 1:
+    if param.associativity == 1:
       s.is_dty_M1 //= s.ctrl_bit_dty_rd_M1
     else: # Multiway set assoc
       @s.update
@@ -508,13 +479,13 @@ class BlockingCacheCtrlRTL ( Component ):
     def en_M1():
       s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
 
-    CS_data_array_wben_M1   = slice( 4,  4 + dwb )
+    CS_data_array_wben_M1   = slice( 4,  4 + param.bitwidth_data )
     CS_data_array_type_M1   = slice( 3,  4 )
     CS_data_array_val_M1    = slice( 2,  3 )
     CS_ostall_M1            = slice( 1,  2 )
     CS_evict_mux_sel_M1     = slice( 0,  1 )
 
-    s.cs1 = Wire( mk_bits( 4 + dwb ) )
+    s.cs1 = Wire( mk_bits( 4 + param.bitwidth_data ) )
 
     @s.update
     def comb_block_M1():
@@ -607,7 +578,8 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_memreq_en            = slice( 1,  2 )
     CS_cacheresp_en         = slice( 0,  1 )
     s.cs2 = Wire( mk_bits( 8 + wdmx ) )
-    s.msel = Wire(BitsRdWordMuxSel)
+    s.msel = Wire(param.BitsRdWordMuxSel)
+
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
       s.msel = BitsRdWordMuxSel(s.offset_M2[2:ofw]) + BitsRdWordMuxSel(1)  
@@ -649,17 +621,13 @@ class BlockingCacheCtrlRTL ( Component ):
             s.read_byte_mux_sel_M2 = s.offset_M2[0:2]
           elif s.len_M2 == 2:
             s.read_half_word_mux_sel_M2 = s.offset_M2[1:2]
-    
 
     @s.update
     def stall_logic_M2():
       s.stall_mux_sel_M2 = s.is_stall
       s.stall_reg_en_M2 = not s.is_stall
-      
-
 
   def line_trace( s ):
-    # colors = {'RED': '\033[91m', 'GREEN': '\033[92m', 'WHITE': '\033[0m'}
     types = ["rd","wr","in"]
     msg_M0 = "  "
     if s.val_M0:
@@ -687,12 +655,10 @@ class BlockingCacheCtrlRTL ( Component ):
         msg_M1 = "wc"
       elif ~s.hit_M1 and s.cachereq_type_M1 != 2:
         msg_M1 = Fore.RED + types[s.cachereq_type_M1] + Style.RESET_ALL
-        # msg_M1 = colors['RED'] + types[s.cachereq_type_M1] + colors['WHITE']
       elif s.is_write_refill_M1:
         msg_M1 = "wf"
       elif s.hit_M1 and s.cachereq_type_M1 != 2:
         msg_M1 = Fore.GREEN + types[s.cachereq_type_M1] + Style.RESET_ALL
-        # msg_M1 = colors['GREEN'] + types[s.cachereq_type_M1] + colors['WHITE']
       else:
         msg_M1 = types[s.cachereq_type_M1]
 
@@ -716,7 +682,4 @@ class BlockingCacheCtrlRTL ( Component ):
     state    = " [{}]".format(msg_state)
     pipeline = stage1 + stage2 + stage3 + state
     add_msgs = ""
-    # add_msgs += f" hit:{s.hit_M1}|LRU:{s.ctrl_bit_rep_rd_M1}|repway:{s.way_ptr_M1}"
-    # add_msgs += f"|is_stall:{s.is_stall}|way:{s.represp_ptr_M1}|rprd:{s.ctrl_bit_rep_rd_M1}"
-    # add_msgs += f"|way_ptr{s.way_ptr_M1}"
     return pipeline + add_msgs 
