@@ -11,6 +11,7 @@ Date   : 10 February 2020
 
 from BlockingCache.BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
 from BlockingCache.BlockingCacheDpathRTL  import BlockingCacheDpathRTL
+from CacheParams                          import CacheParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
@@ -24,56 +25,14 @@ class BlockingCacheRTL ( Component ):
     MemMsg        = "",   # Memory req/resp msg type
     associativity = 1     # Associativity
   ):
-      
-    #----------------------------------------------------------------------------
-    # Bitwidths
-    #----------------------------------------------------------------------------
-      
-    bitwidth_cacheline        = MemMsg.bitwidth_data
-    bitwidth_addr             = MemMsg.bitwidth_addr
-    bitwidth_opaque           = MemMsg.bitwidth_opaque
-    bitwidth_data             = CacheMsg.bitwidth_data
-    total_num_cachelines      = num_bytes // bitwidth_cacheline                  # number of cachelines
-    nblocks_per_way           = total_num_cachelines // associativity            # cachelines per way
-    bitwidth_index            = clog2( nblocks_per_way )                         # index width
-    bitwidth_offset           = clog2( bitwidth_cacheline // 8 )                 # offset bitwidth
-    bitwidth_tag              = bitwidth_addr - bitwidth_offset - bitwidth_index # tag bitwidth
-    bitwidth_tag_array        = int( bitwidth_tag + 1 + 1 + 7 ) // 8 * 8 
-    bitwidth_tag_wben         = int( bitwidth_tag_array + 7 ) // 8               # Tag array write byte bitwidth
-    bitwidth_data_wben        = int( bitwidth_cacheline + 7 ) // 8               # Data array write byte bitwidth 
-    bitwidth_rd_wd_mux_sel    = clog2( bitwidth_cacheline // bitwidth_data + 1 ) # Read word mux bitwidth
-    bitwidth_rd_byte_mux_sel  = clog2( bitwidth_data // 8 )                      # Read byte mux sel bitwidth
-    bitwidth_rd_2byte_mux_sel = clog2( bitwidth_data // 16 )                     # Read half word mux sel bitwidth
-  
-    #----------------------------------------------------------------------------
-    # Make Bits object
-    #----------------------------------------------------------------------------
-    
-    BitsLen           = mk_bits(clog2(bitwidth_data//8))
-    BitsOpaque        = mk_bits(bitwidth_opaque)         # opaque
-    BitsType          = mk_bits(4)                       # type
-    BitsAddr          = mk_bits(bitwidth_addr)           # address 
-    BitsData          = mk_bits(bitwidth_data)           # data 
-    BitsCacheline     = mk_bits(bitwidth_cacheline)      # cacheline 
-    BitsIdx           = mk_bits(bitwidth_index)          # index 
-    BitsTag           = mk_bits(bitwidth_tag)            # tag 
-    BitsOffset        = mk_bits(bitwidth_offset)         # offset 
-    BitsTagArray      = mk_bits(bitwidth_tag_array)      # Tag array write byte enable
-    BitsTagwben       = mk_bits(bitwidth_tag_wben)       # Tag array write byte enable
-    BitsDataWben      = mk_bits(bitwidth_data_wben)      # Data array write byte enable
-    BitsRdWordMuxSel  = mk_bits(bitwidth_rd_wd_mux_sel)  # Read data mux M2 
-    BitsRdByteMuxSel  = mk_bits(bitwidth_rd_byte_mux_sel)
-    BitsRd2ByteMuxSel = mk_bits(bitwidth_rd_2byte_mux_sel)
-    BitsAssoc         = mk_bits(associativity)
-    if associativity == 1:
-      BitsAssoclog2 = Bits1
-    else:
-      BitsAssoclog2  = mk_bits(clog2(associativity))
-  
+
+    params = CacheParams(num_bytes=num_bytes, CacheMsg=CacheMsg, \
+                         MemMsg=MemMsg, associativity=associativity)
+
     #----------------------------------------------------------------------------
     # Interface
     #----------------------------------------------------------------------------
-    
+
     # Proc -> Cache
     s.cachereq  = RecvIfcRTL ( CacheMsg.Req )
     # Cache -> Proc
@@ -82,14 +41,9 @@ class BlockingCacheRTL ( Component ):
     s.memresp   = RecvIfcRTL ( MemMsg.Resp )
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
-  
-    s.cacheDpath = BlockingCacheDpathRTL(
-      bitwidth_addr, bitwidth_data, bitwidth_cacheline, bitwidth_index, bitwidth_offset, bitwidth_tag, total_num_cachelines, nblocks_per_way, 
-      BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagArray, BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel,
-      BitsRd2ByteMuxSel, BitsAssoclog2, BitsAssoc,
-      bitwidth_tag_array, associativity
-    )(
+
+    s.cacheDpath = BlockingCacheDpathRTL( params )
+    (
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
       cachereq_type_M0    = s.cachereq.msg.type_,
       cachereq_addr_M0    = s.cachereq.msg.addr,
@@ -101,21 +55,14 @@ class BlockingCacheRTL ( Component ):
       cacheresp_opaque_M2 = s.cacheresp.msg.opaque,
       cacheresp_type_M2   = s.cacheresp.msg.type_,
       cacheresp_data_M2   = s.cacheresp.msg.data,
-      cacheresp_len_M2   = s.cacheresp.msg.len,
+      cacheresp_len_M2    = s.cacheresp.msg.len,
       memreq_opaque_M2    = s.memreq.msg.opaque,
       memreq_addr_M2      = s.memreq.msg.addr,
       memreq_data_M2      = s.memreq.msg.data,
-      
     )
-  
-    s.cacheCtrl = BlockingCacheCtrlRTL(
-      bitwidth_data, bitwidth_offset,
-      BitsLen, BitsAddr, BitsOpaque, BitsType, BitsData, BitsCacheline, BitsIdx, BitsTag, BitsOffset,
-      BitsTagwben, BitsDataWben, BitsRdWordMuxSel, BitsRdByteMuxSel, BitsRd2ByteMuxSel, 
-      BitsAssoclog2, BitsAssoc,
-      bitwidth_tag_wben, bitwidth_data_wben, bitwidth_rd_wd_mux_sel, bitwidth_rd_byte_mux_sel, bitwidth_rd_2byte_mux_sel,
-      associativity,
-    )(
+
+    s.cacheCtrl = BlockingCacheCtrlRTL( params )
+    (
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
       memresp_en            = s.memresp.en,
@@ -166,7 +113,7 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.len_M2,                     s.cacheDpath.len_M2,
       s.cacheCtrl.stall_reg_en_M2,            s.cacheDpath.stall_reg_en_M2,
       s.cacheCtrl.stall_mux_sel_M2,           s.cacheDpath.stall_mux_sel_M2,
-  
+
       # Associativity
       s.cacheCtrl.ctrl_bit_rep_wr_M0,         s.cacheDpath.ctrl_bit_rep_wr_M0,
       s.cacheCtrl.tag_match_way_M1,           s.cacheDpath.tag_match_way_M1,
@@ -174,11 +121,11 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.ctrl_bit_rep_rd_M1,         s.cacheDpath.ctrl_bit_rep_rd_M1,
       s.cacheCtrl.ctrl_bit_rep_en_M1,         s.cacheDpath.ctrl_bit_rep_en_M1,
     )
-  
+
   # Line tracing
   def line_trace( s ):
     memreq_msg = memresp_msg = "{:42}".format(" ")
-    
+
     if s.memresp.en:
       memresp_msg = "{}".format(s.memresp.msg)
     if s.memreq.en:
@@ -187,4 +134,3 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.line_trace(),memreq_msg,memresp_msg,
       s.cacheDpath.line_trace())
     return msg
-  

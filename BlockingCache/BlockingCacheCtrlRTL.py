@@ -4,7 +4,7 @@
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
-Date   : 1 Jan 2020
+Date   : 10 February 2020
 """
 
 from .ReplacementPolicy import ReplacementPolicy
@@ -23,6 +23,7 @@ wr = y             = b1(1)
 rd = n = x         = b1(0)
 
 class BlockingCacheCtrlRTL ( Component ):
+
   def construct( s, param ):
 
     wdmx0 = param.BitsRdWordMuxSel(0)
@@ -75,7 +76,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.reg_en_M0             = OutPort(Bits1)
     
     s.ctrl_bit_rep_wr_M0    = OutPort(param.BitsAssoclog2)
-    if associativity == 1: # Drive these ports with 0's
+    if param.associativity == 1: # Drive these ports with 0's
       s.ctrl_bit_rep_wr_M0 //= param.BitsAssoclog2(0)
 
     #--------------------------------------------------------------------------
@@ -115,7 +116,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.offset_M2                 = InPort (param.BitsOffset)
     s.len_M2                    = InPort (param.BitsLen)
     s.reg_en_M2                 = OutPort(Bits1)
-    s.read_data_mux_sel_M2      = OutPort(mk_bits(clog2(2))) # What is this?
+    s.read_data_mux_sel_M2      = OutPort(Bits1) 
     s.read_word_mux_sel_M2      = OutPort(param.BitsRdWordMuxSel)
     s.read_byte_mux_sel_M2      = OutPort(param.BitsRdByteMuxSel)
     s.read_half_word_mux_sel_M2 = OutPort(param.BitsRdHwordMuxSel)
@@ -192,9 +193,9 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 Stage 
     #---------------------------------------------------------------------------
 
-    s.val_M0 = Wire(Bits1)
+    s.val_M0                = Wire(Bits1)
     s.is_write_hit_clean_M0 = Wire(Bits1)
-    s.is_write_refill_M0 = Wire(Bits1)
+    s.is_write_refill_M0    = Wire(Bits1)
 
     s.is_refill_reg_M0 = RegRst(Bits1)\
     ( # NO STALLS should occur while refilling
@@ -300,7 +301,6 @@ class BlockingCacheCtrlRTL ( Component ):
               else:
                 s.tag_array_val_M0[i] = n
               
-    
     #--------------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------------
@@ -347,7 +347,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.stall_mux_sel_M1 = s.is_stall
       s.stall_reg_en_M1  = not s.is_stall
 
-    if associativity > 1:
+    if param.associativity > 1:
       # EXTRA Logic for accounting for set associative caches
       s.repreq_en_M1      = Wire(Bits1)
       s.repreq_rdy_M1     = Wire(Bits1)
@@ -408,9 +408,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def hit_logic_M1():
       s.hit_M1 = n
-      # if s.repreq_rdy_M1: Not necessary for now...
-      if s.is_write_refill_M1 \
-        or (s.tag_match_M1 and s.cachereq_type_M1 != INIT):
+      if s.is_write_refill_M1 or (s.tag_match_M1 and s.cachereq_type_M1 != INIT):
         # for some reason we also made hit refill a hit 
         # but not actually
         s.hit_M1 = y
@@ -428,6 +426,7 @@ class BlockingCacheCtrlRTL ( Component ):
       shamt = s.offset_M1,
       out = s.wben_out
     )
+
     @s.update
     def mask_select_M1():
       if s.len_M1 == 0:
@@ -460,8 +459,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def is_write_hit_clean_M0_logic():
-      if s.cachereq_type_M1 == WRITE and \
-        s.hit_M1 and not s.is_dty_M1 and \
+      if s.cachereq_type_M1 == WRITE and s.hit_M1 and not s.is_dty_M1 and \
           not s.is_write_hit_clean_M1 and not s.is_write_refill_M1:
         s.is_write_hit_clean_M0 = y
       else:
@@ -491,8 +489,7 @@ class BlockingCacheCtrlRTL ( Component ):
     def comb_block_M1():
       
       wben = s.wben_out
-      if s.val_M1: #                                                wben| ty|val|ostall|addr
-                   #                                                                    mux  
+      if s.val_M1: #                                                wben| ty|val|ostall|addr mux  
         if s.is_refill_M1:                          s.cs1 = concat(wbenf, wr, y , n    , b1(0))
         elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1))
         elif s.is_write_hit_clean_M1:               s.cs1 = concat(wbenf, x , n , n    , b1(0))
@@ -582,7 +579,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = BitsRdWordMuxSel(s.offset_M2[2:ofw]) + BitsRdWordMuxSel(1)  
+      s.msel = BitsRdWordMuxSel(s.offset_M2[2:param.bitwidth_offset]) + BitsRdWordMuxSel(1)  
       s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
       if s.val_M2:                                     #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
         if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
