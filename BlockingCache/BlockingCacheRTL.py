@@ -11,7 +11,7 @@ Date   : 10 February 2020
 
 from BlockingCache.BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
 from BlockingCache.BlockingCacheDpathRTL  import BlockingCacheDpathRTL
-from CacheParams                          import CacheParams
+from .CacheParams                          import CacheParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
@@ -42,16 +42,10 @@ class BlockingCacheRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    s.cacheDpath = BlockingCacheDpathRTL( params )
+    s.cacheDpath = BlockingCacheDpathRTL( params )\
     (
-      cachereq_opaque_M0  = s.cachereq.msg.opaque,
-      cachereq_type_M0    = s.cachereq.msg.type_,
-      cachereq_addr_M0    = s.cachereq.msg.addr,
-      cachereq_data_M0    = s.cachereq.msg.data,
-      cachereq_len_M0     = s.cachereq.msg.len,
-      memresp_opaque_Y    = s.memresp.msg.opaque,
-      memresp_type_Y      = s.memresp.msg.type_, 
-      memresp_data_Y      = s.memresp.msg.data,
+      cachereq            = s.cachereq.msg,
+      memresp_Y           = s.memresp.msg,
       cacheresp_opaque_M2 = s.cacheresp.msg.opaque,
       cacheresp_type_M2   = s.cacheresp.msg.type_,
       cacheresp_data_M2   = s.cacheresp.msg.data,
@@ -61,7 +55,7 @@ class BlockingCacheRTL ( Component ):
       memreq_data_M2      = s.memreq.msg.data,
     )
 
-    s.cacheCtrl = BlockingCacheCtrlRTL( params )
+    s.cacheCtrl = BlockingCacheCtrlRTL( params )\
     (
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
@@ -81,7 +75,6 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.tag_array_type_M0,          s.cacheDpath.tag_array_type_M0,
       s.cacheCtrl.tag_array_wben_M0,          s.cacheDpath.tag_array_wben_M0,
       s.cacheCtrl.cachereq_type_M0,           s.cachereq.msg.type_,
-      s.cacheDpath.cachereq_type_M0,          s.cachereq.msg.type_,
       s.cacheCtrl.ctrl_bit_val_wr_M0,         s.cacheDpath.ctrl_bit_val_wr_M0,
       s.cacheCtrl.ctrl_bit_dty_wr_M0,         s.cacheDpath.ctrl_bit_dty_wr_M0,
       s.cacheCtrl.reg_en_M0,                  s.cacheDpath.reg_en_M0,
@@ -105,7 +98,7 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.reg_en_M2,                  s.cacheDpath.reg_en_M2,
       s.cacheCtrl.read_word_mux_sel_M2,       s.cacheDpath.read_word_mux_sel_M2,
       s.cacheCtrl.read_byte_mux_sel_M2,       s.cacheDpath.read_byte_mux_sel_M2,
-      s.cacheCtrl.read_half_word_mux_sel_M2,  s.cacheDpath.read_half_word_mux_sel_M2,
+      s.cacheCtrl.read_2byte_mux_sel_M2,  s.cacheDpath.read_2byte_mux_sel_M2,
       s.cacheCtrl.subword_access_mux_sel_M2,  s.cacheDpath.subword_access_mux_sel_M2,
       s.cacheCtrl.read_data_mux_sel_M2,       s.cacheDpath.read_data_mux_sel_M2,
       s.cacheCtrl.cachereq_type_M2,           s.cacheDpath.cachereq_type_M2,

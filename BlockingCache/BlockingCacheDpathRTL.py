@@ -14,31 +14,23 @@ from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from sram.SramPRTL                  import SramPRTL
-from mem_pclib.constants            import *
-# from mem_pclib.ifc.dpathStructs     import mk_pipeline_msg
+from mem_pclib.constants.constants  import *
+from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
 
 class BlockingCacheDpathRTL (Component):
 
   def construct( s, param ):
-    
+
     #---------------------------------------------------------------------
     # Interface
     #--------------------------------------------------------------------- 
     
     # Proc -> Cache
-    s.cachereq_M0         = InPort(param.CacheMsg.Req)
-    # s.s.cachereq_M0.opaque  = InPort(param.BitsOpaque)
-    # s.s.cachereq_M0.type_    = InPort(param.BitsType)
-    # s.cachereq_M0.addr    = InPort(param.BitsAddr)
-    # s.cachereq_M0.data    = InPort(param.BitsData)
-    # s.cachereq_M0.len     = InPort(param.BitsLen)
+    s.cachereq            = InPort(param.CacheMsg.Req)
     
     # Mem -> Cache
     s.memresp_Y           = InPort(param.MemMsg.Resp)
-    # s.memresp_Y.opaque    = InPort(param.BitsOpaque)
-    # s.memresp_Y.type_      = InPort(param.BitsType)
-    # s.memresp_Y.data      = InPort(param.BitsCacheline)
-    
+
     # Cache -> Proc
     # s.cachresp_M2         = InPort(param.CacheMsg.Resp)
     s.cacheresp_opaque_M2 = OutPort(param.BitsOpaque)
@@ -87,14 +79,17 @@ class BlockingCacheDpathRTL (Component):
     # MSHR Signals
     s.reg_en_MSHR           = InPort (Bits1)
     s.MSHR_type             = OutPort(param.BitsType)
-    # Stall Registers
+
+    # Stall Registers for saving outputs from tag array
     s.stall_mux_sel_M1      = InPort(Bits1)
     s.stall_reg_en_M1       = InPort(Bits1)
+    
     # Signals for multiway param.associativity
     s.tag_match_way_M1      = OutPort(param.BitsAssoclog2)
     s.way_offset_M1         = InPort(param.BitsAssoclog2)
     s.ctrl_bit_rep_en_M1    = InPort(Bits1)
     s.ctrl_bit_rep_rd_M1    = OutPort(param.BitsAssoclog2)
+    
     if param.associativity == 1: # Not necessary for Dmapped cache
       s.tag_match_way_M1  //= param.BitsAssoclog2(0)
       s.ctrl_bit_rep_rd_M1//= param.BitsAssoclog2(0)
@@ -102,49 +97,44 @@ class BlockingCacheDpathRTL (Component):
     # M2 Dpath Signals
     #--------------------------------------------------------------------------
 
-    s.reg_en_M2             = InPort(Bits1)
-    s.read_data_mux_sel_M2  = InPort(Bits1)
-    s.read_word_mux_sel_M2  = InPort(param.BitsRdWordMuxSel)
-    s.read_byte_mux_sel_M2  = InPort(param.BitsRdByteMuxSel)
-    s.read_half_word_mux_sel_M2 = InPort(param.BitsRd2ByteMuxSel)
+    s.reg_en_M2                 = InPort(Bits1)
+    s.read_data_mux_sel_M2      = InPort(Bits1)
+    s.read_word_mux_sel_M2      = InPort(param.BitsRdWordMuxSel)
+    s.read_byte_mux_sel_M2      = InPort(param.BitsRdByteMuxSel)
+    s.read_2byte_mux_sel_M2     = InPort(param.BitsRd2ByteMuxSel)
     s.subword_access_mux_sel_M2 = InPort(Bits2)
-    s.cachereq_type_M2      = OutPort(param.BitsType)
-    s.offset_M2             = OutPort(param.BitsOffset)
-    s.len_M2                = OutPort(param.BitsLen)
-    s.stall_reg_en_M2                = InPort(Bits1)
-    s.stall_mux_sel_M2                = InPort(Bits1)
+    s.cachereq_type_M2          = OutPort(param.BitsType)
+    s.offset_M2                 = OutPort(param.BitsOffset)
+    s.len_M2                    = OutPort(param.BitsLen)
+    # Saves the data from data array in case of stalls
+    s.stall_reg_en_M2           = InPort(Bits1)
+    s.stall_mux_sel_M2          = InPort(Bits1)
 
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
     
-    s.memresp_data_M0     = Wire(param.BitsCacheline)
-    s.len_M0              = Wire(param.BitsLen)
     s.MSHR_len_M0         = Wire(param.BitsLen)
-    s.memresp_opaque_M0   = Wire(param.BitsOpaque)
-    s.opaque_M0           = Wire(param.BitsOpaque)
-    s.data_array_wdata_M0 = Wire(param.BitsCacheline)
     s.MSHR_type_M0        = Wire(param.BitsType)
-    s.type_M0             = Wire(param.BitsType)
     s.MSHR_addr_M0        = Wire(param.BitsAddr)
-    s.addr_M0             = Wire(param.BitsAddr)
     s.MSHR_data_M0        = Wire(param.BitsCacheline)
-    s.cachereq_M1.addr    = Wire(param.BitsAddr)
-    s.rep_out_M0          = Wire(param.BitsCacheline)
+    s.cachereq_M0         = Wire(param.PipelineMsg)
+    s.cachereq_M1         = Wire(param.PipelineMsg)
 
     # Replicator
+    s.replicator_out_M0   = Wire(param.BitsCacheline)
     @s.update
-    def replicator(): # replicates based on word access
-      if s.len_M0 == 1: 
+    def replicator(): # replicates based on word access (len)
+      if s.cachereq.len == 1: 
         for i in range(0,param.bitwidth_cacheline,8): # byte
-          s.rep_out_M0[i:i+8] = s.cachereq_M0.data
-      elif s.len_M0 == 2:
+          s.replicator_out_M0[i:i+8] = s.cachereq.data
+      elif s.cachereq.len == 2:
         for i in range(0,param.bitwidth_cacheline,16): #hald word
-          s.rep_out_M0[i:i+16] = s.cachereq_M0.data
+          s.replicator_out_M0[i:i+16] = s.cachereq.data
       else:
         for i in range(0,param.bitwidth_cacheline,param.bitwidth_data):
-          s.rep_out_M0[i:i+param.bitwidth_data] = s.cachereq_M0.data
-  
+          s.replicator_out_M0[i:i+param.bitwidth_data] = s.cachereq.data
+
     # Pipeline Registers
     s.memresp_M0 = Wire(param.MemMsg.Resp)
     s.pipeline_reg_M0 = RegEnRst(param.MemMsg.Resp)(
@@ -153,86 +143,67 @@ class BlockingCacheDpathRTL (Component):
       out = s.memresp_M0,
     )
     s.memresp_type_M0 //= s.memresp_M0.type_
-    # s.memresp_data_reg_M0 = RegEnRst(param.BitsCacheline)\
-    # (
-    #   en  = s.reg_en_M0,
-    #   in_ = s.memresp_Y.data,
-    #   out = s.memresp_data_M0,
-    # )
-
-    # s.memresp_opaque_reg_M0 = RegEnRst(param.BitsOpaque)\
-    # (
-    #   en  = s.reg_en_M0,
-    #   in_ = s.memresp_Y.opaque,
-    #   out = s.memresp_opaque_M0,
-    # )
-
-    # s.memresp_type_reg_M0 = RegEnRst(param.BitsType)\
-    # (
-    #   en  = s.reg_en_M0,
-    #   in_ = s.memresp_Y.type_,
-    #   out = s.memresp_type_M0
-    # )
 
     # Cachereq or Memresp select muxes
     s.len_mux_M0 = Mux(param.BitsLen, 2)\
     (
       in_ = {
-        0: s.cachereq_M0.len,
+        0: s.cachereq.len,
         1: s.MSHR_len_M0
       },
       sel = s.memresp_mux_sel_M0,
-      out = s.len_M0,
+      out = s.cachereq_M0.len,
     )
     
     s.opaque_mux_M0 = Mux(param.BitsOpaque, 2)\
     (
       in_ = {
-        0: s.cachereq_M0.opaque,
+        0: s.cachereq.opaque,
         1: s.memresp_M0.opaque
       },
       sel = s.memresp_mux_sel_M0,
-      out = s.opaque_M0,
+      out = s.cachereq_M0.opaque,
     )
 
     s.type_mux_M0 = Mux(param.BitsType, 2)\
     (
       in_ = {
-        0: s.cachereq_M0.type_,
+        0: s.cachereq.type_,
         1: s.MSHR_type_M0
       },
       sel = s.memresp_mux_sel_M0,
-      out = s.type_M0,
+      out = s.cachereq_M0.type_,
     )
 
     s.addr_mux_M0 = Mux(param.BitsAddr, 3)\
     (
       in_ = {
-        0: s.cachereq_M0.addr,
+        0: s.cachereq.addr,
         1: s.MSHR_addr_M0,
         2: s.cachereq_M1.addr
       },
       sel = s.addr_mux_sel_M0,
-      out = s.addr_M0,
+      out = s.cachereq_M0.addr,
     )
 
     s.write_data_mux_M0 = Mux(param.BitsCacheline, 3)\
     (
-      in_ = {0: s.rep_out_M0,
-            1: s.memresp_M0.data,
-            2: s.MSHR_data_M0},
+      in_ = {
+        0: s.replicator_out_M0,
+        1: s.memresp_M0.data,
+        2: s.MSHR_data_M0
+      },
       sel = s.wdata_mux_sel_M0,
-      out = s.data_array_wdata_M0,
+      out = s.cachereq_M0.data,
     )
 
-    # Tag Array
-
+    ## Tag Array ##
     s.tag_array_idx_M0      = Wire(param.BitsIdx)
     s.tag_array_wdata_M0    = Wire(param.BitsTagArray)
     s.tag_array_rdata_M1    = [Wire(param.BitsTagArray) for _ in range(param.associativity)]
 
-    s.tag_array_idx_M0               //= s.addr_M0[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
-    s.tag_array_wdata_M0[0:param.bitwidth_tag]      //= s.addr_M0[param.bitwidth_offset+param.bitwidth_index:param.bitwidth_index+param.bitwidth_offset+param.bitwidth_tag]
+    s.tag_array_idx_M0               //= s.cachereq_M0.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
+    s.tag_array_wdata_M0[0:param.bitwidth_tag]      //= s.cachereq_M0.addr[param.bitwidth_offset+param.bitwidth_index:param.bitwidth_index+param.bitwidth_offset+param.bitwidth_tag]
     # valid bit at top
     s.tag_array_wdata_M0[param.bitwidth_tag_array-1:param.bitwidth_tag_array]  //= s.ctrl_bit_val_wr_M0
     # Dirty bit 2nd to top
@@ -307,55 +278,17 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
     # M1 Stage 
     #--------------------------------------------------------------------
-    
-    s.cachereq_opaque_M1  = Wire(param.BitsOpaque)
-    s.cachereq_len_M1     = Wire(param.BitsLen)
-    s.cachereq_data_M1    = Wire(param.BitsCacheline)
-    
+    s.cachereq_M1_2       = Wire(param.PipelineMsg)
+
     # Pipeline registers
-    s.cachereq_M1 = Wire(param.CacheMsg.Req)
-    s.pipeline_reg_M1 = RegEnRst(param.CacheMsg.Req)(
+    s.pipeline_reg_M1 = RegEnRst(param.PipelineMsg)(
       en  = s.reg_en_M1,
       in_ = s.cachereq_M0,
       out = s.cachereq_M1,
     )
 
-    cachereq_type_M1 //= s.cachereq_M1.type_
-    # s.len_M1 //= s.cachereq_len_M1
-    # s.cachereq_len_reg_M1 = RegEnRst(param.BitsLen)\
-    # ( # registers for subword/word acess 0 = word, 1 = byte, 2 = 2-byte
-    #   en  = s.reg_en_M1,
-    #   in_ = s.len_M0,
-    #   out = s.cachereq_len_M1,
-    # )
-
-    # s.cachereq_opaque_reg_M1 = RegEnRst(param.BitsOpaque)\
-    # (
-    #   en  = s.reg_en_M1,
-    #   in_ = s.opaque_M0,
-    #   out = s.cachereq_opaque_M1,
-    # )
-
-    # s.cachereq_type_reg_M1 = RegEnRst(param.BitsType)\
-    # (
-    #   en  = s.reg_en_M1,
-    #   in_ = s.type_M0,
-    #   out = s.cachereq_type_M1,
-    # )
-
-    # s.cachereq_address_reg_M1 = RegEnRst(param.BitsAddr)\
-    # (
-    #   en  = s.reg_en_M1,
-    #   in_ = s.addr_M0,
-    #   out = s.cachereq_M1.addr,
-    # )
-
-    # s.cachereq_data_reg_M1 = RegEnRst(param.BitsCacheline)\
-    # (
-    #   en  = s.reg_en_M1,
-    #   in_ = s.data_array_wdata_M0,
-    #   out = s.cachereq_data_M1,
-    # )
+    s.cachereq_type_M1 //= s.cachereq_M1.type_
+    s.len_M1 //= s.cachereq_M1.len
 
     # 1 Entry MSHR
     s.MSHR_type_reg = RegEnRst(param.BitsType)\
@@ -404,7 +337,7 @@ class BlockingCacheDpathRTL (Component):
             s.tag_match_M1 = y
     else: # Multiway asso
       s.match_way_M1 = Wire(param.BitsAssoclog2)
-      s.tag_match_way_M1 //= s.match_way_M1
+      s.tag_match_way_M1 //= s.match_way_M1 # way pointer
       @s.update
       def AssoComparator_M1():
         s.tag_match_M1 = n
@@ -431,7 +364,7 @@ class BlockingCacheDpathRTL (Component):
         s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:param.bitwidth_tag]
 
     s.evict_addr_M1       = Wire(param.BitsAddr)
-    s.cache_addr_M1       = Wire(param.BitsAddr)
+    # s.cache_addr_M1       = Wire(param.BitsAddr)
     s.evict_addr_M1[param.bitwidth_offset+param.bitwidth_index:param.bitwidth_addr] //= s.evict_way_out_M1 # set the tag
     # set the idx; idx is the same as the cachereq_addr
     s.evict_addr_M1[param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index] //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index]
@@ -444,25 +377,25 @@ class BlockingCacheDpathRTL (Component):
         1: s.evict_addr_M1
       },
       sel = s.evict_mux_sel_M1,
-      out = s.cache_addr_M1
+      out = s.cachereq_M1_2.addr
     )
 
-    # Data Array ( Btwn M1 and M2 )
+    ## Data Array ##
     s.data_array_wdata_M1 = Wire(param.BitsCacheline)
     s.data_array_rdata_M2 = Wire(param.BitsCacheline)
-    s.data_array_wdata_M1 //= s.cachereq_data_M1  
+    s.data_array_wdata_M1 //= s.cachereq_M1.data  
     
     # Index bits change depending on param.associativity
     if param.associativity == 1:
       s.data_array_idx_M1   = Wire(param.BitsIdx)
       s.data_array_idx_M1 //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
     else:
-      Bitsparam.total_num_cachelines = mk_bits(clog2(param.total_num_cachelines))
-      s.data_array_idx_M1   = Wire(Bitsparam.total_num_cachelines)
+      BitsClogNlines = mk_bits(clog2(param.total_num_cachelines))
+      s.data_array_idx_M1   = Wire(BitsClogNlines)
       @s.update
       def choice_calc_M1():
-        s.data_array_idx_M1 = Bitsparam.total_num_cachelines(s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]) \
-          + Bitsparam.total_num_cachelines(s.way_offset_M1) * Bitsparam.total_num_cachelines(param.nblocks_per_way)
+        s.data_array_idx_M1 = BitsClogNlines(s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]) \
+          + BitsClogNlines(s.way_offset_M1) * BitsClogNlines(param.nblocks_per_way)
     
     s.data_array_out_M2 = Wire(param.BitsCacheline)
     s.data_array_M2 = SramPRTL(param.bitwidth_cacheline, param.total_num_cachelines)(
@@ -488,61 +421,27 @@ class BlockingCacheDpathRTL (Component):
       out = s.data_array_rdata_M2,
     )
 
+    s.cachereq_M1_2.len     //= s.cachereq_M1.len
+    s.cachereq_M1_2.data    //= s.cachereq_M1.data
+    s.cachereq_M1_2.type_   //= s.cachereq_M1.type_
+    s.cachereq_M1_2.opaque  //= s.cachereq_M1.opaque
     #----------------------------------------------------------------
     # M2 Stage 
     #----------------------------------------------------------------
     
     # Pipeline registers
-    s.cachereq_M2 = Wire(param.CacheMsg.Req)
-    s.pipeline_reg_M2 = RegEnRst(param.CacheMsg.Req)(
+    s.cachereq_M2 = Wire(param.PipelineMsg)
+    s.pipeline_reg_M2 = RegEnRst(param.PipelineMsg)(
       en  = s.reg_en_M2,
-      in_ = s.cachereq_M1,
+      in_ = s.cachereq_M1_2,
       out = s.cachereq_M2,
     )
-    s.cacheresp_len_M2    //= s.cachereq_M2.len
     s.len_M2              //= s.cachereq_M2.len
+    s.cacheresp_len_M2    //= s.cachereq_M2.len
     s.cacheresp_opaque_M2 //= s.cachereq_M2.opaque
     s.cachereq_type_M2    //= s.cachereq_M2.type_
-    # s.cachereq_len_M2 = Wire(param.BitsLen)
-    # s.cachereq_len_reg_M2 = RegEnRst(param.BitsLen)\
-    # (
-    #   en  = s.reg_en_M2,
-    #   in_ = s.cachereq_len_M1,
-    #   out = s.cachereq_len_M2,
-    # )
-    
-    # s.cachereq_opaque_M2  = Wire(param.BitsOpaque)
-    # s.cachereq_opaque_reg_M2 = RegEnRst(param.BitsOpaque)\
-    # (
-    #   en  = s.reg_en_M2,
-    #   in_ = s.cachereq_opaque_M1,
-    #   out = s.cacheresp_opaque_M2,
-    # )
-    
-    # s.cachereq_type_reg_M2 = RegEnRst(param.BitsType)\
-    # (
-    #   en  = s.reg_en_M2,
-    #   in_ = s.cachereq_type_M1,
-    #   out = s.cachereq_type_M2,
-    # )
 
-    # s.cachereq_addr_M2    = Wire(param.BitsAddr)
-    # s.cachereq_address_reg_M2 = RegEnRst(param.BitsAddr)\
-    # (
-    #   en  = s.reg_en_M2,
-    #   in_ = s.cache_addr_M1,
-    #   out = s.cachereq_addr_M2,
-    # )
-
-    # s.cachereq_data_M2      = Wire(param.BitsCacheline)
-    # s.cachereq_data_reg_M2  = RegEnRst(param.BitsCacheline)\
-    # (
-    #   en  = s.reg_en_M2,
-    #   in_ = s.cachereq_data_M1,
-    #   out = s.cachereq_data_M2,
-    # )
-
-    s.read_data_M2          = Wire(param.BitsCacheline)
+    s.read_data_M2     = Wire(param.BitsCacheline)
     s.read_data_mux_M2 = Mux(param.BitsCacheline, 2)\
     (
       in_ = {
@@ -583,7 +482,7 @@ class BlockingCacheDpathRTL (Component):
     # TWO BYTE SELECT MUX
     s.half_word_read_mux_out_M2 = Wire(Bits16)
     s.read_half_word_mux_M2 = Mux(Bits16, param.bitwidth_data//16)(
-      sel = s.read_half_word_mux_sel_M2 ,
+      sel = s.read_2byte_mux_sel_M2 ,
       out = s.half_word_read_mux_out_M2
     )
     for i in range(param.bitwidth_data//16):
@@ -612,4 +511,5 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
+    msg += f" {s.cachereq_M1}"
     return msg

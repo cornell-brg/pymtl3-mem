@@ -13,14 +13,13 @@ from pymtl3      import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from mem_pclib.constants.constants   import *
 
 # Constants
 STATE_GO           = b3(0)
 STATE_REFILL       = b3(1)
 STATE_EVICT        = b3(2)
 STATE_REFILL_WRITE = b3(3)
-wr = y             = b1(1)
-rd = n = x         = b1(0)
 
 class BlockingCacheCtrlRTL ( Component ):
 
@@ -28,7 +27,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     wdmx0 = param.BitsRdWordMuxSel(0)
     btmx0 = param.BitsRdByteMuxSel(0)
-    hwmx0 = param.BitsRdHwordMuxSel(0)
+    hwmx0 = param.BitsRd2ByteMuxSel(0)
     acmx0 = Bits2(0) # access select 0
     wben0 = param.BitsDataWben(0)
     wbenf = param.BitsDataWben(-1)
@@ -119,7 +118,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.read_data_mux_sel_M2      = OutPort(Bits1) 
     s.read_word_mux_sel_M2      = OutPort(param.BitsRdWordMuxSel)
     s.read_byte_mux_sel_M2      = OutPort(param.BitsRdByteMuxSel)
-    s.read_half_word_mux_sel_M2 = OutPort(param.BitsRdHwordMuxSel)
+    s.read_2byte_mux_sel_M2     = OutPort(param.BitsRd2ByteMuxSel)
     s.subword_access_mux_sel_M2 = OutPort(Bits2)
     s.stall_reg_en_M2           = OutPort(Bits1)
     s.stall_mux_sel_M2          = OutPort(Bits1)
@@ -203,7 +202,7 @@ class BlockingCacheCtrlRTL ( Component ):
       out = s.is_refill_M0
     )
     
-    if associativity > 1: # MSHR for replacement ptr
+    if param.associativity > 1: # MSHR for replacement ptr
       # This eases adaptability for nonblocking since we can
       # Store the replacement ptr in the MSHR along all other info
       s.MSHR_ptr_M0 = Wire(param.BitsAssoclog2)
@@ -230,7 +229,7 @@ class BlockingCacheCtrlRTL ( Component ):
       else:
         s.is_write_refill_M0 = n
 
-    CS_tag_array_wben_M0  = slice( 8, 8 + param.bitwidth_tag )
+    CS_tag_array_wben_M0  = slice( 8, 8 + param.bitwidth_tag_wben )
     CS_wdata_mux_sel_M0   = slice( 6, 8 )
     CS_addr_mux_sel_M0    = slice( 4, 6 )
     CS_memresp_mux_sel_M0 = slice( 3, 4 )
@@ -238,7 +237,7 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_ctrl_bit_dty_wr_M0 = slice( 1, 2 )
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
-    s.cs0 = Wire( mk_bits( 9 + param.bitwidth_tag ) ) # Bits for control signal table
+    s.cs0 = Wire( mk_bits( 9 + param.bitwidth_tag_wben ) ) # Bits for control signal table
     @s.update
     def comb_block_M0(): # logic block for setting output ports
       s.val_M0 = s.cachereq_en or (s.is_refill_M0 and s.memresp_type_M0 != WRITE) or s.is_write_refill_M0 or s.is_write_hit_clean_M0
@@ -421,7 +420,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
     s.wben_out = Wire(param.BitsDataWben)
     s.wben_in  = Wire(param.BitsDataWben)
-    s.WbenGen = LeftLogicalShifter( param.BitsDataWben, clog2(param.bitwidth_data) )(
+    s.WbenGen = LeftLogicalShifter( param.BitsDataWben, clog2(param.bitwidth_data_wben) )(
       in_ = s.wben_in,
       shamt = s.offset_M1,
       out = s.wben_out
@@ -477,13 +476,13 @@ class BlockingCacheCtrlRTL ( Component ):
     def en_M1():
       s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
 
-    CS_data_array_wben_M1   = slice( 4,  4 + param.bitwidth_data )
+    CS_data_array_wben_M1   = slice( 4,  4 + param.bitwidth_data_wben )
     CS_data_array_type_M1   = slice( 3,  4 )
     CS_data_array_val_M1    = slice( 2,  3 )
     CS_ostall_M1            = slice( 1,  2 )
     CS_evict_mux_sel_M1     = slice( 0,  1 )
 
-    s.cs1 = Wire( mk_bits( 4 + param.bitwidth_data ) )
+    s.cs1 = Wire( mk_bits( 4 + param.bitwidth_data_wben ) )
 
     @s.update
     def comb_block_M1():
@@ -568,18 +567,18 @@ class BlockingCacheCtrlRTL ( Component ):
     def en_M2():
       s.reg_en_M2 = ~s.stall_M2
 
-    CS_read_word_mux_sel_M2 = slice( 8,  8 + wdmx )
+    CS_read_word_mux_sel_M2 = slice( 8,  8 + param.bitwidth_rd_wd_mux_sel )
     CS_read_data_mux_sel_M2 = slice( 7,  8 )
     CS_ostall_M2            = slice( 6,  7 )
     CS_memreq_type          = slice( 2,  6 )
     CS_memreq_en            = slice( 1,  2 )
     CS_cacheresp_en         = slice( 0,  1 )
-    s.cs2 = Wire( mk_bits( 8 + wdmx ) )
+    s.cs2 = Wire( mk_bits( 8 + param.bitwidth_rd_wd_mux_sel ) )
     s.msel = Wire(param.BitsRdWordMuxSel)
 
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = BitsRdWordMuxSel(s.offset_M2[2:param.bitwidth_offset]) + BitsRdWordMuxSel(1)  
+      s.msel = param.BitsRdWordMuxSel(s.offset_M2[2:param.bitwidth_offset]) + param.BitsRdWordMuxSel(1)  
       s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
       if s.val_M2:                                     #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
         if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
@@ -609,7 +608,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def subword_access_mux_sel_logic_M2():
       s.read_byte_mux_sel_M2  = btmx0
-      s.read_half_word_mux_sel_M2 = hwmx0
+      s.read_2byte_mux_sel_M2 = hwmx0
       s.subword_access_mux_sel_M2 = acmx0
       if s.cachereq_type_M2 == READ:
         if s.hit_M2[0] or s.is_refill_M2:
@@ -617,7 +616,7 @@ class BlockingCacheCtrlRTL ( Component ):
           if s.len_M2 == 1:
             s.read_byte_mux_sel_M2 = s.offset_M2[0:2]
           elif s.len_M2 == 2:
-            s.read_half_word_mux_sel_M2 = s.offset_M2[1:2]
+            s.read_2byte_mux_sel_M2 = s.offset_M2[1:2]
 
     @s.update
     def stall_logic_M2():
