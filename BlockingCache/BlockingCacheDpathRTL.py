@@ -18,6 +18,7 @@ from mem_pclib.constants            import *
 # from mem_pclib.ifc.dpathStructs     import mk_pipeline_msg
 
 class BlockingCacheDpathRTL (Component):
+
   def construct( s, param ):
     
     #---------------------------------------------------------------------

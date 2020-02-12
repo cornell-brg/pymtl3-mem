@@ -16,48 +16,53 @@ class CacheParams:
     associativity = 1     # Associativity
   ):
 
+    self.num_bytes     = num_bytes
+    self.CacheMsg      = CacheMsg
+    self.MemMsg        = MemMsg
+    self.associativity = associativity
+
 	  #--------------------------------------------------------------------------
 	  # Bitwidths
 	  #--------------------------------------------------------------------------
 	
-	  bitwidth_cacheline        = MemMsg.bitwidth_data
-	  bitwidth_addr             = MemMsg.bitwidth_addr
-	  bitwidth_opaque           = MemMsg.bitwidth_opaque
-	  bitwidth_data             = CacheMsg.bitwidth_data
-	  total_num_cachelines      = num_bytes // bitwidth_cacheline                  # number of cachelines
-	  nblocks_per_way           = total_num_cachelines // associativity            # cachelines per way
-	  bitwidth_index            = clog2( nblocks_per_way )                         # index width
-	  bitwidth_offset           = clog2( bitwidth_cacheline // 8 )                 # offset bitwidth
-	  bitwidth_tag              = bitwidth_addr - bitwidth_offset - bitwidth_index # tag bitwidth
-	  bitwidth_tag_array        = int( bitwidth_tag + 1 + 1 + 7 ) // 8 * 8 
-	  bitwidth_tag_wben         = int( bitwidth_tag_array + 7 ) // 8               # Tag array write byte bitwidth
-	  bitwidth_data_wben        = int( bitwidth_cacheline + 7 ) // 8               # Data array write byte bitwidth 
-	  bitwidth_rd_wd_mux_sel    = clog2( bitwidth_cacheline // bitwidth_data + 1 ) # Read word mux bitwidth
-	  bitwidth_rd_byte_mux_sel  = clog2( bitwidth_data // 8 )                      # Read byte mux sel bitwidth
-	  bitwidth_rd_2byte_mux_sel = clog2( bitwidth_data // 16 )                     # Read half word mux sel bitwidth
+	  self.bitwidth_cacheline        = MemMsg.bitwidth_data
+	  self.bitwidth_addr             = MemMsg.bitwidth_addr
+	  self.bitwidth_opaque           = MemMsg.bitwidth_opaque
+	  self.bitwidth_data             = CacheMsg.bitwidth_data
+	  self.total_num_cachelines      = num_bytes // bitwidth_cacheline                  # number of cachelines
+	  self.nblocks_per_way           = total_num_cachelines // associativity            # cachelines per way
+	  self.bitwidth_index            = clog2( nblocks_per_way )                         # index width
+	  self.bitwidth_offset           = clog2( bitwidth_cacheline // 8 )                 # offset bitwidth
+	  self.bitwidth_tag              = bitwidth_addr - bitwidth_offset - bitwidth_index # tag bitwidth
+	  self.bitwidth_tag_array        = int( bitwidth_tag + 1 + 1 + 7 ) // 8 * 8 
+	  self.bitwidth_tag_wben         = int( bitwidth_tag_array + 7 ) // 8               # Tag array write byte bitwidth
+	  self.bitwidth_data_wben        = int( bitwidth_cacheline + 7 ) // 8               # Data array write byte bitwidth 
+	  self.bitwidth_rd_wd_mux_sel    = clog2( bitwidth_cacheline // bitwidth_data + 1 ) # Read word mux bitwidth
+	  self.bitwidth_rd_byte_mux_sel  = clog2( bitwidth_data // 8 )                      # Read byte mux sel bitwidth
+	  self.bitwidth_rd_2byte_mux_sel = clog2( bitwidth_data // 16 )                     # Read half word mux sel bitwidth
 	
 	  #--------------------------------------------------------------------------
 	  # Make Bits object
 	  #--------------------------------------------------------------------------
 	
-	  BitsLen           = mk_bits(clog2(bitwidth_data//8)) # Number of bytes  being accessed
-	  BitsOpaque        = mk_bits(bitwidth_opaque)         # opaque
-	  BitsType          = mk_bits(4)                       # access type
-	  BitsAddr          = mk_bits(bitwidth_addr)           # address 
-	  BitsData          = mk_bits(bitwidth_data)           # data 
-	  BitsCacheline     = mk_bits(bitwidth_cacheline)      # cacheline 
-	  BitsIdx           = mk_bits(bitwidth_index)          # index 
-	  BitsTag           = mk_bits(bitwidth_tag)            # tag 
-	  BitsOffset        = mk_bits(bitwidth_offset)         # offset 
-	  BitsTagArray      = mk_bits(bitwidth_tag_array)      # Tag array write byte enable
-	  BitsTagwben       = mk_bits(bitwidth_tag_wben)       # Tag array write byte enable
-	  BitsDataWben      = mk_bits(bitwidth_data_wben)      # Data array write byte enable
-	  BitsRdWordMuxSel  = mk_bits(bitwidth_rd_wd_mux_sel)  # Read data mux M2 
-	  BitsRdByteMuxSel  = mk_bits(bitwidth_rd_byte_mux_sel)
-	  BitsRd2ByteMuxSel = mk_bits(bitwidth_rd_2byte_mux_sel)
-	  BitsAssoc         = mk_bits(associativity)
+	  self.BitsLen           = mk_bits(clog2(bitwidth_data//8)) # Number of bytes  being accessed
+	  self.BitsOpaque        = mk_bits(bitwidth_opaque)         # opaque
+	  self.BitsType          = mk_bits(4)                       # access type
+	  self.BitsAddr          = mk_bits(bitwidth_addr)           # address 
+	  self.BitsData          = mk_bits(bitwidth_data)           # data 
+	  self.BitsCacheline     = mk_bits(bitwidth_cacheline)      # cacheline 
+	  self.BitsIdx           = mk_bits(bitwidth_index)          # index 
+	  self.BitsTag           = mk_bits(bitwidth_tag)            # tag 
+	  self.BitsOffset        = mk_bits(bitwidth_offset)         # offset 
+	  self.BitsTagArray      = mk_bits(bitwidth_tag_array)      # Tag array write byte enable
+	  self.BitsTagwben       = mk_bits(bitwidth_tag_wben)       # Tag array write byte enable
+	  self.BitsDataWben      = mk_bits(bitwidth_data_wben)      # Data array write byte enable
+	  self.BitsRdWordMuxSel  = mk_bits(bitwidth_rd_wd_mux_sel)  # Read data mux M2 
+	  self.BitsRdByteMuxSel  = mk_bits(bitwidth_rd_byte_mux_sel)
+	  self.BitsRd2ByteMuxSel = mk_bits(bitwidth_rd_2byte_mux_sel)
+	  self.BitsAssoc         = mk_bits(associativity)
 	  if associativity == 1:
-	    BitsAssoclog2 = Bits1
+	    self.BitsAssoclog2 = Bits1
 	  else:
-	    BitsAssoclog2  = mk_bits(clog2(associativity))
+	    self.BitsAssoclog2  = mk_bits(clog2(associativity))
 	

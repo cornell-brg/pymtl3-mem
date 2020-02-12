@@ -26,7 +26,8 @@ class BlockingCacheRTL ( Component ):
     associativity = 1     # Associativity
   ):
 
-    params = CacheParams(num_bytes=num_bytes, CacheMsg=CacheMsg, MemMsg=MemMsg, associativity=associativity)
+    params = CacheParams(num_bytes=num_bytes, CacheMsg=CacheMsg, \
+                         MemMsg=MemMsg, associativity=associativity)
 
     #----------------------------------------------------------------------------
     # Interface
@@ -41,7 +42,7 @@ class BlockingCacheRTL ( Component ):
     # Cache -> Mem
     s.memreq    = SendIfcRTL( MemMsg.Req )
 
-    s.cacheDpath = BlockingCacheDpathRTL( CacheParams )
+    s.cacheDpath = BlockingCacheDpathRTL( params )
     (
       cachereq_opaque_M0  = s.cachereq.msg.opaque,
       cachereq_type_M0    = s.cachereq.msg.type_,
@@ -60,7 +61,7 @@ class BlockingCacheRTL ( Component ):
       memreq_data_M2      = s.memreq.msg.data,
     )
 
-    s.cacheCtrl = BlockingCacheCtrlRTL( CacheParams )
+    s.cacheCtrl = BlockingCacheCtrlRTL( params )
     (
       cachereq_en           = s.cachereq.en,
       cachereq_rdy          = s.cachereq.rdy,
