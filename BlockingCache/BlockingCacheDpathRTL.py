@@ -16,6 +16,7 @@ from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from sram.SramPRTL                  import SramPRTL
 from mem_pclib.constants.constants  import *
 from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
+from mem_pclib.rtl.AddrDecoder      import AddrDecoder
 
 class BlockingCacheDpathRTL (Component):
 
@@ -32,7 +33,6 @@ class BlockingCacheDpathRTL (Component):
     s.memresp_Y           = InPort(param.MemMsg.Resp)
 
     # Cache -> Proc
-    # s.cachresp_M2         = InPort(param.CacheMsg.Resp)
     s.cacheresp_opaque_M2 = OutPort(param.BitsOpaque)
     s.cacheresp_type_M2   = OutPort(param.BitsType) 
     s.cacheresp_data_M2	  = OutPort(param.BitsData)	
@@ -125,10 +125,10 @@ class BlockingCacheDpathRTL (Component):
     s.replicator_out_M0   = Wire(param.BitsCacheline)
     @s.update
     def replicator(): # replicates based on word access (len)
-      if s.cachereq.len == 1: 
+      if s.cachereq_M0.len == 1: 
         for i in range(0,param.bitwidth_cacheline,8): # byte
           s.replicator_out_M0[i:i+8] = s.cachereq.data
-      elif s.cachereq.len == 2:
+      elif s.cachereq_M0.len == 2:
         for i in range(0,param.bitwidth_cacheline,16): #hald word
           s.replicator_out_M0[i:i+16] = s.cachereq.data
       else:
@@ -197,13 +197,26 @@ class BlockingCacheDpathRTL (Component):
       out = s.cachereq_M0.data,
     )
 
+    s.addr_tag_M0    = Wire(param.BitsTag)
+    s.addr_index_M0  = Wire(param.BitsIdx)
+    s.addr_offset_M0 = Wire(param.BitsOffset)
+    s.addr_tag_M1    = Wire(param.BitsTag)
+    s.addr_index_M1  = Wire(param.BitsIdx)
+    s.addr_offset_M1 = Wire(param.BitsOffset)
+    s.addr_decode_M0 = AddrDecoder(param)(
+      addr_in     = s.cachereq_M0.addr,
+      tag_out     = s.addr_tag_M0, 
+      index_out   = s.addr_index_M0,
+      offset_out  = s.addr_offset_M0,
+    )
+
     ## Tag Array ##
     s.tag_array_idx_M0      = Wire(param.BitsIdx)
     s.tag_array_wdata_M0    = Wire(param.BitsTagArray)
     s.tag_array_rdata_M1    = [Wire(param.BitsTagArray) for _ in range(param.associativity)]
 
-    s.tag_array_idx_M0               //= s.cachereq_M0.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
-    s.tag_array_wdata_M0[0:param.bitwidth_tag]      //= s.cachereq_M0.addr[param.bitwidth_offset+param.bitwidth_index:param.bitwidth_index+param.bitwidth_offset+param.bitwidth_tag]
+    s.tag_array_idx_M0                          //= s.addr_index_M0
+    s.tag_array_wdata_M0[0:param.bitwidth_tag]  //= s.addr_tag_M0
     # valid bit at top
     s.tag_array_wdata_M0[param.bitwidth_tag_array-1:param.bitwidth_tag_array]  //= s.ctrl_bit_val_wr_M0
     # Dirty bit 2nd to top
@@ -239,9 +252,9 @@ class BlockingCacheDpathRTL (Component):
       # Can't store in SRAM since we need to constantly access
       # them for LRU
       s.replacement_bits_M1 = RegisterFile( param.BitsAssoclog2, param.nblocks_per_way )
-      s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
+      s.replacement_bits_M1.raddr[0] //= s.addr_index_M1
       s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
-      s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
+      s.replacement_bits_M1.waddr[0] //= s.addr_index_M1
       s.replacement_bits_M1.wdata[0] //= s.ctrl_bit_rep_wr_M0
       s.replacement_bits_M1.wen[0]   //= s.ctrl_bit_rep_en_M1      
       # Can possibly store in SRAM if we use FIFO rep policy
@@ -287,6 +300,14 @@ class BlockingCacheDpathRTL (Component):
       out = s.cachereq_M1,
     )
 
+
+    s.addr_decode_M1 = AddrDecoder(param)(
+      addr_in     = s.cachereq_M1.addr,
+      tag_out     = s.addr_tag_M1, 
+      index_out   = s.addr_index_M1,
+      offset_out  = s.addr_offset_M1,
+    )
+
     s.cachereq_type_M1 //= s.cachereq_M1.type_
     s.len_M1 //= s.cachereq_M1.len
 
@@ -326,14 +347,14 @@ class BlockingCacheDpathRTL (Component):
       s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][param.bitwidth_tag_array-1:param.bitwidth_tag_array] 
       s.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][param.bitwidth_tag_array-2:param.bitwidth_tag_array-1] 
     
-    s.offset_M1 //= s.cachereq_M1.addr[0:param.bitwidth_offset]
+    s.offset_M1 //= s.addr_offset_M1
     # Comparator
     if param.associativity == 1:
       @s.update
       def DmappedComparator_M1():
         s.tag_match_M1 = n
         if ( s.ctrl_bit_val_rd_M1 ):
-          if s.tag_array_rdata_M1[0][0:param.bitwidth_tag] == s.cachereq_M1.addr[param.bitwidth_index+param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index+param.bitwidth_tag]:
+          if s.tag_array_rdata_M1[0][0:param.bitwidth_tag] == s.addr_tag_M1:
             s.tag_match_M1 = y
     else: # Multiway asso
       s.match_way_M1 = Wire(param.BitsAssoclog2)
@@ -343,7 +364,7 @@ class BlockingCacheDpathRTL (Component):
         s.tag_match_M1 = n
         for i in range( param.associativity ):
           if ( s.ctrl_bit_val_rd_M1[i] ):
-            if s.tag_array_rdata_M1[i][0:param.bitwidth_tag] == s.cachereq_M1.addr[param.bitwidth_index+param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index+param.bitwidth_tag]:
+            if s.tag_array_rdata_M1[i][0:param.bitwidth_tag] == s.addr_tag_M1:
               s.tag_match_M1 = y
               s.match_way_M1 = param.BitsAssoclog2(i) # If not valid, then no comparisons
           
@@ -364,10 +385,9 @@ class BlockingCacheDpathRTL (Component):
         s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:param.bitwidth_tag]
 
     s.evict_addr_M1       = Wire(param.BitsAddr)
-    # s.cache_addr_M1       = Wire(param.BitsAddr)
     s.evict_addr_M1[param.bitwidth_offset+param.bitwidth_index:param.bitwidth_addr] //= s.evict_way_out_M1 # set the tag
     # set the idx; idx is the same as the cachereq_addr
-    s.evict_addr_M1[param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index] //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index]
+    s.evict_addr_M1[param.bitwidth_offset:param.bitwidth_offset+param.bitwidth_index] //= s.addr_index_M1
     # Zero the offset since this will be a memreq
     s.evict_addr_M1[0:param.bitwidth_offset]       //= param.BitsOffset(0) 
     s.evict_mux_M1 = Mux(param.BitsAddr, 2)\
@@ -388,13 +408,13 @@ class BlockingCacheDpathRTL (Component):
     # Index bits change depending on param.associativity
     if param.associativity == 1:
       s.data_array_idx_M1   = Wire(param.BitsIdx)
-      s.data_array_idx_M1 //= s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]
+      s.data_array_idx_M1 //= s.addr_index_M1
     else:
       BitsClogNlines = mk_bits(clog2(param.total_num_cachelines))
       s.data_array_idx_M1   = Wire(BitsClogNlines)
       @s.update
       def choice_calc_M1():
-        s.data_array_idx_M1 = BitsClogNlines(s.cachereq_M1.addr[param.bitwidth_offset:param.bitwidth_index+param.bitwidth_offset]) \
+        s.data_array_idx_M1 = BitsClogNlines(s.addr_index_M1) \
           + BitsClogNlines(s.way_offset_M1) * BitsClogNlines(param.nblocks_per_way)
     
     s.data_array_out_M2 = Wire(param.BitsCacheline)
@@ -506,10 +526,10 @@ class BlockingCacheDpathRTL (Component):
     s.cacheresp_type_M2       //= s.cachereq_type_M2
     s.offset_M2               //= s.cachereq_M2.addr[0:param.bitwidth_offset]
     s.memreq_opaque_M2        //= s.cachereq_M2.opaque
+    s.memreq_addr_M2[0:param.bitwidth_offset] //= param.BitsOffset(0)
     s.memreq_addr_M2[param.bitwidth_offset:param.bitwidth_addr] //= s.cachereq_M2.addr[param.bitwidth_offset:param.bitwidth_addr]
     s.memreq_data_M2          //= s.read_data_M2
 
   def line_trace( s ):
     msg = ""
-    msg += f" {s.cachereq_M1}"
     return msg

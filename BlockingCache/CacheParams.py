@@ -6,7 +6,8 @@ Date:   10 February 2020
 '''
 
 from pymtl3 import *
-from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
+from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg, mk_MSHR_msg
+from mem_pclib.ifcs.ctrlStructs    import mk_ctrl_pipeline_struct
 
 class CacheParams:
 
@@ -42,7 +43,7 @@ class CacheParams:
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8 )                      # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )                     # Read half word mux sel bitwidth
     self.bitwidth_len              = clog2( self.bitwidth_data // 8 )
-    
+    self.bitwidth_clog_asso        = clog2( self.associativity )
     #--------------------------------------------------------------------------
     # Make Bits object
     #--------------------------------------------------------------------------
@@ -73,3 +74,12 @@ class CacheParams:
     #--------------------------------------------------------------------------
     self.PipelineMsg = mk_pipeline_msg(self.bitwidth_addr, \
       self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len)
+    self.MSHRMsg     = mk_MSHR_msg(self.bitwidth_addr, \
+      self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len, \
+        self.bitwidth_clog_asso)
+
+    #--------------------------------------------------------------------------
+    # Msgs for Ctrl
+    #--------------------------------------------------------------------------
+    self.CtrlMsg = mk_ctrl_pipeline_struct()
+    
