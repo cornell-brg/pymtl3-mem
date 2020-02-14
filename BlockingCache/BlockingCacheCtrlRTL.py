@@ -21,7 +21,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     wdmx0 = param.BitsRdWordMuxSel(0)
     btmx0 = param.BitsRdByteMuxSel(0)
-    2bmx0 = param.BitsRd2ByteMuxSel(0)
+    bbmx0 = param.BitsRd2ByteMuxSel(0)
     acmx0 = Bits2(0) # access select 0
     wben0 = param.BitsDataWben(0)
     wbenf = param.BitsDataWben(-1)
@@ -548,7 +548,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def subword_access_mux_sel_logic_M2():
       s.read_byte_mux_sel_M2  = btmx0
-      s.read_2byte_mux_sel_M2 = 2bmx0
+      s.read_2byte_mux_sel_M2 = bbmx0
       s.subword_access_mux_sel_M2 = acmx0
       if s.cachereq_type_M2 == READ:
         if s.hit_M2[0] or s.state_M2.is_refill:
