@@ -9,7 +9,7 @@ Date   : 12 February 2020
 """
 
 from pymtl3 import *
-from mem_pclib.rtl.utils import ECompEn
+# from mem_pclib.rtl.utils import ECompEn
 from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst, Reg, RegEn
 from pymtl3.stdlib.rtl.arithmetics  import Mux
@@ -19,7 +19,7 @@ class MSHR (Component):
 
   def construct( s, param, entries ):
 
-    BitsEntries   = clog2( entries + 1 )  
+    BitsEntries   = mk_bits( clog2( entries + 1 ) )
 
     s.alloc_en    = InPort(Bits1)
     s.alloc_in    = InPort(param.MSHRMsg)
@@ -29,7 +29,7 @@ class MSHR (Component):
     s.dealloc_id  = InPort(param.BitsOpaque)
     s.dealloc_en  = InPort(Bits1)
     s.dealloc_out = OutPort(param.MSHRMsg)
-    s.empty       = OutPort(Bit1) # high when no more secondary misses?
+    s.empty       = OutPort(Bits1) # high when no more secondary misses?
 
     # Count of free MSHR Entries
     s.num_entries_in = Wire(BitsEntries)
@@ -50,7 +50,10 @@ class MSHR (Component):
     def full_logic():
       s.full = n
       s.empty = n
-      if s.num_entries_out == entries:
+      if s.num_entries_out == entries or \
+        (s.num_entries_out == entries - 1 and s.alloc_en):
+        # Considered full if num entries is equal to max entries
+        # or if we have one less and are allocating an entry
         s.full = y
       if s.num_entries_out == 0:
         s.empty = y
@@ -63,3 +66,7 @@ class MSHR (Component):
       )
       s.alloc_id //= s.alloc_in.opaque
 
+  def line_trace(s):
+    msg = ""
+    msg += f" c:{s.num_entries_out}"
+    return msg

@@ -83,8 +83,6 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.tag_array_val_M0,           s.cacheDpath.tag_array_val_M0,
       s.cacheCtrl.cachereq_type_M1,           s.cacheDpath.cachereq_type_M1,
       s.cacheCtrl.reg_en_M1,                  s.cacheDpath.reg_en_M1,
-      s.cacheCtrl.reg_en_MSHR,                s.cacheDpath.reg_en_MSHR,
-      s.cacheCtrl.MSHR_type,                  s.cacheDpath.MSHR_type,
       s.cacheCtrl.data_array_type_M1,         s.cacheDpath.data_array_type_M1,
       s.cacheCtrl.data_array_wben_M1,         s.cacheDpath.data_array_wben_M1,
       s.cacheCtrl.evict_mux_sel_M1,           s.cacheDpath.evict_mux_sel_M1,
@@ -113,6 +111,14 @@ class BlockingCacheRTL ( Component ):
       s.cacheCtrl.way_offset_M1,              s.cacheDpath.way_offset_M1,
       s.cacheCtrl.ctrl_bit_rep_rd_M1,         s.cacheDpath.ctrl_bit_rep_rd_M1,
       s.cacheCtrl.ctrl_bit_rep_en_M1,         s.cacheDpath.ctrl_bit_rep_en_M1,
+      
+      # MSHR Signals
+      s.cacheCtrl.MSHR_alloc_en,              s.cacheDpath.MSHR_alloc_en,
+      s.cacheCtrl.MSHR_dealloc_en,            s.cacheDpath.MSHR_dealloc_en,
+      s.cacheCtrl.MSHR_full,                  s.cacheDpath.MSHR_full,
+      s.cacheCtrl.MSHR_empty,                 s.cacheDpath.MSHR_empty,
+      s.cacheCtrl.MSHR_ptr,                   s.cacheDpath.MSHR_ptr,
+      s.cacheCtrl.MSHR_type,                  s.cacheDpath.MSHR_type,
     )
 
   # Line tracing

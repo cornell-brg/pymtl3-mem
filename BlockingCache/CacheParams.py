@@ -43,7 +43,10 @@ class CacheParams:
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8 )                      # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )                     # Read half word mux sel bitwidth
     self.bitwidth_len              = clog2( self.bitwidth_data // 8 )
-    self.bitwidth_clog_asso        = clog2( self.associativity )
+    if self.associativity == 1:
+      self.bitwidth_clog_asso      = 1
+    else:
+      self.bitwidth_clog_asso      = clog2( self.associativity ) 
     #--------------------------------------------------------------------------
     # Make Bits object
     #--------------------------------------------------------------------------
@@ -64,10 +67,7 @@ class CacheParams:
     self.BitsRdByteMuxSel  = mk_bits(self.bitwidth_rd_byte_mux_sel)
     self.BitsRd2ByteMuxSel = mk_bits(self.bitwidth_rd_2byte_mux_sel)
     self.BitsAssoc         = mk_bits(self.associativity)
-    if associativity == 1:
-      self.BitsAssoclog2 = Bits1
-    else:
-      self.BitsAssoclog2  = mk_bits(clog2(associativity))
+    self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
 
     #--------------------------------------------------------------------------
     # Msgs for Dpath
@@ -75,7 +75,7 @@ class CacheParams:
     self.PipelineMsg = mk_pipeline_msg(self.bitwidth_addr, \
       self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len)
     self.MSHRMsg     = mk_MSHR_msg(self.bitwidth_addr, \
-      self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len, \
+      self.bitwidth_data, self.bitwidth_opaque, 4, self.bitwidth_len, \
         self.bitwidth_clog_asso)
 
     #--------------------------------------------------------------------------
