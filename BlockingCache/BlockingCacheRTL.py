@@ -11,7 +11,7 @@ Date   : 10 February 2020
 
 from BlockingCache.BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
 from BlockingCache.BlockingCacheDpathRTL  import BlockingCacheDpathRTL
-from .CacheParams                          import CacheParams
+from BlockingCache.CacheParams            import CacheParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg

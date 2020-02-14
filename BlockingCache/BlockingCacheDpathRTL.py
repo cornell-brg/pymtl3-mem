@@ -8,15 +8,15 @@ Author : Xiaoyu Yan, Eric Tang (et396)
 Date   : 15 November 2019
 """
 
+from mem_pclib.constants.constants  import *
+from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
+from mem_pclib.rtl.AddrDecoder      import AddrDecoder
 from mem_pclib.rtl.utils            import EComp
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from sram.SramPRTL                  import SramPRTL
-from mem_pclib.constants.constants  import *
-from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
-from mem_pclib.rtl.AddrDecoder      import AddrDecoder
 
 class BlockingCacheDpathRTL (Component):
 

@@ -7,13 +7,13 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from .ReplacementPolicy import ReplacementPolicy
-from colorama import Fore, Back, Style 
-from pymtl3      import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
-from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from BlockingCache.ReplacementPolicy import ReplacementPolicy
+from colorama                        import Fore, Back, Style 
 from mem_pclib.constants.constants   import *
+from pymtl3                          import *
+from pymtl3.stdlib.ifcs.MemMsg       import MemMsgType
+from pymtl3.stdlib.rtl.arithmetics   import LeftLogicalShifter
+from pymtl3.stdlib.rtl.registers     import RegEnRst, RegRst
 
 class BlockingCacheCtrlRTL ( Component ):
 
