@@ -70,4 +70,11 @@ def mk_MSHR_msg( addr, data, opaque, type_, len_, repl ):
   })
   return req_cls
 
-# def mk_MSHR_array_msg(  )
+def mk_M0_mux_msg( p ):
+  req_cls = mk_bitstruct( "M0", {
+    'type_':  p.BitsType,
+    'opaque': p.BitsOpaque,
+    'len':    p.BitsLen,
+    'data':   p.BitsData,
+  })
+  return req_cls

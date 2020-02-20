@@ -6,8 +6,9 @@ Date:   10 February 2020
 '''
 
 from pymtl3 import *
-from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg, mk_MSHR_msg
-from mem_pclib.ifcs.ctrlStructs    import mk_ctrl_pipeline_struct
+from mem_pclib.ifcs.dpathStructs   import *
+from mem_pclib.ifcs.ctrlStructs    import *
+from mem_pclib.ifcs.cacheStructs   import *
 
 class CacheParams:
 
@@ -47,6 +48,7 @@ class CacheParams:
       self.bitwidth_clog_asso      = 1
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity ) 
+   
     #--------------------------------------------------------------------------
     # Make Bits object
     #--------------------------------------------------------------------------
@@ -72,14 +74,25 @@ class CacheParams:
     #--------------------------------------------------------------------------
     # Msgs for Dpath
     #--------------------------------------------------------------------------
+    
+    self.DpathSignalsOut = mk_dpath_signals_out_struct(self)
+
+    # structs local to the dpath
+    
     self.PipelineMsg = mk_pipeline_msg(self.bitwidth_addr, \
       self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len)
     self.MSHRMsg     = mk_MSHR_msg(self.bitwidth_addr, \
       self.bitwidth_data, self.bitwidth_opaque, 4, self.bitwidth_len, \
         self.bitwidth_clog_asso)
+    self.MuxM0Msg    = mk_M0_mux_msg(self)
 
     #--------------------------------------------------------------------------
     # Msgs for Ctrl
     #--------------------------------------------------------------------------
+    
+    self.CtrlSignalsOut = mk_ctrl_signals_out_struct(self)
+
+    # structs local to the ctrl
+    
     self.CtrlMsg = mk_ctrl_pipeline_struct()
     
