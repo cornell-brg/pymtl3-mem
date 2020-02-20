@@ -7,8 +7,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from BlockingCache.ReplacementPolicy import ReplacementPolicy
-from colorama                        import Fore, Back, Style 
+from .ReplacementPolicy              import ReplacementPolicy
+from colorama                        import Fore, Back, Style
 from mem_pclib.constants.constants   import *
 from pymtl3                          import *
 from pymtl3.stdlib.ifcs.MemMsg       import MemMsgType
@@ -18,7 +18,7 @@ from pymtl3.stdlib.rtl.registers     import RegEnRst, RegRst
 class BlockingCacheCtrlRTL ( Component ):
 
   def construct( s, p ):
-    
+
     # TEMP NAMES: Will come up with smth
     wdmx0 = p.BitsRdWordMuxSel(0)
     btmx0 = p.BitsRdByteMuxSel(0)
@@ -49,14 +49,14 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.dpath_in      = InPort(p.DpathSignalsOut)
     s.ctrl_out      = OutPort(p.CtrlSignalsOut)
-    
+
     if p.associativity == 1: # Drive these ports with 0's
       s.ctrl_out.ctrl_bit_rep_wr_M0 //= p.BitsAssoclog2(0)
       s.ctrl_out.ctrl_bit_rep_en_M1 //= n
       s.ctrl_out.way_offset_M1      //= p.BitsAssoclog2(0)
 
     s.reg_en_M1             = OutPort(Bits1)
-    
+
     #--------------------------------------------------------------------------
     # Connection Wires
     #--------------------------------------------------------------------------
@@ -74,7 +74,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.ostall_M2 = Wire(Bits1)
 
     #--------------------------------------------------------------------------
-    # Y Stage 
+    # Y Stage
     #--------------------------------------------------------------------------
 
     @s.update
@@ -83,7 +83,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.memresp_rdy = y # Always yes for blocking cache
 
     #--------------------------------------------------------------------------
-    # M0 Stage 
+    # M0 Stage
     #---------------------------------------------------------------------------
 
     s.memresp_en_M0 = Wire(Bits1)
@@ -100,7 +100,7 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.MSHR_replay_next_M0,
       out = s.MSHR_replay_now_M0
     )
-    
+
     s.state_M0 = Wire(p.CtrlMsg)
     @s.update
     def ctrl_logic_M0():
@@ -113,8 +113,8 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.dpath_in.MSHR_type == READ:
           s.ctrl_out.MSHR_dealloc_en = y
         # if write we don't dealloc
-        
-        # Replay logic  
+
+        # Replay logic
         if not s.dpath_in.MSHR_empty:
           s.MSHR_replay_next_M0 = y
       elif s.MSHR_replay_now_M0:
@@ -125,7 +125,7 @@ class BlockingCacheCtrlRTL ( Component ):
           elif s.dpath_in.MSHR_type == READ:
             s.state_M0.is_refill = y
           s.MSHR_replay_next_M0 = y
-    
+
     s.state_M1 = Wire(p.CtrlMsg)
     @s.update
     def cachereq_logic():
@@ -172,7 +172,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl_out.tag_array_type_M0      = s.cs0[ CS_tag_array_type_M0  ]
       s.ctrl_out.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_out.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
-    
+
     s.way_ptr_M1 = Wire(p.BitsAssoclog2)
 
     if p.associativity == 1: #val for dmapped cache is simpler
@@ -196,30 +196,30 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.state_M0.val:
           if s.state_M0.is_refill:
             s.ctrl_out.tag_array_val_M0[s.way_ptr_M1] = y
-          elif s.state_M0.is_write_refill:     
-            s.ctrl_out.tag_array_val_M0[s.way_ptr_M1] = y      
+          elif s.state_M0.is_write_refill:
+            s.ctrl_out.tag_array_val_M0[s.way_ptr_M1] = y
           elif s.dpath_in.cachereq_type_M0 == INIT:
             s.ctrl_out.tag_array_val_M0[s.dpath_in.ctrl_bit_rep_rd_M1] = y
-          elif s.state_M0.is_write_hit_clean:   
+          elif s.state_M0.is_write_hit_clean:
             s.ctrl_out.tag_array_val_M0[s.dpath_in.tag_match_way_M1] = y
           else:
             for i in range( p.associativity ):
-              if s.dpath_in.cachereq_type_M0 == READ or s.dpath_in.cachereq_type_M0 == WRITE: 
+              if s.dpath_in.cachereq_type_M0 == READ or s.dpath_in.cachereq_type_M0 == WRITE:
                 s.ctrl_out.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
               else:
                 s.ctrl_out.tag_array_val_M0[i] = n
-              
+
     #--------------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------------
-    
+
     s.ctrl_state_reg_M1 = RegEnRst(p.CtrlMsg)\
     (
       en  = s.reg_en_M1,
       in_ = s.state_M0,
       out = s.state_M1,
     )
-    
+
     s.is_stall  = Wire(Bits1)
     s.is_stall_reg_M1 = RegRst(Bits1)(
       in_ = s.stall_M2,
@@ -231,7 +231,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl_out.stall_mux_sel_M1 = s.is_stall
       s.ctrl_out.stall_reg_en_M1  = not s.is_stall
 
-    s.is_evict_M1 = Wire(Bits1)    
+    s.is_evict_M1 = Wire(Bits1)
     s.hit_M1   = Wire(Bits1)
 
     if p.associativity > 1:
@@ -253,11 +253,11 @@ class BlockingCacheCtrlRTL ( Component ):
         represp_ptr     = s.represp_ptr_M1  # Write new mask
       )
       s.ctrl_out.ctrl_bit_rep_wr_M0 //= s.represp_ptr_M1
-      
+
       @s.update
       def Asso_replacement_logic_M1(): #logic for replacement policy module
         s.repreq_is_hit_M1  = n
-        s.repreq_en_M1      = n 
+        s.repreq_en_M1      = n
         s.repreq_hit_ptr_M1 = x
         s.ctrl_out.ctrl_bit_rep_en_M1 = n
         if s.state_M1.val:
@@ -270,7 +270,7 @@ class BlockingCacheCtrlRTL ( Component ):
             # because we need it for nonblocking capability
             # For blocking, we can also update during a refill
             # for misses
-            if s.hit_M1: 
+            if s.hit_M1:
               s.repreq_hit_ptr_M1 = s.dpath_in.tag_match_way_M1
               s.repreq_en_M1      = y
               s.repreq_is_hit_M1  = y
@@ -284,7 +284,7 @@ class BlockingCacheCtrlRTL ( Component ):
       def Asso_data_array_offset_way_M1():
         s.ctrl_out.way_offset_M1 = s.dpath_in.tag_match_way_M1
         if s.state_M1.val:
-          if s.state_M1.is_refill or s.state_M1.is_write_refill: 
+          if s.state_M1.is_refill or s.state_M1.is_write_refill:
             s.ctrl_out.way_offset_M1 = s.way_ptr_M1
           elif s.hit_M1 or s.dpath_in.cachereq_type_M1 == INIT:
             s.ctrl_out.way_offset_M1 = s.dpath_in.tag_match_way_M1
@@ -296,7 +296,7 @@ class BlockingCacheCtrlRTL ( Component ):
     def hit_logic_M1():
       s.hit_M1 = n
       if s.state_M1.is_write_refill or (s.dpath_in.tag_match_M1 and s.dpath_in.cachereq_type_M1 != INIT):
-        # for some reason we also made hit refill a hit 
+        # for some reason we also made hit refill a hit
         # but not actually
         s.hit_M1 = y
 
@@ -340,7 +340,7 @@ class BlockingCacheCtrlRTL ( Component ):
     else: # Multiway set assoc
       @s.update
       def Asso_set_dty_bit_M1():
-        if s.hit_M1: 
+        if s.hit_M1:
           s.is_dty_M1 = s.dpath_in.ctrl_bit_dty_rd_M1[s.dpath_in.tag_match_way_M1]
         else:
           s.is_dty_M1 = s.dpath_in.ctrl_bit_dty_rd_M1[s.dpath_in.ctrl_bit_rep_rd_M1]
@@ -375,10 +375,10 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def comb_block_M1():
-      
+
       wben = s.wben_out
       s.cs1 = concat(wben0, x , n , n    , b1(0))
-      if s.state_M1.val: #                                                wben| ty|val|ostall|addr mux  
+      if s.state_M1.val: #                                                wben| ty|val|ostall|addr mux
         if s.state_M1.is_refill:                    s.cs1 = concat(wbenf, wr, y , n    , b1(0))
         elif s.is_evict_M1:                         s.cs1 = concat(wben0, rd, y , y    , b1(1))
         elif s.state_M1.is_write_hit_clean:         s.cs1 = concat(wbenf, x , n , n    , b1(0))
@@ -393,7 +393,7 @@ class BlockingCacheCtrlRTL ( Component ):
           elif  s.hit_M1 and  s.is_dty_M1:
             if   s.dpath_in.cachereq_type_M1 == READ:        s.cs1 = concat(wben0, rd, y , n    , b1(0))
             elif s.dpath_in.cachereq_type_M1 == WRITE:       s.cs1 = concat( wben, wr, y , n    , b1(0))
-      
+
       s.ctrl_out.data_array_type_M1        = s.cs1[ CS_data_array_type_M1 ]
       s.ctrl_out.data_array_val_M1         = s.cs1[ CS_data_array_val_M1  ]
       s.ctrl_out.data_array_wben_M1        = s.cs1[ CS_data_array_wben_M1 ]
@@ -404,7 +404,7 @@ class BlockingCacheCtrlRTL ( Component ):
     #--------------------------------------------------------------------------
     # M2 Stage
     #--------------------------------------------------------------------------
-    
+
     s.is_evict_M2 = Wire(Bits1)
     s.state_M2 = Wire(p.CtrlMsg)
     s.ctrl_state_reg_M2 = RegEnRst(p.CtrlMsg)\
@@ -443,7 +443,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = p.BitsRdWordMuxSel(s.dpath_in.offset_M2[2:p.bitwidth_offset]) + p.BitsRdWordMuxSel(1)  
+      s.msel = p.BitsRdWordMuxSel(s.dpath_in.offset_M2[2:p.bitwidth_offset]) + p.BitsRdWordMuxSel(1)
       s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   ) # default
       if s.state_M2.val:                                     #  word_mux|rdata_mux|ostall|s.ctrl_out.memreq_type|memreq|cacheresp
         if ~s.memreq_rdy or ~s.cacheresp_rdy:s.cs2 = concat(wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
@@ -541,9 +541,9 @@ class BlockingCacheCtrlRTL ( Component ):
       else "  {}".format(msg_M0)
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
-    pipeline = stage1 + stage2 + stage3 
+    pipeline = stage1 + stage2 + stage3
     add_msgs = ""
     add_msgs += f" rf:{s.state_M0.is_refill} wf:{s.state_M0.is_write_refill}"
     add_msgs += f" al:{s.ctrl_out.MSHR_alloc_en} de:{s.ctrl_out.MSHR_dealloc_en} | emp:{s.dpath_in.MSHR_empty}"
     add_msgs += f" full:{s.dpath_in.MSHR_full} rep:{s.MSHR_replay_now_M0}"
-    return pipeline + add_msgs 
+    return pipeline + add_msgs

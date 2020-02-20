@@ -2,16 +2,16 @@
 =========================================================================
 BlockingCacheRTL.py
 =========================================================================
-Top level model of Pipelined Blocking Cache with instances of ctrl and 
+Top level model of Pipelined Blocking Cache with instances of ctrl and
 dpath
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from BlockingCache.BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
-from BlockingCache.BlockingCacheDpathRTL  import BlockingCacheDpathRTL
-from BlockingCache.CacheParams            import CacheParams
+from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
+from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
+from .CacheParams                         import CacheParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
@@ -19,13 +19,13 @@ from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 
 class BlockingCacheRTL ( Component ):
 
-  def construct( s,                
+  def construct( s,
     num_bytes     = 4096, # cache size in bytes
     CacheMsg      = "",   # Cache req/resp msg type
     MemMsg        = "",   # Memory req/resp msg type
     associativity = 1     # Associativity
   ):
-    
+
     p = CacheParams(num_bytes=num_bytes, CacheMsg=CacheMsg, \
                          MemMsg=MemMsg, associativity=associativity)
     #----------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class BlockingCacheRTL ( Component ):
     s.memreq.msg.type_      //= s.cacheCtrl.ctrl_out.memreq_type
     s.memreq.msg.addr       //= s.cacheDpath.dpath_out.memreq_addr_M2
     s.memreq.msg.data       //= s.cacheDpath.dpath_out.memreq_data_M2
-    
+
     connect_pairs(
       s.cacheCtrl.reg_en_M1,                  s.cacheDpath.reg_en_M1,
     )
