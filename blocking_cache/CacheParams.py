@@ -96,3 +96,15 @@ class CacheParams:
     
     self.CtrlMsg = mk_ctrl_pipeline_struct()
     
+    #--------------------------------------------------------------------
+    # Default Values
+    #--------------------------------------------------------------------
+    # TEMP NAMES: Will come up with something
+    self.wdmx0 = self.BitsRdWordMuxSel(0)
+    self.btmx0 = self.BitsRdByteMuxSel(0)
+    self.bbmx0 = self.BitsRd2ByteMuxSel(0)
+    self.acmx0 = Bits2(0) # access select 0
+    self.wben0 = self.BitsDataWben(0)
+    self.wbenf = self.BitsDataWben(-1)
+    self.tg_wbenf = self.BitsTagwben(-1)
+    
