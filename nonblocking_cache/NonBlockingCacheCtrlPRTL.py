@@ -4,9 +4,7 @@ from pymtl3      import *
 
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
 
-from NonBlockingCache.ifcs.CoherentMemMsg import *
-
-
+from .ifcs.CoherentMemMsg import *
 
 class NonBlockingCacheCtrlPRTL ( Model ):
   def construct( s,
@@ -17,7 +15,7 @@ class NonBlockingCacheCtrlPRTL ( Model ):
     dbw  = 32,  # Short name for data bitwidth
     clw  = 128, # Short name for cacheline bitwidth
     nbl  = 512, # Short name for number of cache blocks, 8192*8/128 = 512
-    
+
     tgw  = 28,  # Short name for tag bit width, 32-4 = 28
     stw  = 4,   # Short name for state bit width
     ctw  = 3,   # Cache type's bit width

@@ -7,11 +7,10 @@ from pymtl3      import *
 
 # from pclib.rtl import RegEnRst, Mux, RegisterFile, RegRst
 
+from .ifcs.CoherentMemMsg import *
 
-from NonBlockingCache.ifcs.CoherentMemMsg import *
-
-from NonBlockingCache.NonBlockingCacheCtrlPRTL import *
-from NonBlockingCache.NonBlockingCacheDpathPRTL import *
+from .NonBlockingCacheCtrlPRTL import *
+from .NonBlockingCacheDpathPRTL import *
 
 class NonBlockingCachePRTL ( Model ):
   def construct( s,
@@ -70,33 +69,33 @@ class NonBlockingCachePRTL ( Model ):
     s.cacheDpath = cacheNopeDpathPRTL(
       ncaches,
       cache_id,
-      opw,   
-      abw, 
-      dbw,  
-      clw, 
+      opw,
+      abw,
+      dbw,
+      clw,
       nbl,
       tgw,
-      stw,  
-      ctw,   
-      mtw,   
-      ccbw, 
-      srw   
+      stw,
+      ctw,
+      mtw,
+      ccbw,
+      srw
     )
 
     s.cacheCtrl = cacheNopeCtrlPRTL(
       ncaches,
       cache_id,
-      opw,   
-      abw, 
-      dbw,  
-      clw, 
+      opw,
+      abw,
+      dbw,
+      clw,
       nbl,
       tgw,
-      stw,  
-      ctw,   
-      mtw,   
-      ccbw, 
-      srw  
+      stw,
+      ctw,
+      mtw,
+      ccbw,
+      srw
     )
 
   # Line tracing
