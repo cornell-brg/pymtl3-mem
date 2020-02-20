@@ -335,9 +335,9 @@ class BlockingCacheCtrlRTL ( Component ):
       wben = s.WbenGen.out
       s.cs1 = concat(p.wben0, x , n , n    , b1(0))
       if s.state_M1.val: #                                                wben| ty|val|ostall|addr mux  
-        if s.state_M1.is_refill:                       s.cs1 = concat(p.wben0, wr, y , n    , b1(0))
+        if s.state_M1.is_refill:                       s.cs1 = concat(p.wbenf, wr, y , n    , b1(0))
         elif s.is_evict_M1:                            s.cs1 = concat(p.wben0, rd, y , y    , b1(1))
-        elif s.state_M1.is_write_hit_clean:            s.cs1 = concat(p.wben0, x , n , n    , b1(0))
+        elif s.state_M1.is_write_hit_clean:            s.cs1 = concat(p.wbenf, x , n , n    , b1(0))
         else:
           if s.dpath_in.cachereq_type_M1 == INIT:      s.cs1 = concat( wben, wr, y , n    , b1(0))
           elif ~s.hit_M1 and ~s.is_dty_M1:             s.cs1 = concat(p.wben0, x , n , n    , b1(0))

@@ -77,8 +77,6 @@ class BlockingCacheRTL ( Component ):
     s.mem_port.req.msg.addr    //= s.cacheDpath.dpath_out.memreq_addr_M2
     s.mem_port.req.msg.data    //= s.cacheDpath.dpath_out.memreq_data_M2
 
-    connect( s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1 )
-
   # Line tracing
   def line_trace( s ):
     memreq_msg = memresp_msg = "{:42}".format(" ")
