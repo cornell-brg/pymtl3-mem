@@ -9,6 +9,7 @@ Date   : 10 February 2020
 """
 
 from pymtl3 import *
+from pymtl3.stdlib.ifcs.MemMsg       import MemMsgType
 
 # Constants
 wr = y             = b1(1)
@@ -23,3 +24,7 @@ data_array_double_mask    = 0xff
 data_array_word_mask      = 0xf
 data_array_half_word_mask = 0x3
 data_array_byte_mask      = 0x1
+
+READ  = b4(MemMsgType.READ)
+WRITE = b4(MemMsgType.WRITE)
+INIT  = b4(MemMsgType.WRITE_INIT)
