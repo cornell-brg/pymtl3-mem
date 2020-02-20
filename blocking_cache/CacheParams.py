@@ -32,8 +32,8 @@ class CacheParams:
     self.bitwidth_addr             = MemMsg.bitwidth_addr
     self.bitwidth_opaque           = MemMsg.bitwidth_opaque
     self.bitwidth_data             = CacheMsg.bitwidth_data
-    self.total_num_cachelines      = self.num_bytes // self.bitwidth_cacheline                  # number of cachelines
-    self.nblocks_per_way           = self.total_num_cachelines // self.associativity            # cachelines per way
+    self.total_num_cachelines      = self.num_bytes // self.bitwidth_cacheline             # number of cachelines
+    self.nblocks_per_way           = self.total_num_cachelines // self.associativity       # cachelines per way
     self.bitwidth_index            = clog2( self.nblocks_per_way )                         # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )                 # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
@@ -49,12 +49,12 @@ class CacheParams:
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity ) 
    
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
     # Make Bits object
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
 
-    self.BitsLen           = mk_bits(self.bitwidth_len) # Number of bytes  being accessed
-    self.BitsOpaque        = mk_bits(self.bitwidth_opaque)         # opaque
+    self.BitsLen           = mk_bits(self.bitwidth_len)       # Number of bytes  being accessed
+    self.BitsOpaque        = mk_bits(self.bitwidth_opaque)    # opaque
     self.BitsType          = mk_bits(4)                       # access type
     self.BitsAddr          = mk_bits(self.bitwidth_addr)           # address 
     self.BitsData          = mk_bits(self.bitwidth_data)           # data 
@@ -69,11 +69,11 @@ class CacheParams:
     self.BitsRdByteMuxSel  = mk_bits(self.bitwidth_rd_byte_mux_sel)
     self.BitsRd2ByteMuxSel = mk_bits(self.bitwidth_rd_2byte_mux_sel)
     self.BitsAssoc         = mk_bits(self.associativity)
-    self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
+    self.BitsAssoclog2     = mk_bits(self.bitwidth_clog_asso)
 
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
     # Msgs for Dpath
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
     
     self.DpathSignalsOut = mk_dpath_signals_out_struct(self)
 
@@ -86,9 +86,9 @@ class CacheParams:
         self.bitwidth_clog_asso)
     self.MuxM0Msg    = mk_M0_mux_msg(self)
 
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
     # Msgs for Ctrl
-    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------
     
     self.CtrlSignalsOut = mk_ctrl_signals_out_struct(self)
 

@@ -32,8 +32,8 @@
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
      inkscape:zoom="1.9999999"
-     inkscape:cx="578.88652"
-     inkscape:cy="139.87824"
+     inkscape:cx="381.38651"
+     inkscape:cy="132.87824"
      inkscape:document-units="px"
      inkscape:current-layer="layer3"
      showgrid="true"
@@ -2210,7 +2210,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -2340,7 +2340,8 @@
      id="layer2"
      inkscape:label="blocks"
      transform="translate(-44.06058,7.95187)"
-     style="display:inline">
+     style="display:inline"
+     sodipodi:insensitive="true">
     <rect
        y="342.63977"
        x="477.13589"
@@ -2589,7 +2590,7 @@
     <path
        id="path6571-9-7-4-5"
        d="M 117.50122,576.21219 V 501.69571"
-       style="display:inline;overflow:visible;visibility:visible;fill:none;stroke:#4588d6;stroke-width:1.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-end:url(#TriangleOutMP65-8-2-3-2);enable-background:accumulate"
+       style="display:inline;overflow:visible;visibility:visible;fill:none;stroke:#4588d6;stroke-width:1.20000005;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-end:url(#TriangleOutMP65-8-2-3-2);enable-background:accumulate"
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0" />
     <path
@@ -2776,7 +2777,8 @@
      id="layer3"
      inkscape:label="wires"
      transform="translate(-44.06058,7.95187)"
-     style="display:inline">
+     style="display:inline"
+     sodipodi:insensitive="true">
     <g
        style="display:inline"
        id="g6632"
@@ -4085,7 +4087,7 @@
        d="m 498.07334,42.564225 4.40938,-5.5742"
        style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.17896843;stroke-miterlimit:4;stroke-dasharray:none;marker:none;enable-background:accumulate" />
     <path
-       style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-end:url(#marker5092-888-2-1-0-9);enable-background:accumulate"
+       style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.20000005;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-end:url(#marker5092-888-2-1-0-9);enable-background:accumulate"
        d="m 260.067,540.78618 h 13.94988"
        id="path6290-8-8-9-9-0"
        inkscape:connector-curvature="0"
@@ -4108,7 +4110,8 @@
      id="layer1"
      inkscape:label="text"
      transform="translate(-44.06058,7.95187)"
-     style="display:inline">
+     style="display:inline"
+     sodipodi:insensitive="true">
     <text
        xml:space="preserve"
        style="color:#000000;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.65600586px;line-height:0%;font-family:Palatino;-inkscape-font-specification:Palatino;text-align:center;writing-mode:lr-tb;text-anchor:middle;display:inline;overflow:visible;visibility:visible;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.13800049;marker:none;enable-background:accumulate"
