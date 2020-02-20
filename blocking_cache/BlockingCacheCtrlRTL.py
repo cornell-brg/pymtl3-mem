@@ -7,8 +7,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from BlockingCache.ReplacementPolicy import ReplacementPolicy
-from colorama                        import Fore, Back, Style 
+from .ReplacementPolicy              import ReplacementPolicy
+from colorama                        import Fore, Back, Style
 from mem_pclib.constants.constants   import *
 from pymtl3                          import *
 from pymtl3.stdlib.ifcs.MemMsg       import MemMsgType
@@ -18,7 +18,7 @@ from pymtl3.stdlib.rtl.registers     import RegEnRst, RegRst
 class BlockingCacheCtrlRTL ( Component ):
 
   def construct( s, p ):
-    
+
     # TEMP NAMES: Will come up with smth
     wdmx0 = p.BitsRdWordMuxSel(0)
     btmx0 = p.BitsRdByteMuxSel(0)
@@ -64,7 +64,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.ostall_M2 = Wire(Bits1)
 
     #--------------------------------------------------------------------------
-    # Y Stage 
+    # Y Stage
     #--------------------------------------------------------------------------
 
     @s.update
@@ -73,7 +73,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.memresp_rdy = y # Always yes for blocking cache
 
     #--------------------------------------------------------------------------
-    # M0 Stage 
+    # M0 Stage
     #---------------------------------------------------------------------------
 
     s.memresp_en_M0 = Wire(Bits1)
@@ -90,7 +90,7 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.MSHR_replay_next_M0,
       out = s.MSHR_replay_now_M0
     )
-    
+
     s.state_M0 = Wire(p.CtrlMsg)
     @s.update
     def ctrl_logic_M0():
@@ -101,7 +101,7 @@ class BlockingCacheCtrlRTL ( Component ):
       if s.memresp_en_M0 and s.dpath_in.memresp_type_M0 != WRITE:
         s.state_M0.is_refill = y
         if s.dpath_in.MSHR_type == READ:
-          s.ctrl_out.MSHR_dealloc_en = y  
+          s.ctrl_out.MSHR_dealloc_en = y
         # Replay logic  
         if not s.dpath_in.MSHR_empty:
           s.MSHR_replay_next_M0 = y
@@ -113,7 +113,7 @@ class BlockingCacheCtrlRTL ( Component ):
           elif s.dpath_in.MSHR_type == READ:
             s.state_M0.is_refill = y
           s.MSHR_replay_next_M0 = y
-    
+
     s.state_M1 = Wire(p.CtrlMsg)
     @s.update
     def cachereq_logic():
@@ -160,7 +160,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl_out.tag_array_type_M0      = s.cs0[ CS_tag_array_type_M0  ]
       s.ctrl_out.ctrl_bit_dty_wr_M0     = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_out.ctrl_bit_val_wr_M0     = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
-    
+
     s.way_ptr_M1 = Wire(p.BitsAssoclog2)
     s.rep_ptr_reg_M1 = RegEnRst(p.BitsAssoclog2)(
       en  = s.reg_en_M1,
@@ -191,7 +191,7 @@ class BlockingCacheCtrlRTL ( Component ):
     #--------------------------------------------------------------------------
     # M1 Stage
     #--------------------------------------------------------------------------
-    
+
     s.ctrl_state_reg_M1 = RegEnRst(p.CtrlMsg)\
     (
       en  = s.reg_en_M1,
@@ -208,7 +208,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl_out.stall_mux_sel_M1 = s.is_stall_M1.out
       s.ctrl_out.stall_reg_en_M1  = not s.is_stall_M1.out
 
-    s.is_evict_M1 = Wire(Bits1)    
+    s.is_evict_M1 = Wire(Bits1)
     s.hit_M1   = Wire(Bits1)
 
     if p.associativity > 1:
@@ -230,11 +230,11 @@ class BlockingCacheCtrlRTL ( Component ):
         represp_ptr     = s.represp_ptr_M1  # Write new mask
       )
       s.ctrl_out.ctrl_bit_rep_wr_M0 //= s.represp_ptr_M1
-      
+
       @s.update
       def Asso_replacement_logic_M1(): #logic for replacement policy module
         s.repreq_is_hit_M1  = n
-        s.repreq_en_M1      = n 
+        s.repreq_en_M1      = n
         s.repreq_hit_ptr_M1 = x
         s.ctrl_out.ctrl_bit_rep_en_M1 = n
         if s.state_M1.val:
@@ -247,7 +247,7 @@ class BlockingCacheCtrlRTL ( Component ):
             # because we need it for nonblocking capability
             # For blocking, we can also update during a refill
             # for misses
-            if s.hit_M1: 
+            if s.hit_M1:
               s.repreq_hit_ptr_M1 = s.dpath_in.tag_match_way_M1
               s.repreq_en_M1      = y
               s.repreq_is_hit_M1  = y
@@ -261,7 +261,7 @@ class BlockingCacheCtrlRTL ( Component ):
       def Asso_data_array_offset_way_M1():
         s.ctrl_out.way_offset_M1 = s.dpath_in.tag_match_way_M1
         if s.state_M1.val:
-          if s.state_M1.is_refill or s.state_M1.is_write_refill: 
+          if s.state_M1.is_refill or s.state_M1.is_write_refill:
             s.ctrl_out.way_offset_M1 = s.way_ptr_M1
           elif s.hit_M1 or s.dpath_in.cachereq_type_M1 == INIT:
             s.ctrl_out.way_offset_M1 = s.dpath_in.tag_match_way_M1
@@ -277,7 +277,7 @@ class BlockingCacheCtrlRTL ( Component ):
     def hit_logic_M1():
       s.hit_M1 = n
       if s.state_M1.is_write_refill or (s.dpath_in.tag_match_M1 and s.dpath_in.cachereq_type_M1 != INIT):
-        # for some reason we also made hit refill a hit 
+        # for some reason we also made hit refill a hit
         # but not actually
         s.hit_M1 = y
 
@@ -414,7 +414,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = p.BitsRdWordMuxSel(s.dpath_in.offset_M2[2:p.bitwidth_offset]) + p.BitsRdWordMuxSel(1)  
+      s.msel = p.BitsRdWordMuxSel(s.dpath_in.offset_M2[2:p.bitwidth_offset]) + p.BitsRdWordMuxSel(1)
       s.cs2 = concat(wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   ) # default
       if s.state_M2.out.val:                                     #  word_mux|rdata_mux|ostall|s.ctrl_out.memreq_type|memreq|cacheresp
         if ~s.memreq_rdy or ~s.cacheresp_rdy:         s.cs2 = concat(wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
@@ -459,8 +459,8 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def stall_logic_M2():
-      s.ctrl_out.stall_mux_sel_M2 = s.is_stall
-      s.ctrl_out.stall_reg_en_M2 = ~s.is_stall
+      s.ctrl_out.stall_mux_sel_M2 = s.is_stall_M1.out
+      s.ctrl_out.stall_reg_en_M2 = ~s.is_stall_M1.out
 
   def line_trace( s ):
     types = ["rd","wr","in"]
@@ -513,9 +513,9 @@ class BlockingCacheCtrlRTL ( Component ):
       else "  {}".format(msg_M0)
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
-    pipeline = stage1 + stage2 + stage3 
+    pipeline = stage1 + stage2 + stage3
     add_msgs = ""
     add_msgs += f" rf:{s.state_M0.is_refill} wf:{s.state_M0.is_write_refill}"
     add_msgs += f" al:{s.ctrl_out.MSHR_alloc_en} de:{s.ctrl_out.MSHR_dealloc_en} | emp:{s.dpath_in.MSHR_empty}"
     add_msgs += f" full:{s.dpath_in.MSHR_full} rep:{s.MSHR_replay_now_M0}"
-    return pipeline + add_msgs 
+    return pipeline + add_msgs
