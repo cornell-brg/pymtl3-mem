@@ -95,6 +95,9 @@ venv.bak/
 *.swo
 *.swn
 
+# VS Code
+.vscode
+
 # Spyder project settings
 .spyderproject
 .spyproject

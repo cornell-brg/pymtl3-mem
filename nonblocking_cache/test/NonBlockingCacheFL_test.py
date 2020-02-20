@@ -21,9 +21,9 @@ from pymtl3.stdlib.ifcs.ValRdyIfc import InValRdyIfc, OutValRdyIfc
 
 from pymtl3.stdlib.cl.MemoryCL import MemoryCL
 
-from NonBlockingCache.ifcs.CoherentMemMsg import *
+from nonblocking_cache.ifcs.CoherentMemMsg import *
 
-from NonBlockingCache.NonBlockingCachePRTL import NonBlockingCachePRTL
+from nonblocking_cache.NonBlockingCachePRTL import NonBlockingCachePRTL
 
 
 #-------------------------------------------------------------------------

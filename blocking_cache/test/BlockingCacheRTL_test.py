@@ -21,11 +21,9 @@ from mem_pclib.test.sim_utils import run_sim, translate_import, TestHarness
 max_cycles = 500
 
 # class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases):
-class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases,
-HypothesisTests ):
-  def run_test( s,
-   msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=512,
-   stall_prob=0, latency=1, src_delay=0, sink_delay=0):
+class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests ):
+  def run_test( s, msgs, mem, CacheMsg, MemMsg, associativity=1, cacheSize=512,
+                stall_prob=0, latency=1, src_delay=0, sink_delay=0 ):
 
     harness = TestHarness( msgs[::2], msgs[1::2],
                            stall_prob, latency,
