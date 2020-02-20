@@ -19,7 +19,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
   def construct( s, p ):
 
-    # TEMP NAMES: Will come up with smth
+    # TEMP NAMES: Will come up with something
     wdmx0 = p.BitsRdWordMuxSel(0)
     btmx0 = p.BitsRdByteMuxSel(0)
     bbmx0 = p.BitsRd2ByteMuxSel(0)
@@ -50,8 +50,6 @@ class BlockingCacheCtrlRTL ( Component ):
     s.dpath_in      = InPort(p.DpathSignalsOut)
     s.ctrl_out      = OutPort(p.CtrlSignalsOut)
 
-    s.reg_en_M1     = OutPort(Bits1)
-
     #--------------------------------------------------------------------------
     # Stall and Ostall Signals
     #--------------------------------------------------------------------------
@@ -69,7 +67,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def mem_resp_rdy():
-      # TODO Update for Nonblocking capability
+      # TODO Update for Non-blocking capability
       s.memresp_rdy = y # Always yes for blocking cache
 
     #--------------------------------------------------------------------------
@@ -163,7 +161,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.way_ptr_M1 = Wire(p.BitsAssoclog2)
     s.rep_ptr_reg_M1 = RegEnRst(p.BitsAssoclog2)(
-      en  = s.reg_en_M1,
+      en  = s.ctrl_out.reg_en_M1,
       in_ = s.dpath_in.MSHR_ptr,
       out = s.way_ptr_M1,
     )
@@ -194,7 +192,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.ctrl_state_reg_M1 = RegEnRst(p.CtrlMsg)\
     (
-      en  = s.reg_en_M1,
+      en  = s.ctrl_out.reg_en_M1,
       in_ = s.state_M0,
       out = s.state_M1,
     )
@@ -339,7 +337,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def en_M1():
-      s.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
+      s.ctrl_out.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
 
     CS_data_array_wben_M1   = slice( 4,  4 + p.bitwidth_data_wben )
     CS_data_array_type_M1   = slice( 3,  4 )

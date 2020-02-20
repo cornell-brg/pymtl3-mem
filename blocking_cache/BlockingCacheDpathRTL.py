@@ -5,13 +5,14 @@
 Parameterizable Pipelined Blocking Cache Datapath
 
 Author : Xiaoyu Yan, Eric Tang (et396)
-Date   : 16 February 2020
+Date   : 20 February 2020
 """
 
 from mem_pclib.constants.constants  import *
 from mem_pclib.ifcs.dpathStructs    import mk_pipeline_msg
 from mem_pclib.rtl.AddrDecoder      import AddrDecoder
 from mem_pclib.rtl.MSHR_v1          import MSHR
+from mem_pclib.rtl.PMux             import PMux
 from mem_pclib.rtl.utils            import EComp
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
@@ -36,8 +37,6 @@ class BlockingCacheDpathRTL (Component):
     s.ctrl_in             = InPort(p.CtrlSignalsOut)
     s.dpath_out           = OutPort(p.DpathSignalsOut)
     
-    s.reg_en_M1             = InPort (Bits1)
-
     #--------------------------------------------------------------------
     # M0 Stage
     #--------------------------------------------------------------------
@@ -134,7 +133,7 @@ class BlockingCacheDpathRTL (Component):
 
     # Pipeline registers
     s.cachereq_M1 = RegEnRst(p.PipelineMsg)(
-      en  = s.reg_en_M1,
+      en  = s.ctrl_in.reg_en_M1,
       in_ = s.cachereq_M0,
     )
     s.cachereq_addr_M1_forward //= s.cachereq_M1.out.addr
@@ -167,7 +166,7 @@ class BlockingCacheDpathRTL (Component):
     ]
     
     s.stall_reg_M1 = [RegEn( p.BitsTagArray )( # Saves output of the SRAM during stall
-      en  = s.ctrl_in.stall_reg_en_M1,                 # which is only saved for 1 cycle
+      en  = s.ctrl_in.stall_reg_en_M1,         # which is only saved for 1 cycle
       in_ = s.tag_array_out_M1[i],
     ) for i in range(p.associativity)]
     
@@ -200,8 +199,8 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.len     //= s.cachereq_M1.out.len
     s.MSHR_alloc_in.repl    //= s.dpath_out.ctrl_bit_rep_rd_M1
 
-    s.ctrl_bit_val_rd_M1 = Wire(p.BitsAssoc)
     # Output the valid bit
+    s.ctrl_bit_val_rd_M1 = Wire(p.BitsAssoc)
     for i in range( p.associativity ):
       s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][p.bitwidth_tag_array-1:p.bitwidth_tag_array] 
       s.dpath_out.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][p.bitwidth_tag_array-2:p.bitwidth_tag_array-1] 
@@ -217,18 +216,14 @@ class BlockingCacheDpathRTL (Component):
             s.dpath_out.tag_match_M1 = y
             s.dpath_out.tag_match_way_M1 = p.BitsAssoclog2(i) 
     
-    # TODO own module? Can't have 1 way muxes
+    # Mux for choosing which way to evict
     s.evict_way_out_M1 = Wire(p.BitsTag)
-    if p.associativity == 1:
-      s.evict_way_out_M1 //= s.tag_array_rdata_M1[0][0:p.bitwidth_tag]
-    else:
-      # Mux for choosing which way to evict
-      s.evict_way_mux_M1 = Mux(p.BitsTag, p.associativity)(
-        sel = s.ctrl_bit_rep_M1,
-        out = s.evict_way_out_M1
-      )
-      for i in range(p.associativity):
-        s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:p.bitwidth_tag]
+    s.evict_way_mux_M1 = PMux(p.BitsTag, p.associativity)(
+      sel = s.ctrl_bit_rep_M1,
+      out = s.evict_way_out_M1
+    )
+    for i in range(p.associativity):
+      s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:p.bitwidth_tag]
 
     s.evict_addr_M1    = Wire(p.BitsAddr)
     s.evict_addr_M1[p.bitwidth_offset+p.bitwidth_index:p.bitwidth_addr] //= s.evict_way_out_M1 # set tag
@@ -251,7 +246,7 @@ class BlockingCacheDpathRTL (Component):
     
     # Index bits change depending on associativity
     BitsClogNlines = mk_bits(clog2(p.total_num_cachelines))
-    s.data_array_idx_M1   = Wire(BitsClogNlines)
+    s.data_array_idx_M1 = Wire(BitsClogNlines)
     @s.update
     def choice_calc_M1():
       s.data_array_idx_M1 = BitsClogNlines(s.addr_decode_M1.index_out) \
@@ -313,7 +308,7 @@ class BlockingCacheDpathRTL (Component):
       sel = s.ctrl_in.read_data_mux_sel_M2
     )
     
-    # Word select mux TODO Put in own module
+    # Word select mux 
     s.read_word_mux_M2 = Mux(p.BitsData, p.bitwidth_cacheline // p.bitwidth_data + 1)\
     (
       sel = s.ctrl_in.read_word_mux_sel_M2
@@ -322,7 +317,7 @@ class BlockingCacheDpathRTL (Component):
     for i in range(1, p.bitwidth_cacheline//p.bitwidth_data+1):
       s.read_word_mux_M2.in_[i] //= s.read_data_mux_M2.out[(i - 1) * p.bitwidth_data:i * p.bitwidth_data]
         
-    # Two bye select mux
+    # Two byte select mux
     s.read_half_word_mux_M2 = Mux(Bits16, p.bitwidth_data//16)(
       sel = s.ctrl_in.read_2byte_mux_sel_M2 
     )

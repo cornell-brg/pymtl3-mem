@@ -6,7 +6,7 @@ Top level model of Pipelined Blocking Cache with instances of ctrl and
 dpath
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
-Date   : 10 February 2020
+Date   : 20 February 2020
 """
 
 from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
@@ -58,20 +58,23 @@ class BlockingCacheRTL ( Component ):
       memreq_en             = s.memreq.en,
       memreq_rdy            = s.memreq.rdy,
     )
+
     connect( s.cacheDpath.dpath_out, s.cacheCtrl.dpath_in )
     connect( s.cacheDpath.ctrl_in  , s.cacheCtrl.ctrl_out )
+
+    # Cache Response Message
     s.cacheresp.msg.opaque  //= s.cacheDpath.dpath_out.cacheresp_opaque_M2
     s.cacheresp.msg.type_   //= s.cacheDpath.dpath_out.cacheresp_type_M2
     s.cacheresp.msg.data    //= s.cacheDpath.dpath_out.cacheresp_data_M2
     s.cacheresp.msg.len     //= s.cacheDpath.dpath_out.cacheresp_len_M2
     s.cacheresp.msg.test    //= s.cacheCtrl.ctrl_out.hit_M2
+
+    # Memory Request Message
     s.memreq.msg.opaque     //= s.cacheDpath.dpath_out.memreq_opaque_M2
     s.memreq.msg.type_      //= s.cacheCtrl.ctrl_out.memreq_type
     s.memreq.msg.addr       //= s.cacheDpath.dpath_out.memreq_addr_M2
     s.memreq.msg.data       //= s.cacheDpath.dpath_out.memreq_data_M2
     
-    connect( s.cacheCtrl.reg_en_M1, s.cacheDpath.reg_en_M1) #TODO figure out what's wrong
-
   # Line tracing
   def line_trace( s ):
     memreq_msg = memresp_msg = "{:42}".format(" ")
