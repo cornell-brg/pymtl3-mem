@@ -13,7 +13,7 @@ from pymtl3 import *
 import random
 import hypothesis
 from hypothesis import strategies as st
-from BlockingCache.BlockingCacheFL import ModelCache
+from blocking_cache.BlockingCacheFL import ModelCache
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
 
@@ -34,7 +34,7 @@ def rand_mem(addr_min=0, addr_max=0xfff):
   while curr_addr <= addr_max:
     mem.append(curr_addr)
     mem.append(random.randint(0,0xffffffff))
-    curr_addr += 4 
+    curr_addr += 4
   return mem
 
 @st.composite
@@ -55,7 +55,7 @@ def gen_reqs( draw ):
   return (addr, type_, data, len_)
 
 class HypothesisTests:
-  
+
   def hypothesis_test_harness(s, associativity, clw, cacheSize,
     transactions, req, stall_prob, latency, src_delay, sink_delay):
     if cacheSize < 2*clw*associativity:
@@ -83,52 +83,52 @@ class HypothesisTests:
     s.run_test(msgs, mem, CacheMsg, MemMsg, associativity, cacheSize, \
     stall_prob, latency, src_delay, sink_delay)
 
-  
+
   @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), 
+    clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([256,512,1024,4096,8192]),
     transactions  = st.integers( 1, 100 ),
-    req           = st.data(), 
-    stall_prob    = st.integers( 0, 1 ), 
-    latency       = st.integers( 1, 5 ), 
-    src_delay     = st.integers( 0, 5 ), 
+    req           = st.data(),
+    stall_prob    = st.integers( 0, 1 ),
+    latency       = st.integers( 1, 5 ),
+    src_delay     = st.integers( 0, 5 ),
     sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_2way(s, clw, cacheSize, transactions, req,
     stall_prob, latency, src_delay, sink_delay):
     s.hypothesis_test_harness(2, clw, cacheSize, transactions, req, \
       stall_prob, latency, src_delay, sink_delay)
-  
+
   @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), 
+    clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
     transactions  = st.integers( 1, 100 ),
-    req           = st.data(), 
-    stall_prob    = st.integers( 0, 1 ), 
-    latency       = st.integers( 1, 5 ), 
-    src_delay     = st.integers( 0, 5 ), 
+    req           = st.data(),
+    stall_prob    = st.integers( 0, 1 ),
+    latency       = st.integers( 1, 5 ),
+    src_delay     = st.integers( 0, 5 ),
     sink_delay    = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req, 
+  def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req,
     stall_prob, latency, src_delay, sink_delay):
     s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, \
       stall_prob, latency, src_delay, sink_delay)
 
-  @hypothesis.settings( deadline = None, max_examples=400 )
+  @hypothesis.settings( deadline = None, max_examples=150 )
   @hypothesis.given(
-    clw           = st.sampled_from([64,128,256,512,1024]), 
+    clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([256,512,1024,4096,8192,16384,32768]),
     transactions  = st.integers( 1, 200 ),
-    req           = st.data(), 
+    req           = st.data(),
     associativity = st.sampled_from([1, 2]),
-    stall_prob    = st.integers( 0, 1 ), 
-    latency       = st.integers( 1, 5 ), 
-    src_delay     = st.integers( 0, 5 ), 
+    stall_prob    = st.integers( 0, 1 ),
+    latency       = st.integers( 1, 5 ),
+    src_delay     = st.integers( 0, 5 ),
     sink_delay    = st.integers( 0, 5 )
   )
-  def test_hypothesis_cache_gen(s, clw, cacheSize, transactions, 
+  def test_hypothesis_cache_gen(s, clw, cacheSize, transactions,
     req, associativity, stall_prob, latency, src_delay, sink_delay):
     s.hypothesis_test_harness(associativity, clw, cacheSize, \
       transactions, req, stall_prob, latency, src_delay, sink_delay)

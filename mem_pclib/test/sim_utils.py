@@ -10,11 +10,12 @@ Date   : 21 Decemeber 2019
 
 import struct
 from pymtl3 import *
+
 from pymtl3.passes.backends.sverilog import ImportPass, TranslationPass
-from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
-from BlockingCache.test.CacheMemory import CacheMemoryCL
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL,\
+from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
+from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
+from blocking_cache.test.CacheMemory import CacheMemoryCL
+from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
    RecvRTL2SendCL, SendIfcRTL
 
 #----------------------------------------------------------------------
@@ -51,7 +52,7 @@ def translate_import( model ):
 class TestHarness(Component):
 
   def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg, 
+                src_delay, sink_delay, CacheModel, CacheMsg,
                 MemMsg, cacheSize=128, associativity=1):
     # Instantiate models
     s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, 0, src_delay)

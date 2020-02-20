@@ -135,7 +135,7 @@ class HitMissTracker:
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheMsg, MemMsg, mem=None):
     # The hit/miss tracker
-    self.tracker = HitMissTracker(size, nways, nbanks, MemMsg.dbw)
+    self.tracker = HitMissTracker(size, nways, nbanks, MemMsg.bitwidth_data)
 
     self.mem = {}
 
@@ -155,11 +155,11 @@ class ModelCache:
     self.CacheMsg = CacheMsg
     self.MemMsg = MemMsg
 
-    self.nlines = int(size // MemMsg.dbw)
+    self.nlines = int(size // MemMsg.bitwidth_data)
     self.nsets = int(self.nlines // nways)
     # Compute how the address is sliced
     self.offset_start = 0
-    self.offset_end = self.offset_start + int(math.log(MemMsg.dbw//8, 2))
+    self.offset_end = self.offset_start + int(math.log(MemMsg.bitwidth_data//8, 2))
     self.idx_start = self.offset_end
     self.idx_end = self.idx_start + int(math.log(self.nsets, 2))
     self.tag_start = self.idx_end
