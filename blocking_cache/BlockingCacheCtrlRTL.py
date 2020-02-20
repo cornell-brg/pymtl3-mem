@@ -187,7 +187,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def stall_logic_M1():
       s.ctrl_out.stall_mux_sel_M1 = s.is_stall_M1.out
-      s.ctrl_out.stall_reg_en_M1  = not s.is_stall_M1.out
+      s.ctrl_out.stall_reg_en_M1  = ~s.is_stall_M1.out
 
     s.is_evict_M1 = Wire(Bits1)
     s.hit_M1   = Wire(Bits1)
@@ -320,7 +320,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def en_M1():
-      s.ctrl_out.reg_en_M1 = not s.stall_M1 and not s.is_evict_M1
+      s.ctrl_out.reg_en_M1 = ~ s.stall_M1 and ~ s.is_evict_M1
 
     CS_data_array_wben_M1   = slice( 4,  4 + p.bitwidth_data_wben )
     CS_data_array_type_M1   = slice( 3,  4 )
@@ -496,7 +496,5 @@ class BlockingCacheCtrlRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
     add_msgs = ""
-    add_msgs += f" rf:{s.state_M0.is_refill} wf:{s.state_M0.is_write_refill}"
-    add_msgs += f" al:{s.ctrl_out.MSHR_alloc_en} de:{s.ctrl_out.MSHR_dealloc_en} | emp:{s.dpath_in.MSHR_empty}"
-    add_msgs += f" full:{s.dpath_in.MSHR_full} rep:{s.MSHR_replay_now_M0}"
+
     return pipeline + add_msgs
