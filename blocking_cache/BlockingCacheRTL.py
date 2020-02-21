@@ -45,7 +45,7 @@ class BlockingCacheRTL ( Component ):
 
     s.cacheDpath = BlockingCacheDpathRTL( p ) \
     (
-      cachereq            = s.cpu_port.req.msg,
+      cachereq_Y          = s.cpu_port.req.msg,
       memresp_Y           = s.mem_port.resp.msg
     )
 
@@ -79,13 +79,15 @@ class BlockingCacheRTL ( Component ):
 
   # Line tracing
   def line_trace( s ):
-    memreq_msg = memresp_msg = "{:42}".format(" ")
+    memreq_msg = "{:42}".format(" ")
+    memresp_msg = "{:42}".format(" ")
 
     if s.mem_port.resp.en:
       memresp_msg = "{}".format(s.mem_port.resp.msg)
-    if s.mem_port.resp.en:
+    if s.mem_port.req.en:
       memreq_msg  = "{}".format(s.mem_port.req.msg)
-    msg = "{} {} {}{}".format(\
-      s.cacheCtrl.line_trace(), memreq_msg, memresp_msg,
-      s.cacheDpath.line_trace())
+    msg = "{} {}{}{}".format(\
+      s.cacheDpath.line_trace(), memresp_msg, s.cacheCtrl.line_trace(),
+      memreq_msg
+      )
     return msg

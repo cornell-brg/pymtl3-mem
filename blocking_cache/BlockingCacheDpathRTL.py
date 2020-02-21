@@ -28,14 +28,14 @@ class BlockingCacheDpathRTL (Component):
     # Interface
     #--------------------------------------------------------------------
     
-    # Proc -> Cache
-    s.cachereq            = InPort(p.CacheMsg.Req)
+    s.cachereq_Y          = InPort(p.CacheMsg.Req)
     
-    # Mem -> Cache
     s.memresp_Y           = InPort(p.MemMsg.Resp)
     
-    s.ctrl_in             = InPort(p.CtrlSignalsOut)
-    s.dpath_out           = OutPort(p.DpathSignalsOut)
+    # signals from ctrl
+    s.ctrl_in             = InPort(p.CtrlSignalsOut) 
+    # signals going out to ctrl
+    s.dpath_out           = OutPort(p.DpathSignalsOut) 
     
     #--------------------------------------------------------------------
     # M0 Stage
@@ -54,10 +54,10 @@ class BlockingCacheDpathRTL (Component):
 
     s.cachereq_msg_mux_in_M0 = Wire( p.MuxM0Msg ) 
     s.MSHR_dealloc_mux_in_M0 = Wire( p.MuxM0Msg ) 
-    s.cachereq_msg_mux_in_M0.type_ //= s.cachereq.type_
-    s.cachereq_msg_mux_in_M0.opaque//= s.cachereq.opaque
-    s.cachereq_msg_mux_in_M0.len   //= s.cachereq.len
-    s.cachereq_msg_mux_in_M0.data  //= s.cachereq.data
+    s.cachereq_msg_mux_in_M0.type_ //= s.cachereq_Y.type_
+    s.cachereq_msg_mux_in_M0.opaque//= s.cachereq_Y.opaque
+    s.cachereq_msg_mux_in_M0.len   //= s.cachereq_Y.len
+    s.cachereq_msg_mux_in_M0.data  //= s.cachereq_Y.data
     s.MSHR_dealloc_mux_in_M0.type_ //= s.MSHR_dealloc_out.type_
     s.MSHR_dealloc_mux_in_M0.opaque//= s.MSHR_dealloc_out.opaque
     s.MSHR_dealloc_mux_in_M0.len   //= s.MSHR_dealloc_out.len
@@ -79,7 +79,7 @@ class BlockingCacheDpathRTL (Component):
     s.addr_mux_M0 = Mux(p.BitsAddr, 3)\
     (
       in_ = {
-        0: s.cachereq.addr,
+        0: s.cachereq_Y.addr,
         1: s.MSHR_dealloc_out.addr,
         2: s.cachereq_addr_M1_forward
       },
@@ -359,5 +359,5 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    msg += s.mshr.line_trace()
+    # msg += s.mshr.line_trace()
     return msg

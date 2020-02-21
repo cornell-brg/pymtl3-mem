@@ -479,3 +479,12 @@ class DmappedTestCases:
     mem = s.hypo_mem()
     MemMsg = ReqRespMsgTypes(OBW, ABW, 64)
     s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 128, 0,1,0,1)
+
+  def test_dmapped_proc_cache(s):
+    msgs = [
+      #    type  opq   addr    len  data     type  opq test len  data
+      req( 'wr', 0, 0x00002000, 0, 0xdeadbeef), resp( 'wr', 0x0, 0, 0, 0          ), 
+      req( 'rd', 1, 0x00002000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xdeadbeef          ), 
+    ]
+    mem = s.hypo_mem()
+    s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 4096, 0,1,7,6)

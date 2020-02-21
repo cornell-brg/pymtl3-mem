@@ -55,7 +55,7 @@ class TestHarness(Component):
                 src_delay, sink_delay, CacheModel, CacheMsg,
                 MemMsg, cacheSize=128, associativity=1):
     # Instantiate models
-    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, 0, src_delay)
+    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, 5, src_delay)
     s.cache = CacheModel(cacheSize, CacheMsg, MemMsg, associativity)
     s.mem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
