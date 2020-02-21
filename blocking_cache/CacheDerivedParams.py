@@ -1,21 +1,24 @@
-'''
-CacheParams
+"""
+=========================================================================
+CacheDerivedParams.py
+=========================================================================
+Generates constants and bitstructs from cache parameters
 
 Author: Eric Tang (et396), Xiaoyu Yan (xy97) 
 Date:   10 February 2020
-'''
+"""
 
 from pymtl3 import *
 from mem_pclib.ifcs.dpathStructs   import *
 from mem_pclib.ifcs.ctrlStructs    import *
 from mem_pclib.ifcs.cacheStructs   import *
 
-class CacheParams:
+class CacheDerivedParams:
 
   def __init__(self,    
+    CacheMsg       ,      # Cache req/resp msg type
+    MemMsg         ,      # Memory req/resp msg type
     num_bytes     = 4096, # cache size in bytes
-    CacheMsg      = "",   # Cache req/resp msg type
-    MemMsg        = "",   # Memory req/resp msg type
     associativity = 1     # Associativity
   ):
 

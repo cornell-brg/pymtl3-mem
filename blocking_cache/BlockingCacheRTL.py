@@ -11,7 +11,7 @@ Date   : 20 February 2020
 
 from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
 from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
-from .CacheParams                         import CacheParams
+from .CacheDerivedParams                  import CacheDerivedParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
@@ -21,14 +21,14 @@ from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRT
 class BlockingCacheRTL ( Component ):
 
   def construct( s,
+    CacheMsg      ,   # Cache req/resp msg type
+    MemMsg        ,   # Memory req/resp msg type
     num_bytes     = 4096, # cache size in bytes
-    CacheMsg      = "",   # Cache req/resp msg type
-    MemMsg        = "",   # Memory req/resp msg type
     associativity = 1     # Associativity
   ):
 
-    p = CacheParams( num_bytes=num_bytes, CacheMsg=CacheMsg, \
-                     MemMsg=MemMsg, associativity=associativity )
+    # Generate additional constants and bitstructs from the given parameters
+    p = CacheDerivedParams( CacheMsg, MemMsg, num_bytes, associativity )
 
     #---------------------------------------------------------------------
     # Interface
