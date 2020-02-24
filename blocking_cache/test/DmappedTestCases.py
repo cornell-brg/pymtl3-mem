@@ -105,7 +105,8 @@ class DmappedTestCases:
   #----------------------------------------------------------------------
   # Test Case: Write Hit: CLEAN
   #----------------------------------------------------------------------
-  def test_dmapped_write_hit_clean( s ):
+  def test_dmapped_write_hit_clean( s, stall_prob=0, latency=1, src_delay=0,\
+  sink_delay=0 ):
     msgs = [
       #    type  opq  addr      len data                type  opq  test len data
       req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),    
@@ -113,7 +114,12 @@ class DmappedTestCases:
       req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  55 ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheMsg, MemMsg, 1, 512, stall_prob, latency, \
+      src_delay, sink_delay )
+
+  def test_dmapped_write_hit_clean_lat(s):
+    s.test_dmapped_write_hit_clean(0,1,7,6)
+
   #----------------------------------------------------------------------
   # Test Case: Write Hit: DIRTY
   #----------------------------------------------------------------------
@@ -488,3 +494,4 @@ class DmappedTestCases:
     ]
     mem = s.hypo_mem()
     s.run_test(msgs, mem, CacheMsg, MemMsg, 1, 4096, 0,1,7,6)
+

@@ -20,10 +20,10 @@ STATE_REFILL       = b3(1)
 STATE_EVICT        = b3(2)
 STATE_REFILL_WRITE = b3(3)
 
-data_array_double_mask    = 0xff
-data_array_word_mask      = 0xf
-data_array_half_word_mask = 0x3
-data_array_byte_mask      = 0x1
+data_array_double_mask = 0xff
+data_array_word_mask   = 0xf
+data_array_2byte_mask  = 0x3
+data_array_byte_mask   = 0x1
 
 READ  = b4(MemMsgType.READ)
 WRITE = b4(MemMsgType.WRITE)

@@ -30,7 +30,7 @@ def mk_dpath_signals_out_struct( p ):
     # M1 Dpath Signals
     'cachereq_type_M1'    : p.BitsType,
     'ctrl_bit_dty_rd_M1'  : p.BitsAssoc,
-    'tag_match_M1'        : Bits1,
+    'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
     # MSHR Signals
@@ -39,7 +39,7 @@ def mk_dpath_signals_out_struct( p ):
     'MSHR_type'           : p.BitsType,
     'MSHR_ptr'            : p.BitsAssoclog2,
     # Signals for multiway associativity
-    'tag_match_way_M1'    : p.BitsAssoclog2,
+    'hit_way_M1'          : p.BitsAssoclog2,
     'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
     
     # M2 Dpath Signals

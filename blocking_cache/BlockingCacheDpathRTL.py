@@ -208,13 +208,13 @@ class BlockingCacheDpathRTL (Component):
     # Comparator
     @s.update
     def Comparator():
-      s.dpath_out.tag_match_M1 = n
-      s.dpath_out.tag_match_way_M1 = p.BitsAssoclog2(0)
+      s.dpath_out.hit_M1 = n
+      s.dpath_out.hit_way_M1 = p.BitsAssoclog2(0)
       for i in range( p.associativity ):
         if ( s.ctrl_bit_val_rd_M1[i] ):
           if s.tag_array_rdata_M1[i][0:p.bitwidth_tag] == s.addr_decode_M1.tag_out:
-            s.dpath_out.tag_match_M1 = y
-            s.dpath_out.tag_match_way_M1 = p.BitsAssoclog2(i) 
+            s.dpath_out.hit_M1 = y
+            s.dpath_out.hit_way_M1 = p.BitsAssoclog2(i) 
     
     # Mux for choosing which way to evict
     s.evict_way_out_M1 = Wire(p.BitsTag)
@@ -360,4 +360,5 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     # msg += s.mshr.line_trace()
+    msg += f"{s.tag_array_rdata_M1[0]} == {s.addr_decode_M1.tag_out}"
     return msg

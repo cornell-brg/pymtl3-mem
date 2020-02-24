@@ -58,7 +58,7 @@ class ReplacementPolicy (Component):
               s.represp_ptr = ~s.repreq_hit_ptr
     else:
       # Real difficult to implement LRU here
-      pass
+      s.represp_ptr //= b1(0)
 
       
 
