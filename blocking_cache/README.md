@@ -4,7 +4,7 @@
 3. SRAM tag array and data array 
 
 ## Datapath
-![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache.svg)
+![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache_compact2.svg)
 ## Pipeline Stages
 
 `M0`: Tag array SRAM access. Refill response comes to M0 as well.
