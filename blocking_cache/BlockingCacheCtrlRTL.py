@@ -50,15 +50,14 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 Stage
     #---------------------------------------------------------------------------
 
-    s.memresp_en_M0 = RegEnRst(Bits1)\
-    ( 
-      en  = s.ctrl_out.reg_en_M0,
+    s.memresp_en_M0 = RegEnRst(Bits1)( 
       in_ = s.memresp_en,
+      en  = s.ctrl_out.reg_en_M0,
     )
     s.MSHR_replay_next_M0 = Wire(Bits1)
     s.MSHR_replay_reg_M0 = RegEnRst(Bits1)(
-      en  = s.ctrl_out.reg_en_M0,
       in_ = s.MSHR_replay_next_M0,
+      en  = s.ctrl_out.reg_en_M0,
     )
 
     s.state_M0 = Wire(p.CtrlMsg)
@@ -181,17 +180,16 @@ class BlockingCacheCtrlRTL ( Component ):
     # M1 Stage
     #--------------------------------------------------------------------------
     
-    s.state_M1 = RegEnRst(p.CtrlMsg)\
-    (
-      en  = s.ctrl_out.reg_en_M1,
+    s.state_M1 = RegEnRst(p.CtrlMsg)(
       in_ = s.state_M0,
+      en  = s.ctrl_out.reg_en_M1,
     )
     
     # Indicates which way in the cache to replace. We receive the value from 
     # dealloc in the M0 stage and use it in both M0 and M1
     s.way_ptr_M1 = RegEnRst(p.BitsAssoclog2)(
-      en  = s.ctrl_out.reg_en_M1,
       in_ = s.dpath_in.MSHR_ptr,
+      en  = s.ctrl_out.reg_en_M1,
     )
 
     s.is_evict_M1 = Wire(Bits1)
@@ -337,22 +335,19 @@ class BlockingCacheCtrlRTL ( Component ):
     # M2 Stage
     #--------------------------------------------------------------------------
     
-    s.state_M2 = RegEnRst(p.CtrlMsg)\
-    (
+    s.state_M2 = RegEnRst(p.CtrlMsg)(
       en  = s.ctrl_out.reg_en_M2,
       in_ = s.state_M1.out,
     )
 
-    s.is_evict_M2 = RegEnRst(Bits1)\
-    (
-      en  = s.ctrl_out.reg_en_M2,
+    s.is_evict_M2 = RegEnRst(Bits1)(
       in_ = s.is_evict_M1,
+      en  = s.ctrl_out.reg_en_M2,
     )
 
-    s.hit_reg_M2 = RegEnRst(Bits1)\
-    (
-      en  = s.ctrl_out.reg_en_M2,
+    s.hit_reg_M2 = RegEnRst(Bits1)(
       in_ = s.dpath_in.hit_M1,
+      en  = s.ctrl_out.reg_en_M2,
       out = s.ctrl_out.hit_M2[0],
     )
 
