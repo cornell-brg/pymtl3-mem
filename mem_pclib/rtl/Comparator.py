@@ -4,7 +4,6 @@ Comparator.py
 =========================================================================
 Determine whether a hit occurred and which way if associativity > 1
 
-
 Author: Eric Tang (et396), Xiaoyu Yan (xy97) 
 Date:   27 February 2020
 '''

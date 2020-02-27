@@ -1,8 +1,9 @@
 """
-#=========================================================================
-# ctrlStructs.py
-#=========================================================================
-bitstructs for cleaner code
+=========================================================================
+ ctrlStructs.py
+=========================================================================
+Bitstructs used within the cache control module
+
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 2 February 2020
 """
@@ -20,13 +21,14 @@ def mk_ctrl_pipeline_struct(  ):
       BitsData( self.is_write_refill ),
     )
 
-  req_cls = mk_bitstruct( cls_name, {
-    'val'               : Bits1,
-    'is_refill'         : Bits1,
-    'is_write_hit_clean': Bits1,
-    'is_write_refill'   : Bits1,
-  },
-  namespace = {
-    '__str__' : req_to_str
-  })
+  req_cls = mk_bitstruct( cls_name, 
+    {
+      'val'               : Bits1,
+      'is_refill'         : Bits1,
+      'is_write_hit_clean': Bits1,
+      'is_write_refill'   : Bits1,
+    },
+    namespace = {'__str__' : req_to_str}
+  )
+
   return req_cls

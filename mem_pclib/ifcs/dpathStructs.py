@@ -1,11 +1,13 @@
 """
-#=========================================================================
-# dpathStructs.py
-#=========================================================================
-bitstructs for cleaner code
+=========================================================================
+ dpathStructs.py
+=========================================================================
+Bitstructs used within the datapath
+
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 2 February 2020
 """
+
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 

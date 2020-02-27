@@ -80,8 +80,7 @@ class CacheDerivedParams:
     
     self.DpathSignalsOut = mk_dpath_signals_out_struct(self)
 
-    # structs local to the dpath
-    
+    # Structs used within dpath module
     self.PipelineMsg = mk_pipeline_msg(self.bitwidth_addr, \
       self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len)
     self.MSHRMsg     = mk_MSHR_msg(self.bitwidth_addr, \
@@ -95,7 +94,7 @@ class CacheDerivedParams:
     
     self.CtrlSignalsOut = mk_ctrl_signals_out_struct(self)
 
-    # structs local to the ctrl
+    # Structs local to the ctrl
     self.CtrlMsg = mk_ctrl_pipeline_struct()
     
     #--------------------------------------------------------------------

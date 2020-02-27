@@ -2,8 +2,8 @@
 #=========================================================================
 # cacheStructs.py
 #=========================================================================
-
 bitstructs for cache signals between the ctrl and dpath
+
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 19 February 2020
 """
@@ -78,18 +78,18 @@ def mk_ctrl_signals_out_struct( p ):
     'way_offset_M1'     : Bits1,
 
     # M2 Ctrl Signals
-    'reg_en_M2'           : Bits1,
-    'read_data_mux_sel_M2': Bits1,
-    'read_word_mux_sel_M2': p.BitsRdWordMuxSel,
-    'read_byte_mux_sel_M2': p.BitsRdByteMuxSel,
-    'read_2byte_mux_sel_M2': p.BitsRd2ByteMuxSel,
+    'reg_en_M2'                : Bits1,
+    'read_data_mux_sel_M2'     : Bits1,
+    'read_word_mux_sel_M2'     : p.BitsRdWordMuxSel,
+    'read_byte_mux_sel_M2'     : p.BitsRdByteMuxSel,
+    'read_2byte_mux_sel_M2'    : p.BitsRd2ByteMuxSel,
     'subword_access_mux_sel_M2': Bits2,
-    'stall_reg_en_M2': Bits1,
-    'stall_mux_sel_M2': Bits1,
-    'hit_M2': Bits2,
-    'memreq_type': p.BitsType,
-    'MSHR_alloc_en': Bits1,
-    'MSHR_dealloc_en': Bits1,
+    'stall_reg_en_M2'          : Bits1,
+    'stall_mux_sel_M2'         : Bits1,
+    'hit_M2'                   : Bits2,
+    'memreq_type'              : p.BitsType,
+    'MSHR_alloc_en'            : Bits1,
+    'MSHR_dealloc_en'          : Bits1,
     
   })
   return req_cls

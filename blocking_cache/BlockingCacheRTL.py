@@ -35,9 +35,7 @@ class BlockingCacheRTL ( Component ):
     # Interface
     #---------------------------------------------------------------------
 
-    # Proc <-> Cache
     s.cpu_port = MemMinionIfcRTL( CacheMsg.Req, CacheMsg.Resp )
-    # Mem <-> Cache
     s.mem_port = MemMasterIfcRTL( MemMsg.Req, MemMsg.Resp )
 
     #---------------------------------------------------------------------
