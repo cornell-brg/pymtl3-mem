@@ -21,8 +21,8 @@ from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRT
 class BlockingCacheRTL ( Component ):
 
   def construct( s,
-    CacheMsg      ,   # Cache req/resp msg type
-    MemMsg        ,   # Memory req/resp msg type
+    CacheMsg,             # Cache req/resp msg type
+    MemMsg,               # Memory req/resp msg type
     num_bytes     = 4096, # cache size in bytes
     associativity = 1     # Associativity
   ):
