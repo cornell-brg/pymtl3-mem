@@ -62,13 +62,13 @@ class TestHarness(Component):
     s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
     s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, 0, sink_delay)
 
-    connect( s.src.send,  s.cache.cpu_port.req  )
-    connect( s.sink.recv, s.cache.cpu_port.resp )
+    connect( s.src.send,  s.cache.mem_minion_ifc.req  )
+    connect( s.sink.recv, s.cache.mem_minion_ifc.resp )
 
     connect( s.mem.ifc[0].resp, s.mem2cache.recv )
-    connect( s.cache.mem_port.resp, s.mem2cache.send )
+    connect( s.cache.mem_master_ifc.resp, s.mem2cache.send )
 
-    connect( s.cache.mem_port.req, s.cache2mem.recv )
+    connect( s.cache.mem_master_ifc.req, s.cache2mem.recv )
     connect( s.mem.ifc[0].req, s.cache2mem.send )
 
   def load( s, addrs, data_ints ):
