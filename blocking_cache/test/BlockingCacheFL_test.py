@@ -12,10 +12,11 @@ import struct
 import random
 
 from pymtl3 import *
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
 from blocking_cache.test.DmappedTestCases import DmappedTestCases
 from blocking_cache.test.Asso2WayTestCases import AssoTestCases
 from blocking_cache.BlockingCacheFL import ModelCache
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 class CacheFL_Tests(DmappedTestCases, AssoTestCases):
 
