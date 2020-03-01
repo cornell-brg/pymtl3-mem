@@ -40,6 +40,7 @@ class CacheDerivedParams:
     self.bitwidth_index            = clog2( self.nblocks_per_way )                   # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
+    # 1 bit for dirty and val. Rest for tag. Need to make sure multiple of 8.
     self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 1 + 7 ) // 8 * 8 
     self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
     self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8         # Data array write byte bitwidth 
@@ -52,6 +53,9 @@ class CacheDerivedParams:
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity ) 
    
+    print("size[{}], asso[{}], clw[{}], tag[{}]".format(num_bytes, associativity,
+    self.bitwidth_cacheline, self.bitwidth_tag))
+
     #--------------------------------------------------------------------
     # Make Bits object
     #--------------------------------------------------------------------
@@ -66,6 +70,7 @@ class CacheDerivedParams:
     self.BitsTag           = mk_bits( self.bitwidth_tag )           # tag 
     self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset 
     self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
+    self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_array - self.bitwidth_tag - 2 )
     self.BitsTagwben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write byte enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write byte enable
     self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2 
@@ -85,12 +90,14 @@ class CacheDerivedParams:
     # Msgs for Dpath
     #--------------------------------------------------------------------
     
+    self.full_sram = False if self.bitwidth_tag_array - self.bitwidth_tag \
+      - 2 > 0 else True
     self.DpathSignalsOut = mk_dpath_signals_out_struct( self )
 
     # Structs used within dpath module
-    self.PipelineMsg = mk_pipeline_msg( self )
-    self.MSHRMsg     = mk_MSHR_msg( self )
-    self.MuxM0Msg    = mk_M0_mux_msg( self )
+    self.PipelineMsg    = mk_pipeline_msg( self )
+    self.MSHRMsg        = mk_MSHR_msg( self )
+    self.StructTagArray = mk_tag_array_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

@@ -208,7 +208,7 @@ class BlockingCacheCtrlRTL ( Component ):
       repreq_is_hit   = s.repreq_is_hit_M1,
       repreq_ptr      = s.dpath_in.ctrl_bit_rep_rd_M1, # Read replacement mask
       represp_ptr     = s.ctrl_out.ctrl_bit_rep_wr_M0, # Bypass to M0 stage? 
-      #TODO Need more clarification 
+      #TODO Need more work
     )
 
     @s.update

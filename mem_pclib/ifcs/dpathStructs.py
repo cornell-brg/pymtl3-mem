@@ -61,15 +61,6 @@ def mk_MSHR_msg( p ):
   })
   return req_cls
 
-def mk_M0_mux_msg( p ):
-  req_cls = mk_bitstruct( "M0", {
-    'type_':  p.BitsType,
-    'opaque': p.BitsOpaque,
-    'len':    p.BitsLen,
-    'data':   p.BitsData,
-  })
-  return req_cls
-
 def mk_addr_struct( p ):
   # declaration alignment MATTERS here
   struct = mk_bitstruct( "addr", {
@@ -77,4 +68,20 @@ def mk_addr_struct( p ):
     'index' : p.BitsIdx,
     'offset': p.BitsOffset
   } )
+  return struct
+
+def mk_tag_array_struct( p ):
+  if p.full_sram:
+    struct = mk_bitstruct( "tag_array", {
+      'val': Bits1,
+      'dty': Bits1,
+      'tag': p.BitsTag,
+    } )
+  else:
+    struct = mk_bitstruct( "tag_array", {
+      'val': Bits1,
+      'dty': Bits1,
+      'tag': p.BitsTag,
+      'tmp': p.BitsTagArrayTmp
+    } )
   return struct
