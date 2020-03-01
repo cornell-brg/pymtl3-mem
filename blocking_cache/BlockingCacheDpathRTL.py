@@ -16,6 +16,7 @@ from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.Muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
 from mem_pclib.rtl.arithmetics      import Indexer
+from mem_pclib.rtl.registers        import PiplineRegEnRst
 from sram.SramPRTL                  import SramPRTL
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
@@ -42,7 +43,7 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
 
     # Pipeline Registers
-    s.pipeline_reg_M0 = RegEnRst( p.MemMsg.Resp )(
+    s.pipeline_reg_M0 = PiplineRegEnRst( p.MemMsg.Resp, p.MemMsg.Resp(0, 0, 0, 0, 0) )(
       en  = s.ctrl_in.reg_en_M0,
       in_ = s.memresp_Y
     )
@@ -114,7 +115,7 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
 
     # Pipeline registers
-    s.cachereq_M1 = RegEnRst( p.PipelineMsg )(
+    s.cachereq_M1 = PiplineRegEnRst( p.PipelineMsg, p.PipelineMsg(0, 0, 0, 0, 0) )(
       en  = s.ctrl_in.reg_en_M1,
       in_ = s.cachereq_M0,
     )
@@ -253,7 +254,7 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
     
     # Pipeline registers
-    s.cachereq_M2 = RegEnRst(p.PipelineMsg)(
+    s.cachereq_M2 = PiplineRegEnRst( p.PipelineMsg, p.PipelineMsg(0,0,0,0,0) )(
       en  = s.ctrl_in.reg_en_M2,
       in_ = s.cachereq_M1_2,
     )

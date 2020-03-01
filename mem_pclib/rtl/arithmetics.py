@@ -27,7 +27,9 @@ class Indexer ( Component ):
     s.index = InPort( p.BitsIdx )
     s.offset= InPort( p.BitsAssoclog2 )
     s.out   = OutPort( p.BitsClogNlines )
+    BitsClogNlines  = p.BitsClogNlines
+    nblocks_per_way = p.nblocks_per_way
     @s.update
     def index_logic():
-      s.out = p.BitsClogNlines(s.index) + p.BitsClogNlines(s.offset) * \
-        p.BitsClogNlines(p.nblocks_per_way)
+      s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
+        BitsClogNlines( nblocks_per_way )

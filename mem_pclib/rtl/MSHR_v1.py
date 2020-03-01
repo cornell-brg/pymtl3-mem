@@ -31,7 +31,7 @@ class MSHR (Component):
     s.empty       = OutPort(Bits1) # high when no more secondary misses?
 
     # Number of free MSHR Entries
-    s.num_entries_in = Wire(BitsEntries)
+    s.num_entries_in  = Wire(BitsEntries)
     s.num_entries_reg = RegRst(BitsEntries)(
       in_ = s.num_entries_in,
     )
@@ -48,15 +48,15 @@ class MSHR (Component):
     def full_logic():
       s.full = n
       s.empty = n
-      if s.num_entries_reg.out == entries or \
-        (s.num_entries_reg.out == entries - 1 and s.alloc_en):
+      if s.num_entries_reg.out == BitsEntries(entries) or \
+        (s.num_entries_reg.out == BitsEntries(entries - 1) and s.alloc_en):
         # Considered full if num entries is equal to max entries or if we 
         # have one less and are allocating an entry
         s.full = y
-      if s.num_entries_reg.out == 0:
+      if s.num_entries_reg.out == BitsEntries(0):
         s.empty = y
 
-    if entries == 1:
+    if entries == BitsEntries(1):
       s.MSHR = RegEnRst(p.MSHRMsg)(
         in_ = s.alloc_in,
         out = s.dealloc_out,

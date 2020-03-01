@@ -21,12 +21,14 @@ class Comparator( Component ):
     s.hit       = OutPort(Bits1)
     s.hit_way   = OutPort(p.BitsAssoclog2)
 
+    BitsAssoclog2 = p.BitsAssoclog2
+    associativity = p.associativity
     @s.update
     def comparing_logic():
       s.hit     = n
-      s.hit_way = p.BitsAssoclog2(0)
-      for i in range( p.associativity ):
+      s.hit_way = BitsAssoclog2(0)
+      for i in range( associativity ):
         if ( s.tag_array[i].val ):
           if s.tag_array[i].tag == s.addr_tag:
             s.hit = y
-            s.hit_way = p.BitsAssoclog2(i) 
+            s.hit_way = BitsAssoclog2(i) 
