@@ -17,6 +17,7 @@ from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 class BlockingCacheRTL ( Component ):
 
@@ -73,7 +74,8 @@ class BlockingCacheRTL ( Component ):
     # Memory Request Message
     s.mem_master_ifc.req.msg.opaque  //= s.cacheDpath.dpath_out.memreq_opaque_M2
     s.mem_master_ifc.req.msg.type_   //= s.cacheCtrl.ctrl_out.memreq_type
-    s.mem_master_ifc.req.msg.addr    //= s.cacheDpath.dpath_out.memreq_addr_M2
+                              # Bits32                         # StructAddr
+    connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.dpath_out.memreq_addr_M2 )
     s.mem_master_ifc.req.msg.data    //= s.cacheDpath.dpath_out.memreq_data_M2
 
   # Line tracing

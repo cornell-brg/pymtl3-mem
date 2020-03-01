@@ -15,12 +15,13 @@ from mem_pclib.rtl.Comparator       import Comparator
 from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.Muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
-from mem_pclib.rtl.utils            import EComp
+from mem_pclib.rtl.arithmetics      import Indexer
+from sram.SramPRTL                  import SramPRTL
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
-from sram.SramPRTL                  import SramPRTL
+from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 class BlockingCacheDpathRTL (Component):
 
@@ -47,53 +48,45 @@ class BlockingCacheDpathRTL (Component):
     )
     s.dpath_out.memresp_type_M0 //= s.pipeline_reg_M0.out.type_
 
-    # Cachereq / Memresp select muxes
-    s.cachereq_msg_mux_in_M0 = Wire( p.MuxM0Msg )
-    s.cachereq_msg_mux_in_M0.type_  //= s.cachereq_Y.type_
-    s.cachereq_msg_mux_in_M0.opaque //= s.cachereq_Y.opaque
-    s.cachereq_msg_mux_in_M0.len    //= s.cachereq_Y.len
-    s.cachereq_msg_mux_in_M0.data   //= s.cachereq_Y.data
-
     s.MSHR_dealloc_out       = Wire( p.MSHRMsg  ) # Output from MSHR
-    s.MSHR_dealloc_mux_in_M0 = Wire( p.MuxM0Msg ) 
+    s.MSHR_dealloc_mux_in_M0 = Wire( p.CacheMsg.Req ) 
     s.MSHR_dealloc_mux_in_M0.type_  //= s.MSHR_dealloc_out.type_
     s.MSHR_dealloc_mux_in_M0.opaque //= s.MSHR_dealloc_out.opaque
     s.MSHR_dealloc_mux_in_M0.len    //= s.MSHR_dealloc_out.len
     s.MSHR_dealloc_mux_in_M0.data   //= s.MSHR_dealloc_out.data
+    s.MSHR_dealloc_mux_in_M0.addr   //= s.MSHR_dealloc_out.addr
 
-    s.cachereq_msg_mux_M0 = Mux( p.MuxM0Msg , 2 )(
+    # Chooses to servce the cache request from proc or refill response from mem
+    s.MSHR_mux_M0 = Mux( p.CacheMsg.Req , 2 )(
       in_ = {
-        0: s.cachereq_msg_mux_in_M0,
+        0: s.cachereq_Y,
         1: s.MSHR_dealloc_mux_in_M0
       },
       sel = s.ctrl_in.memresp_mux_sel_M0,
     )
 
     s.cachereq_M0 = Wire( p.PipelineMsg )
-    s.cachereq_M0.len    //= s.cachereq_msg_mux_M0.out.len
-    s.cachereq_M0.type_  //= s.cachereq_msg_mux_M0.out.type_
-    s.cachereq_M0.opaque //= s.cachereq_msg_mux_M0.out.opaque
+    s.cachereq_M0.len    //= s.MSHR_mux_M0.out.len
+    s.cachereq_M0.type_  //= s.MSHR_mux_M0.out.type_
+    s.cachereq_M0.opaque //= s.MSHR_mux_M0.out.opaque
 
     s.cachereq_addr_M1_forward = Wire( p.BitsAddr )
-    s.addr_mux_M0 = Mux( p.BitsAddr, 3 )\
-    (
+    # Selects the bypass as a result of write hit clean
+    s.addr_mux_M0 = Mux( p.BitsAddr, 2 )(
       in_ = {
-        0: s.cachereq_Y.addr,
-        1: s.MSHR_dealloc_out.addr,
-        2: s.cachereq_addr_M1_forward
+        0: s.MSHR_mux_M0.out.addr,
+        1: s.cachereq_addr_M1_forward
       },
       sel = s.ctrl_in.addr_mux_sel_M0,
-      out = s.cachereq_M0.addr,
+    )
+    connect_bits2bitstruct( s.cachereq_M0.addr, s.addr_mux_M0.out )
+
+    s.replicator_M0 = CacheDataReplicator( p )(
+      msg_len = s.MSHR_mux_M0.out.len,
+      data    = s.MSHR_mux_M0.out.data
     )
 
-    s.replicator_M0 = CacheDataReplicator( p ) \
-    (
-      msg_len = s.cachereq_msg_mux_M0.out.len,
-      data    = s.cachereq_msg_mux_M0.out.data
-    )
-
-    s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )\
-    (
+    s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )(
       in_ = {
         0: s.replicator_M0.out,
         1: s.pipeline_reg_M0.out.data
@@ -102,20 +95,16 @@ class BlockingCacheDpathRTL (Component):
       out = s.cachereq_M0.data,
     )
 
-    s.addr_decode_M0 = AddrDecoder( p )(
-      addr_in     = s.cachereq_M0.addr
-    )
-
     # Tag Array Inputs
     s.tag_array_idx_M0 = Wire( p.BitsIdx )
-    s.tag_array_idx_M0 //= s.addr_decode_M0.index_out
+    s.tag_array_idx_M0 //= s.cachereq_M0.addr.index
 
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
-    s.tag_array_wdata_M0[0:p.bitwidth_tag] //= s.addr_decode_M0.tag_out 
+    s.tag_array_wdata_M0[0:p.bitwidth_tag] //= s.cachereq_M0.addr.tag 
     s.tag_array_wdata_M0[p.bitwidth_tag_array-1:p.bitwidth_tag_array] //= s.ctrl_in.ctrl_bit_val_wr_M0 # Valid bit 
     s.tag_array_wdata_M0[p.bitwidth_tag_array-2:p.bitwidth_tag_array-1] //= s.ctrl_in.ctrl_bit_dty_wr_M0 # Dirty bit
 
-    s.dpath_out.cachereq_type_M0 //= s.cachereq_msg_mux_M0.out.type_
+    s.dpath_out.cachereq_type_M0 //= s.MSHR_mux_M0.out.type_
 
     #--------------------------------------------------------------------
     # M1 Stage 
@@ -126,18 +115,17 @@ class BlockingCacheDpathRTL (Component):
       en  = s.ctrl_in.reg_en_M1,
       in_ = s.cachereq_M0,
     )
-    s.cachereq_addr_M1_forward //= s.cachereq_M1.out.addr
 
-    s.addr_decode_M1 = AddrDecoder( p )(
-      addr_in     = s.cachereq_M1.out.addr,
-    )
+    # Connect the M1 addr backwards to M0
+    #                               Bits32                     StructAddr
+    connect_bits2bitstruct( s.cachereq_addr_M1_forward, s.cachereq_M1.out.addr )
 
     # Register File to store the replacement info
     s.ctrl_bit_rep_M1 = Wire(p.BitsAssoclog2) 
     s.replacement_bits_M1 = RegisterFile( p.BitsAssoclog2, p.nblocks_per_way )
-    s.replacement_bits_M1.raddr[0] //= s.addr_decode_M1.index_out
+    s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.out.addr.index
     s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
-    s.replacement_bits_M1.waddr[0] //= s.addr_decode_M1.index_out
+    s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.out.addr.index
     s.replacement_bits_M1.wdata[0] //= s.ctrl_in.ctrl_bit_rep_wr_M0
     s.replacement_bits_M1.wen  [0] //= s.ctrl_in.ctrl_bit_rep_en_M1      
     
@@ -181,13 +169,14 @@ class BlockingCacheDpathRTL (Component):
           out = s.tag_array_rdata_M1[i],
         )
       )
-    s.stall_mux_M1 = stall_muxes_M1
+    s.stall_muxes_M1 = stall_muxes_M1
 
     # MSHR (1 entry) 
     s.MSHR_alloc_in = Wire(p.MSHRMsg)
     s.MSHR_alloc_in.type_  //= s.cachereq_M1.out.type_
-    s.MSHR_alloc_in.addr   //= s.cachereq_M1.out.addr
+    connect_bits2bitstruct( s.MSHR_alloc_in.addr, s.cachereq_M1.out.addr )
     s.MSHR_alloc_in.opaque //= s.cachereq_M1.out.opaque
+    # select only one word of data to store since the rest is replicated
     s.MSHR_alloc_in.data   //= s.cachereq_M1.out.data[0:p.bitwidth_data] 
     s.MSHR_alloc_in.len    //= s.cachereq_M1.out.len
     s.MSHR_alloc_in.repl   //= s.dpath_out.ctrl_bit_rep_rd_M1
@@ -209,33 +198,29 @@ class BlockingCacheDpathRTL (Component):
       s.ctrl_bit_val_rd_M1[i] //= s.tag_array_rdata_M1[i][p.bitwidth_tag_array-1:p.bitwidth_tag_array] 
       s.dpath_out.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_M1[i][p.bitwidth_tag_array-2:p.bitwidth_tag_array-1] 
     
-    # Comparator
-    @s.update
-    def Comparator():
-      s.dpath_out.hit_M1 = n
-      s.dpath_out.hit_way_M1 = p.BitsAssoclog2(0)
-      for i in range( p.associativity ):
-        if ( s.ctrl_bit_val_rd_M1[i] ):
-          if s.tag_array_rdata_M1[i][0:p.bitwidth_tag] == s.addr_decode_M1.tag_out:
-            s.dpath_out.hit_M1 = y
-            s.dpath_out.hit_way_M1 = p.BitsAssoclog2(i) 
+    s.comparator_set = Comparator( p )(
+      addr_tag       = s.cachereq_M1.out.addr.tag,
+      tag_array_val  = s.ctrl_bit_val_rd_M1,
+      hit            = s.dpath_out.hit_M1,
+      hit_way        = s.dpath_out.hit_way_M1,
+    )
+    for i in range( p.associativity ):
+      s.comparator_set.tag_array_data[i] //= s.tag_array_rdata_M1[i]
     
     # Mux for choosing which way to evict
-    s.evict_way_out_M1 = Wire(p.BitsTag)
-    s.evict_way_mux_M1 = PMux(p.BitsTag, p.associativity)(
+    s.evict_way_mux_M1 = PMux( p.BitsTag, p.associativity )(
       sel = s.ctrl_bit_rep_M1,
-      out = s.evict_way_out_M1
     )
-    for i in range(p.associativity):
+    for i in range( p.associativity ):
       s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i][0:p.bitwidth_tag]
 
-    s.evict_addr_M1 = Wire(p.BitsAddr)
-    s.evict_addr_M1[p.bitwidth_offset+p.bitwidth_index:p.bitwidth_addr] //= s.evict_way_out_M1 # set tag
-    s.evict_addr_M1[p.bitwidth_offset:p.bitwidth_offset+p.bitwidth_index] //= s.addr_decode_M1.index_out  # set index
-    s.evict_addr_M1[0:p.bitwidth_offset] //= p.BitsOffset(0) # Zero the offset since this will be a memreq
+    s.evict_addr_M1 = Wire( p.StructAddr )
+    s.evict_addr_M1.tag    //= s.evict_way_mux_M1.out 
+    s.evict_addr_M1.index  //= s.cachereq_M1.out.addr.index
+    s.evict_addr_M1.offset //= p.BitsOffset(0) # Zero the offset since this will be a memreq
 
     s.cachereq_M1_2 = Wire(p.PipelineMsg)
-    s.evict_mux_M1  = Mux(p.BitsAddr, 2)\
+    s.evict_mux_M1  = Mux(p.StructAddr, 2)\
     (
       in_ = {
         0: s.cachereq_M1.out.addr,
@@ -249,23 +234,21 @@ class BlockingCacheDpathRTL (Component):
     s.data_array_wdata_M1 = Wire(p.BitsCacheline)
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data  
     
-    # Index bits change depending on associativity
-    BitsClogNlines = mk_bits(clog2(p.total_num_cachelines))
-    s.data_array_idx_M1 = Wire(BitsClogNlines)
-    @s.update
-    def choice_calc_M1():
-      s.data_array_idx_M1 = BitsClogNlines(s.addr_decode_M1.index_out) \
-        + BitsClogNlines(s.ctrl_in.way_offset_M1) * BitsClogNlines(p.nblocks_per_way)
+    s.index_offset_M1 = Indexer( p )(
+      index  = s.cachereq_M1.out.addr.index,
+      offset = s.ctrl_in.way_offset_M1,
+    )
     
     s.cachereq_M1_2.len    //= s.cachereq_M1.out.len
     s.cachereq_M1_2.data   //= s.cachereq_M1.out.data
     s.cachereq_M1_2.type_  //= s.cachereq_M1.out.type_
     s.cachereq_M1_2.opaque //= s.cachereq_M1.out.opaque
 
+    # Send the M1 status signals to control
     s.dpath_out.ctrl_bit_rep_rd_M1 //= s.ctrl_bit_rep_M1
     s.dpath_out.cachereq_type_M1   //= s.cachereq_M1.out.type_
     s.dpath_out.len_M1             //= s.cachereq_M1.out.len
-    s.dpath_out.offset_M1          //= s.addr_decode_M1.offset_out
+    s.dpath_out.offset_M1          //= s.cachereq_M1.out.addr.offset
     s.dpath_out.MSHR_ptr           //= s.MSHR_dealloc_out.repl
     s.dpath_out.MSHR_type          //= s.MSHR_dealloc_out.type_ 
     
@@ -287,7 +270,7 @@ class BlockingCacheDpathRTL (Component):
     s.data_array_M2 = SramPRTL(p.bitwidth_cacheline, p.total_num_cachelines)(
       port0_val   = s.ctrl_in.data_array_val_M1,
       port0_type  = s.ctrl_in.data_array_type_M1,
-      port0_idx   = s.data_array_idx_M1,
+      port0_idx   = s.index_offset_M1.out,
       port0_wdata = s.data_array_wdata_M1,
       port0_wben  = s.ctrl_in.data_array_wben_M1
     )
@@ -305,7 +288,7 @@ class BlockingCacheDpathRTL (Component):
       sel = s.ctrl_in.stall_mux_sel_M2
     )
 
-    s.read_data_mux_M2 = Mux(p.BitsCacheline, 2)\
+    s.read_data_mux_M2 = Mux( p.BitsCacheline, 2 )\
     (
       in_ = {
         0: s.stall_mux_M2.out,
@@ -314,26 +297,29 @@ class BlockingCacheDpathRTL (Component):
       sel = s.ctrl_in.read_data_mux_sel_M2
     )
 
-    # Data size select mux
-    s.data_size_mux_M2 = DataSizeMux(p)\
-    (
-      data              = s.read_data_mux_M2.out,
-      word_mux_sel      = s.ctrl_in.read_word_mux_sel_M2,
-      half_word_mux_sel = s.ctrl_in.read_2byte_mux_sel_M2,
-      byte_mux_sel      = s.ctrl_in.read_byte_mux_sel_M2,
-      data_size_mux_sel = s.ctrl_in.subword_access_mux_sel_M2
+    # Data size select mux for subword accesses
+    s.data_size_mux_M2 = DataSizeMux( p )(
+      data   = s.read_data_mux_M2.out,
+      en     = s.ctrl_in.data_size_mux_en_M2,        
+      len_   = s.cachereq_M2.out.len,
+      offset = s.cachereq_M2.out.addr.offset,
     )
 
-    s.dpath_out.cacheresp_data_M2                                 //= s.data_size_mux_M2.out
-    s.dpath_out.cacheresp_type_M2                                 //= s.dpath_out.cachereq_type_M2
-    s.dpath_out.offset_M2                                         //= s.cachereq_M2.out.addr[0:p.bitwidth_offset]
-    s.dpath_out.memreq_opaque_M2                                  //= s.cachereq_M2.out.opaque
-    s.dpath_out.memreq_addr_M2[0:p.bitwidth_offset]               //= p.BitsOffset(0)
-    s.dpath_out.memreq_addr_M2[p.bitwidth_offset:p.bitwidth_addr] //= s.cachereq_M2.out.addr[p.bitwidth_offset:p.bitwidth_addr]
-    s.dpath_out.memreq_data_M2                                    //= s.read_data_mux_M2.out
+    s.dpath_out.cacheresp_data_M2 //= s.data_size_mux_M2.out
+    s.dpath_out.cacheresp_type_M2 //= s.dpath_out.cachereq_type_M2
+    s.dpath_out.offset_M2         //= s.cachereq_M2.out.addr.offset
+    s.dpath_out.memreq_opaque_M2  //= s.cachereq_M2.out.opaque
+    s.memreq_addr_out           = Wire(p.StructAddr) 
+    s.memreq_addr_out.tag    //= s.cachereq_M2.out.addr.tag
+    s.memreq_addr_out.index  //= s.cachereq_M2.out.addr.index
+    s.memreq_addr_out.offset //= p.BitsOffset(0)
+
+    s.dpath_out.memreq_addr_M2  //= s.memreq_addr_out
+    s.dpath_out.memreq_data_M2  //= s.read_data_mux_M2.out
+    
 
   def line_trace( s ):
     msg = ""
     # msg += s.mshr.line_trace()
-    msg += f"{s.tag_array_rdata_M1[0]} == {s.addr_decode_M1.tag_out}"
+    # msg += f"{s.tag_array_rdata_M1[0]} == {s.addr_decode_M1.tag_out}"
     return msg

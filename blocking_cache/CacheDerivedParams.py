@@ -56,43 +56,47 @@ class CacheDerivedParams:
     # Make Bits object
     #--------------------------------------------------------------------
 
-    self.BitsLen           = mk_bits(self.bitwidth_len)           # Number of bytes  being accessed
-    self.BitsOpaque        = mk_bits(self.bitwidth_opaque)        # opaque
-    self.BitsType          = mk_bits(4)                           # access type
-    self.BitsAddr          = mk_bits(self.bitwidth_addr)          # address 
-    self.BitsData          = mk_bits(self.bitwidth_data)          # data 
-    self.BitsCacheline     = mk_bits(self.bitwidth_cacheline)     # cacheline 
-    self.BitsIdx           = mk_bits(self.bitwidth_index)         # index 
-    self.BitsTag           = mk_bits(self.bitwidth_tag)           # tag 
-    self.BitsOffset        = mk_bits(self.bitwidth_offset)        # offset 
-    self.BitsTagArray      = mk_bits(self.bitwidth_tag_array)     # Tag array write byte enable
-    self.BitsTagwben       = mk_bits(self.bitwidth_tag_wben)      # Tag array write byte enable
-    self.BitsDataWben      = mk_bits(self.bitwidth_data_wben)     # Data array write byte enable
-    self.BitsRdWordMuxSel  = mk_bits(self.bitwidth_rd_wd_mux_sel) # Read data mux M2 
-    self.BitsRdByteMuxSel  = mk_bits(self.bitwidth_rd_byte_mux_sel)
-    self.BitsRd2ByteMuxSel = mk_bits(self.bitwidth_rd_2byte_mux_sel)
-    self.BitsAssoc         = mk_bits(self.associativity)
-    self.BitsAssoclog2     = mk_bits(self.bitwidth_clog_asso)
+    self.BitsLen           = mk_bits( self.bitwidth_len )           # Number of bytes  being accessed
+    self.BitsOpaque        = mk_bits( self.bitwidth_opaque )        # opaque
+    self.BitsType          = mk_bits( 4 )                           # access type
+    self.BitsAddr          = mk_bits( self.bitwidth_addr )          # address 
+    self.BitsData          = mk_bits( self.bitwidth_data )          # data 
+    self.BitsCacheline     = mk_bits( self.bitwidth_cacheline )     # cacheline 
+    self.BitsIdx           = mk_bits( self.bitwidth_index )         # index 
+    self.BitsTag           = mk_bits( self.bitwidth_tag )           # tag 
+    self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset 
+    self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
+    self.BitsTagwben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write byte enable
+    self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write byte enable
+    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2 
+    self.BitsRd2ByteMuxSel = mk_bits( self.bitwidth_rd_2byte_mux_sel )
+    self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
+    self.BitsAssoc         = mk_bits( self.associativity )
+    self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
+    self.BitsClogNlines    = mk_bits(clog2(self.total_num_cachelines))
+
+    #--------------------------------------------------------------------
+    # Specialize structs 
+    #--------------------------------------------------------------------
+    
+    self.StructAddr      = mk_addr_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Dpath
     #--------------------------------------------------------------------
     
-    self.DpathSignalsOut = mk_dpath_signals_out_struct(self)
+    self.DpathSignalsOut = mk_dpath_signals_out_struct( self )
 
     # Structs used within dpath module
-    self.PipelineMsg = mk_pipeline_msg(self.bitwidth_addr, \
-      self.bitwidth_cacheline, self.bitwidth_opaque, 4, self.bitwidth_len)
-    self.MSHRMsg     = mk_MSHR_msg(self.bitwidth_addr, \
-      self.bitwidth_data, self.bitwidth_opaque, 4, self.bitwidth_len, \
-        self.bitwidth_clog_asso)
-    self.MuxM0Msg    = mk_M0_mux_msg(self)
+    self.PipelineMsg = mk_pipeline_msg( self )
+    self.MSHRMsg     = mk_MSHR_msg( self )
+    self.MuxM0Msg    = mk_M0_mux_msg( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl
     #--------------------------------------------------------------------
     
-    self.CtrlSignalsOut = mk_ctrl_signals_out_struct(self)
+    self.CtrlSignalsOut = mk_ctrl_signals_out_struct( self )
 
     # Structs local to the ctrl
     self.CtrlMsg = mk_ctrl_pipeline_struct()
@@ -108,4 +112,3 @@ class CacheDerivedParams:
     self.wben0 = self.BitsDataWben(0)
     self.wbenf = self.BitsDataWben(-1)
     self.tg_wbenf = self.BitsTagwben(-1)
-    

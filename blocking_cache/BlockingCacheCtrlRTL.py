@@ -110,15 +110,15 @@ class BlockingCacheCtrlRTL ( Component ):
         # no space in MSHR or we have replay
         s.cachereq_rdy = n
 
-    CS_tag_array_wben_M0  = slice( 7, 7 + p.bitwidth_tag_wben )
-    CS_wdata_mux_sel_M0   = slice( 6, 7 )
-    CS_addr_mux_sel_M0    = slice( 4, 6 )
+    CS_tag_array_wben_M0  = slice( 6, 6 + p.bitwidth_tag_wben )
+    CS_wdata_mux_sel_M0   = slice( 5, 6 )
+    CS_addr_mux_sel_M0    = slice( 4, 5 )
     CS_memresp_mux_sel_M0 = slice( 3, 4 )
     CS_tag_array_type_M0  = slice( 2, 3 )
     CS_ctrl_bit_dty_wr_M0 = slice( 1, 2 )
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
-    s.cs0 = Wire( mk_bits( 9 + p.bitwidth_tag_wben ) ) # Bits for control signal table
+    s.cs0 = Wire( mk_bits( 6 + p.bitwidth_tag_wben ) ) # Bits for control signal table
     s.ostall_M0 = Wire(Bits1) 
     s.ostall_M1 = Wire(Bits1) # Stalls originating from earlier in pipeline
     s.ostall_M2 = Wire(Bits1) 
@@ -134,20 +134,20 @@ class BlockingCacheCtrlRTL ( Component ):
         s.state_M0.val = n
       
       #                 tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
-      s.cs0 = concat( p.tg_wbenf, b2(0)  , b2(0)  ,    x    ,  rd , x , x ) # default value
+      s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(0)  ,    x    ,  rd , x , x ) # default value
       if s.state_M0.val: #                                               tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
-        if s.state_M0.is_refill:                       s.cs0 = concat( p.tg_wbenf, b1(1)  , b2(1)  , b1(1)   ,  wr , n , y )
-        elif s.state_M0.is_write_refill:               s.cs0 = concat( p.tg_wbenf, b1(0)  , b2(1)  , b1(1)   ,  wr , y , y )
-        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat( p.tg_wbenf, b1(0)  , b2(2)  , b1(0)   ,  wr , y , y )
+        if s.state_M0.is_refill:                       s.cs0 = concat( p.tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n , y )
+        elif s.state_M0.is_write_refill:               s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y , y )
+        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y , y )
         else:
-          if (s.dpath_in.cachereq_type_M0 == INIT):    s.cs0 = concat( p.tg_wbenf, b1(0)  , b2(0)  , b1(0)   ,  wr , n , y )
-          elif (s.dpath_in.cachereq_type_M0 == READ):  s.cs0 = concat( p.tg_wbenf, b1(0)  , b2(0)  , b1(0)   ,  rd , n , n )
-          elif (s.dpath_in.cachereq_type_M0 == WRITE): s.cs0 = concat( p.tg_wbenf, b1(0)  , b2(0)  , b1(0)   ,  rd , n , n )
+          if (s.dpath_in.cachereq_type_M0 == INIT):    s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , n , y )
+          elif (s.dpath_in.cachereq_type_M0 == READ):  s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
+          elif (s.dpath_in.cachereq_type_M0 == WRITE): s.cs0 = concat( p.tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
 
       s.ctrl_out.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl_out.wdata_mux_sel_M0   = s.cs0[ CS_wdata_mux_sel_M0   ]
-      s.ctrl_out.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
       s.ctrl_out.addr_mux_sel_M0    = s.cs0[ CS_addr_mux_sel_M0    ]
+      s.ctrl_out.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
       s.ctrl_out.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
       s.ctrl_out.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl_out.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
@@ -351,63 +351,44 @@ class BlockingCacheCtrlRTL ( Component ):
       out = s.ctrl_out.hit_M2[0],
     )
 
-    CS_read_word_mux_sel_M2 = slice( 8,  8 + p.bitwidth_rd_wd_mux_sel )
+    CS_data_size_mux_en_M2  = slice( 8,  9 )
     CS_read_data_mux_sel_M2 = slice( 7,  8 )
     CS_ostall_M2            = slice( 6,  7 )
     CS_memreq_type          = slice( 2,  6 )
     CS_memreq_en            = slice( 1,  2 )
     CS_cacheresp_en         = slice( 0,  1 )
-    s.cs2 = Wire( mk_bits( 8 + p.bitwidth_rd_wd_mux_sel ) )
-    s.msel = Wire(p.BitsRdWordMuxSel)
+    s.cs2 = Wire( Bits9 )
 
     s.stall_M2  = Wire(Bits1) # state signal for if we stalled in M2 stage
-
     @s.update
     def comb_block_M2(): # comb logic block and setting output ports
-      s.msel = p.BitsRdWordMuxSel(s.dpath_in.offset_M2[2:p.bitwidth_offset]) + p.BitsRdWordMuxSel(1)
-                 #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
-      s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   ) # default
-      if s.state_M2.out.val:                                    #  word_mux|rdata_mux|ostall|memreq_type|memreq|cacheresp
-        if s.state_M2.out.is_write_hit_clean:        s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     n   )
-        elif ~s.memreq_rdy or ~s.cacheresp_rdy:      s.cs2 = concat(p.wdmx0,   b1(0) ,  y   ,   READ    ,    n ,     n   )
-        elif s.is_evict_M2.out:                      s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   WRITE   ,    y ,     n   )
+                 #  dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
+      s.cs2 = concat(   y   , b1(0) ,  n   ,   READ    ,    n ,     n   ) # default
+      if s.state_M2.out.val:                                    #  dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
+        if s.state_M2.out.is_write_hit_clean:        s.cs2 = concat(   y   ,  b1(0)  ,  n   ,   READ    ,    n ,     n   )
+        elif ~s.memreq_rdy or ~s.cacheresp_rdy:      s.cs2 = concat(   n   ,  b1(0)  ,  y   ,   READ    ,    n ,     n   )
+        elif s.is_evict_M2.out:                      s.cs2 = concat(   n   ,  b1(0)  ,  n   ,   WRITE   ,    y ,     n   )
         elif s.state_M2.out.is_refill:
-          if s.dpath_in.cachereq_type_M2 == READ:    s.cs2 = concat(s.msel ,   b1(1) ,  n   ,   READ    ,    n ,     y   )
-          elif s.dpath_in.cachereq_type_M2 == WRITE: s.cs2 = concat(p.wdmx0,   b1(1) ,  n   ,   READ    ,    n ,     n   )
+          if s.dpath_in.cachereq_type_M2 == READ:    s.cs2 = concat(   y   ,  b1(1) ,  n   ,   READ    ,    n ,     y   )
+          elif s.dpath_in.cachereq_type_M2 == WRITE: s.cs2 = concat(   n   ,  b1(1) ,  n   ,   READ    ,    n ,     n   )
         else:
-          if s.dpath_in.cachereq_type_M2 == INIT:    s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
+          if s.dpath_in.cachereq_type_M2 == INIT:    s.cs2 = concat(   n   ,  b1(0) ,  n   ,   READ    ,    n ,     y   )
           elif s.dpath_in.cachereq_type_M2 == READ:
-            if    s.ctrl_out.hit_M2[0]:              s.cs2 = concat(s.msel ,   b1(0) ,  n   ,   READ    ,    n ,     y   )
-            elif ~s.ctrl_out.hit_M2[0]:              s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
+            if    s.ctrl_out.hit_M2[0]:              s.cs2 = concat(   y   ,  b1(0) ,  n   ,   READ    ,    n ,     y   )
+            elif ~s.ctrl_out.hit_M2[0]:              s.cs2 = concat(   n   ,  b1(0) ,  n   ,   READ    ,    y ,     n   )
           elif s.dpath_in.cachereq_type_M2 == WRITE:
-            if s.state_M2.out.is_write_refill:       s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   WRITE   ,    n ,     y   )
-            elif  s.ctrl_out.hit_M2[0]:              s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    n ,     y   )
-            elif ~s.ctrl_out.hit_M2[0]:              s.cs2 = concat(p.wdmx0,   b1(0) ,  n   ,   READ    ,    y ,     n   )
+            if s.state_M2.out.is_write_refill:       s.cs2 = concat(   n   ,  b1(0) ,  n   ,   WRITE   ,    n ,     y   )
+            elif  s.ctrl_out.hit_M2[0]:              s.cs2 = concat(   n   ,  b1(0) ,  n   ,   READ    ,    n ,     y   )
+            elif ~s.ctrl_out.hit_M2[0]:              s.cs2 = concat(   n   ,  b1(0) ,  n   ,   READ    ,    y ,     n   )
 
-      s.memreq_en                     = s.cs2[ CS_memreq_en            ]
-      s.cacheresp_en                  = s.cs2[ CS_cacheresp_en         ]
-      s.ctrl_out.read_word_mux_sel_M2 = s.cs2[ CS_read_word_mux_sel_M2 ]
+      s.ctrl_out.data_size_mux_en_M2  = s.cs2[ CS_data_size_mux_en_M2  ]
       s.ctrl_out.read_data_mux_sel_M2 = s.cs2[ CS_read_data_mux_sel_M2 ]
-      s.ctrl_out.memreq_type          = s.cs2[ CS_memreq_type          ]
       s.ostall_M2                     = s.cs2[ CS_ostall_M2            ]
+      s.ctrl_out.memreq_type          = s.cs2[ CS_memreq_type          ]
+      s.cacheresp_en                  = s.cs2[ CS_cacheresp_en         ]
+      s.memreq_en                     = s.cs2[ CS_memreq_en            ]
       s.stall_M2  = s.ostall_M2
       s.ctrl_out.reg_en_M2 = ~s.stall_M2
-
-    @s.update
-    def subword_access_mux_sel_logic_M2():
-      # TODO Put in its own module
-      s.ctrl_out.read_byte_mux_sel_M2  = p.btmx0
-      s.ctrl_out.read_2byte_mux_sel_M2 = p.bbmx0
-      s.ctrl_out.subword_access_mux_sel_M2 = p.acmx0
-      if s.dpath_in.cachereq_type_M2 == READ:
-        if s.ctrl_out.hit_M2[0] or s.state_M2.out.is_refill:
-          # s.ctrl_out.subword_access_mux_sel_M2 = s.dpath_in.len_M2
-          if s.dpath_in.len_M2 == 1:
-            s.ctrl_out.read_byte_mux_sel_M2 = s.dpath_in.offset_M2[0:2]
-            s.ctrl_out.subword_access_mux_sel_M2 = Bits2(1)
-          elif s.dpath_in.len_M2 == 2:
-            s.ctrl_out.read_2byte_mux_sel_M2 = s.dpath_in.offset_M2[1:2]
-            s.ctrl_out.subword_access_mux_sel_M2 = Bits2(2)
 
     @s.update
     def stall_logic_M2():

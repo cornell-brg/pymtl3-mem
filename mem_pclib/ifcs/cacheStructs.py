@@ -20,7 +20,7 @@ def mk_dpath_signals_out_struct( p ):
     'cacheresp_data_M2'   : p.BitsData,
     'cacheresp_len_M2'    : p.BitsLen,
     'memreq_opaque_M2'    : p.BitsOpaque,
-    'memreq_addr_M2'      : p.BitsAddr,
+    'memreq_addr_M2'      : p.StructAddr,
     'memreq_data_M2'      : p.BitsCacheline,
 
     # M0 Dpath Signals 
@@ -33,11 +33,13 @@ def mk_dpath_signals_out_struct( p ):
     'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
+
     # MSHR Signals
     'MSHR_full'           : Bits1,
     'MSHR_empty'          : Bits1,
     'MSHR_type'           : p.BitsType,
     'MSHR_ptr'            : p.BitsAssoclog2,
+    
     # Signals for multiway associativity
     'hit_way_M1'          : p.BitsAssoclog2,
     'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
@@ -57,7 +59,7 @@ def mk_ctrl_signals_out_struct( p ):
     # M0 Ctrl Signals 
     'reg_en_M0'         : Bits1,
     'memresp_mux_sel_M0': Bits1,
-    'addr_mux_sel_M0'   : Bits2,
+    'addr_mux_sel_M0'   : Bits1,
     'wdata_mux_sel_M0'  : Bits1,
     'tag_array_val_M0'  : p.BitsAssoc,
     'tag_array_type_M0' : Bits1,
@@ -75,21 +77,18 @@ def mk_ctrl_signals_out_struct( p ):
     'stall_mux_sel_M1'  : Bits1,
     'stall_reg_en_M1'   : Bits1,
     'ctrl_bit_rep_en_M1': Bits1,
-    'way_offset_M1'     : Bits1,
+    'way_offset_M1'     : p.BitsAssoclog2,
 
     # M2 Ctrl Signals
-    'reg_en_M2'                : Bits1,
-    'read_data_mux_sel_M2'     : Bits1,
-    'read_word_mux_sel_M2'     : p.BitsRdWordMuxSel,
-    'read_byte_mux_sel_M2'     : p.BitsRdByteMuxSel,
-    'read_2byte_mux_sel_M2'    : p.BitsRd2ByteMuxSel,
-    'subword_access_mux_sel_M2': Bits2,
-    'stall_reg_en_M2'          : Bits1,
-    'stall_mux_sel_M2'         : Bits1,
-    'hit_M2'                   : Bits2,
-    'memreq_type'              : p.BitsType,
-    'MSHR_alloc_en'            : Bits1,
-    'MSHR_dealloc_en'          : Bits1,
+    'reg_en_M2'           : Bits1,
+    'read_data_mux_sel_M2': Bits1,
+    'data_size_mux_en_M2' : Bits1,
+    'stall_reg_en_M2'     : Bits1,
+    'stall_mux_sel_M2'    : Bits1,
+    'hit_M2'              : Bits2,
+    'memreq_type'         : p.BitsType,
+    'MSHR_alloc_en'       : Bits1,
+    'MSHR_dealloc_en'     : Bits1,
     
   })
   return req_cls
