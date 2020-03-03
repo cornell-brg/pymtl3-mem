@@ -12,6 +12,7 @@ from mem_pclib.constants.constants  import *
 from pymtl3                         import *
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegRst, Reg, RegEn
+from mem_pclib.rtl.registers        import PiplineRegEnRst
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 
 class MSHR (Component):
@@ -57,7 +58,7 @@ class MSHR (Component):
         s.empty = y
 
     if entries == BitsEntries(1):
-      s.MSHR = RegEnRst(p.MSHRMsg)(
+      s.MSHR = PiplineRegEnRst( p.MSHRMsg, p.MSHRMsg(0,0,0,0,0,0) )(
         in_ = s.alloc_in,
         out = s.dealloc_out,
         en  = s.alloc_en

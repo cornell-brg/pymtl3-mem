@@ -16,9 +16,9 @@ def mk_ctrl_pipeline_struct(  ):
   def req_to_str( self ):
     return "{}:{}:{}:{}".format(
       Bits1( self.val ),
-      BitsAddr( self.is_refill ),
-      BitsLen( self.is_write_hit_clean ),
-      BitsData( self.is_write_refill ),
+      Bits1( self.is_refill ),
+      Bits1( self.is_write_hit_clean ),
+      Bits1( self.is_write_refill ),
     )
 
   req_cls = mk_bitstruct( cls_name, 

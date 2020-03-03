@@ -113,7 +113,7 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
     # M1 Stage 
     #--------------------------------------------------------------------
-
+    
     # Pipeline registers
     s.cachereq_M1 = PiplineRegEnRst( p.PipelineMsg, p.PipelineMsg(0, 0, 0, 0, 0) )(
       en  = s.ctrl_in.reg_en_M1,

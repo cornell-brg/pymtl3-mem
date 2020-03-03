@@ -14,14 +14,14 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 def mk_pipeline_msg( p ):
   cls_name    = f"Pipeline"
 
-  def req_to_str( self ):
-    return "{}:{}:{}:{}:{}".format(
-      MemMsgType.str[ int( self.type_ ) ],
-      BitsOpaque( self.opaque ),
-      BitsAddr( self.addr ),
-      BitsLen( self.len ),
-      BitsData( self.data ),
-    )
+  # def req_to_str( self ):
+  #   return "{}:{}:{}:{}:{}".format(
+  #     MemMsgType.str[ int( self.type_ ) ],
+  #     p.BitsOpaque( self.opaque ),
+  #     self.addr,
+  #     p.BitsLen( self.len ),
+  #     p.BitsData( self.data ),
+  #   )
 
   req_cls = mk_bitstruct( cls_name, {
     'type_':  p.BitsType,
@@ -30,9 +30,10 @@ def mk_pipeline_msg( p ):
     'len':    p.BitsLen,
     'data':   p.BitsCacheline,
   },
-  namespace = {
-    '__str__' : req_to_str
-  })
+  # namespace = {
+  #   '__str__' : req_to_str
+  # }
+  )
   return req_cls
 
 def mk_MSHR_msg( p ):
@@ -41,11 +42,11 @@ def mk_MSHR_msg( p ):
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}:{}".format(
       MemMsgType.str[ int( self.type_ ) ],
-      BitsOpaque( self.opaque ),
-      BitsAddr( self.addr ),
-      BitsLen( self.len ),
-      BitsData( self.data ),
-      BitsRep(self.repl)
+      p.BitsOpaque( self.opaque ),
+      self.addr ,
+      p.BitsLen( self.len ),
+      p.BitsData( self.data ),
+      p.BitsRep(self.repl)
     )
 
   req_cls = mk_bitstruct( cls_name, {
@@ -62,11 +63,18 @@ def mk_MSHR_msg( p ):
   return req_cls
 
 def mk_addr_struct( p ):
+  def req_to_str( self ):
+    return "{}{}{}".format(
+      self.tag, self.index, self.offset 
+    )
   # declaration alignment MATTERS here
   struct = mk_bitstruct( "addr", {
     'tag'   : p.BitsTag,
     'index' : p.BitsIdx,
     'offset': p.BitsOffset
+  },
+  namespace = {
+    '__str__' : req_to_str
   } )
   return struct
 
