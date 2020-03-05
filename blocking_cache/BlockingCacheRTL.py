@@ -27,6 +27,12 @@ class BlockingCacheRTL ( Component ):
     num_bytes     = 4096, # cache size in bytes
     associativity = 1     # Associativity
   ):
+    """
+      Parameters
+      ----------
+      CacheMsg : a bundle of [Req, Resp] types for mem_minion_ifc (e.g. between processor and cache)
+      MemMsg   : a bundle of [Req, Resp] types for mem_master_ifc (e.g. between this cache and memory)
+    """
 
     # Generate additional constants and bitstructs from the given parameters
     p = CacheDerivedParams( CacheMsg, MemMsg, num_bytes, associativity )
