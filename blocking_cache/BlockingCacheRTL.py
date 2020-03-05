@@ -8,16 +8,16 @@ dpath
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 20 February 2020
 """
-
-from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
-from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
-from .CacheDerivedParams                  import CacheDerivedParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
+
+from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
+from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
+from .CacheDerivedParams                  import CacheDerivedParams
 
 class BlockingCacheRTL ( Component ):
 
@@ -30,8 +30,13 @@ class BlockingCacheRTL ( Component ):
     """
       Parameters
       ----------
-      CacheMsg : a bundle of [Req, Resp] types for mem_minion_ifc (e.g. between processor and cache)
-      MemMsg   : a bundle of [Req, Resp] types for mem_master_ifc (e.g. between this cache and memory)
+      CacheMsg      : a bundle of [Req, Resp] types
+           Types for mem_minion_ifc (e.g. between processor and cache)
+
+      MemMsg        : a bundle of [Req, Resp] types
+           Types for mem_master_ifc (e.g. between this cache and memory)
+      num_bytes     : int
+      associativity : int
     """
 
     # Generate additional constants and bitstructs from the given parameters
