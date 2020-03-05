@@ -10,16 +10,16 @@ Date   : 21 Decemeber 2019
 
 import pytest
 import random
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
-from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 OBW  = 8   # Short name for opaque bitwidth
 ABW  = 32  # Short name for addr bitwidth
 DBW  = 32  # Short name for data bitwidth
 CLW  = 128 # cacheline bitwidth
-CacheMsg = ReqRespMsgTypes(OBW, ABW, DBW)
-MemMsg = ReqRespMsgTypes(OBW, ABW, CLW)
+
+CacheReqType, CacheRespType = mk_mem_msg(OBW, ABW, DBW)
+MemReqType, MemRespType = mk_mem_msg(OBW, ABW, CLW)
 
 #-------------------------------------------------------------------------
 # make messages
@@ -29,13 +29,13 @@ def req( type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Req( type_, opaque, addr, len, data )
+  return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Resp( type_, opaque, test, len, data )
+  return CacheRespType( type_, opaque, test, len, data )
 
 class GenericTestCases:
 
@@ -46,7 +46,7 @@ class GenericTestCases:
       req( 'rd', 0x1, 0x000ab000, 0, 0          ), resp( 'rd', 0x1, 1,   0, 0xdeadbeef ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #----------------------------------------------------------------------
   # Test Case: Read Hits: path, many requests
@@ -61,7 +61,7 @@ class GenericTestCases:
       msgs.append(req(  'rd', i, ((0x00012000)<<2)+i*4, 0, 0 ))
       msgs.append(resp( 'rd', i, 1,             0, i ))
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #----------------------------------------------------------------------
   # Test Case: Read Hits: random requests
@@ -81,7 +81,7 @@ class GenericTestCases:
       msgs.append(req(  'rd', i, addr[i], 0, 0 ))
       msgs.append(resp( 'rd', i, 1,       0, data[i] ))
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg, cacheSize = 4096 )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, cacheSize = 4096 )
 
   #----------------------------------------------------------------------
   # Test Case: Read Hits: Test for entire line hits
@@ -100,7 +100,7 @@ class GenericTestCases:
       req( 'rd', 0x7, base_addr+12, 0, 0          ), resp( 'rd', 0x7, 1, 0, 0xbabababa ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #----------------------------------------------------------------------
   # Test Case: Write Hit: CLEAN
@@ -108,12 +108,12 @@ class GenericTestCases:
   def test_write_hit_clean( s ):
     msgs = [
       #    type  opq  addr      len data                type  opq  test len data
-      req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),    
+      req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),
       req( 'wr', 0x1, 0x1184,    0, 55         ), resp( 'wr', 0x1, 1,   0,  0  ),
       req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  55 ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
   #----------------------------------------------------------------------
   # Test Case: Write Hit: DIRTY
   #----------------------------------------------------------------------
@@ -129,9 +129,9 @@ class GenericTestCases:
       req( 'rd', 0x5, 0x66668,   0, 0          ), resp( 'rd', 0x5, 1,   0,  0x39287 ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
   #----------------------------------------------------------------------
-  # Test Case: Write Hit: read/write hit 
+  # Test Case: Write Hit: read/write hit
   #----------------------------------------------------------------------
   # The test field in the response message: 0 == MISS, 1 == HIT
   def test_write_hits_read_hits( s ):
@@ -143,7 +143,7 @@ class GenericTestCases:
       req( 'rd', 0x3, 0, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xffffffff ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #----------------------------------------------------------------------
   # Test Case: Read Miss Clean:
@@ -152,7 +152,7 @@ class GenericTestCases:
     return [
       # addr                data
       0x00000000, 0xdeadbeef,
-      0x00000004, 0x00c0ffee 
+      0x00000004, 0x00c0ffee
     ]
   def test_read_miss_1word_clean( s ):
     msgs = [
@@ -161,7 +161,7 @@ class GenericTestCases:
       req( 'rd', 0x1, 0x00000004, 0, 0          ), resp( 'rd', 0x1, 1,   0,  0x00c0ffee )
     ]
     mem = s.read_miss_1word_mem()
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #----------------------------------------------------------------------
   # Test Case: Write Miss Clean:
@@ -182,7 +182,7 @@ class GenericTestCases:
       req( 'rd', 0x2, 0x00000008, 0, 0          ), resp( 'rd', 0x2, 1,   0, 0xeeeeeeee )
     ]
     mem = s.write_miss_1word_mem()
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   def test_write_miss_offset( s ):
     msgs = [
@@ -193,8 +193,8 @@ class GenericTestCases:
       req( 'rd', 0x3, 0x00000084, 0, 0         ), resp( 'rd', 0x3, 1,   0,  0x0e0e0e0e), # read  word 0x00000080
     ]
     mem = s.write_miss_1word_mem()
-    s.run_test( msgs, mem, CacheMsg, MemMsg, cacheSize = 4096 )
-  
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, cacheSize = 4096 )
+
   #-------------------------------------------------------------------------
   # Test cases: Read Dirty:
   #-------------------------------------------------------------------------
@@ -207,7 +207,7 @@ class GenericTestCases:
       req( 'rd', 0x2, 0, 0, 0          ), resp( 'rd', 0x2, 1, 0, 0xbabababa ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #-------------------------------------------------------------------------
   # Test cases: Write Dirty:
@@ -222,7 +222,7 @@ class GenericTestCases:
       req( 'rd', 0x03, 0, 0, 0          ), resp('rd', 0x03, 1,   0,  0xc0ffeebb ), # read  word  0x00000000
     ]
     mem = None
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )
 
   #-------------------------------------------------------------------------
   # Test cases: Write Dirty:
@@ -231,9 +231,9 @@ class GenericTestCases:
   def test_read_miss_dirty( s ):
     msgs = [
       #    type  opq   addr                 len data               type  opq   test len data
-      req( 'wr', 0x0, 0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ), 
-      req( 'rd', 0x1, 0x00010000,  0, 0          ), resp('rd', 0x1,   0,   0, 0x00c0ffee ), 
-      req( 'rd', 0x2, 0x00000000,  0, 0          ), resp('rd', 0x2,   0,   0, 0xbeefbeeb ) 
+      req( 'wr', 0x0, 0x00000000,  0, 0xbeefbeeb ), resp('wr', 0x0,   0,   0, 0          ),
+      req( 'rd', 0x1, 0x00010000,  0, 0          ), resp('rd', 0x1,   0,   0, 0x00c0ffee ),
+      req( 'rd', 0x2, 0x00000000,  0, 0          ), resp('rd', 0x2,   0,   0, 0xbeefbeeb )
     ]
     mem = [0x00010000, 0x00c0ffee]
-    s.run_test( msgs, mem, CacheMsg, MemMsg )
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType )

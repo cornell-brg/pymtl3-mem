@@ -51,16 +51,17 @@ def translate_import( model ):
 
 class TestHarness(Component):
 
-  def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg,
-                MemMsg, cacheSize=128, associativity=1):
+  def construct( s, src_msgs, sink_msgs, stall_prob, latency, src_delay,
+                 sink_delay, CacheModel, CacheReqType, CacheRespType,
+                 MemReqType, MemRespType, cacheSize=128, associativity=1 ):
     # Instantiate models
-    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, 0, src_delay)
-    s.cache = CacheModel(CacheMsg, MemMsg, cacheSize, associativity)
-    s.mem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
-    s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
-    s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
-    s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, 0, sink_delay)
+    s.src   = TestSrcRTL(CacheReqType, src_msgs, 0, src_delay)
+    s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
+                         cacheSize, associativity)
+    s.mem   = CacheMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.cache2mem = RecvRTL2SendCL(MemReqType)
+    s.mem2cache = RecvCL2SendRTL(MemRespType)
+    s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)
 
     connect( s.src.send,  s.cache.mem_minion_ifc.req  )
     connect( s.sink.recv, s.cache.mem_minion_ifc.resp )

@@ -14,8 +14,8 @@ import random
 import hypothesis
 from hypothesis import strategies as st
 from blocking_cache.BlockingCacheFL import ModelCache
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -61,11 +61,11 @@ class HypothesisTests:
     if cacheSize < 2*clw*associativity:
       cacheSize = 2*clw*associativity
     mem = rand_mem(addr_min, addr_max)
-    CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-    MemMsg = ReqRespMsgTypes(obw, abw, clw)
+    CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
     # FL Model to generate expected transactions
     model = ModelCache(cacheSize, associativity, 0, \
-      CacheMsg, MemMsg, mem)
+      CacheReqType, CacheRespType, MemReqType, MemRespType, mem)
     # Grab list of generated transactions
     reqs_lst = req.draw(
       st.lists( gen_reqs( ), min_size = 1, max_size=transactions ),
@@ -80,7 +80,7 @@ class HypothesisTests:
         model.read(addr, i, len_)
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
-    s.run_test(msgs, mem, CacheMsg, MemMsg, associativity, cacheSize, \
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, associativity, cacheSize, \
     stall_prob, latency, src_delay, sink_delay)
 
 
