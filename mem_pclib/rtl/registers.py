@@ -10,9 +10,9 @@ Date   : 1 March 2020
 
 from pymtl3                        import *
 
-class PiplineRegEnRst( Component ):
+class DpathPipelineRegEnRst( Component ):
 
-  def construct( s, Type, reset_value ):
+  def construct( s, p ):
     s.out = OutPort( Type )
     s.in_ = InPort( Type )
 
