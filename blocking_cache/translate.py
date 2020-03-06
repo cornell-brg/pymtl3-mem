@@ -21,47 +21,37 @@ from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
-obw       = 8   # Short name for opaque bitwidth
-abw       = 32  # Short name for addr bitwidth
-dbw       = 32  # Short name for data bitwidth
-clw       = 128
-cacheSize = 4096
-CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
-MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
+
+
 
 #=========================================================================
 # Command line processing
 #=========================================================================
 
 def parse_cmdline():
-
-  # Standard command line arguments
-  p.add_argument( "-h", "--help", action="store_true" )
-
+  p = argparse.ArgumentParser(description='Translate the cache with some params')
   # Additional commane line arguments for the translator
-  p.add_argument( "--output-dir", default="", type=valid_dir )
-
+  p.add_argument( "--output-dir", default="", type=str )
+  p.add_argument( "--size", default=4096, type=int )
+  p.add_argument( "--clw", default=128, type=int )
+  p.add_argument( "--dbw", default=32, type=int )
+  p.add_argument( "--abw", default=32, type=int )
+  p.add_argument( "--obw", default=8, type=int )
+  p.add_argument( "--asso", default=1, type=int )
   opts = p.parse_args()
-  if opts.help: p.error()
   return opts
 
 
 def main():
   opts = parse_cmdline()
-  # If output directory was specified, change to that directory
-  # if opts.output_dir:
-  #   os.chdir( opts.output_dir )
-
+  CacheReqType, CacheRespType = mk_mem_msg(opts.obw, opts.abw, opts.dbw)
+  MemReqType, MemRespType = mk_mem_msg(opts.obw, opts.abw, opts.clw)
   # Instantiate the cache
   dut = BlockingCacheRTL(CacheReqType, CacheRespType, MemReqType, \
-    MemRespType, cacheSize)
-
-  # Tag the processor as to be translated
+    MemRespType, opts.size, opts.asso)
   dut.verilog_translate = True
-  # Perform translation
   success = False
   dut.config_verilog_translate = TranslationConfigs() 
-
   try:
     dut.elaborate()
     dut.apply( TranslationPass() )
@@ -73,7 +63,6 @@ def main():
       # print(f"You can find the generated SystemVerilog file at {path}.")
     else:
       print("\nTranslation failed!")
-
 
 if __name__ == "__main__":
   main()

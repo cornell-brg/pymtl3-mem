@@ -45,7 +45,6 @@ Hit       :       M0 M1 M2
 Hit       :          M0 M1 M2                     <- 6 cycles for 4 transactions
 ```
 
-
 ### Miss Clean (read/write)
 ```
 Miss      : M0 M1 M2 .......... M0 M1 M2          <- Refill path
@@ -56,4 +55,26 @@ Trans     :    Y  Y  ...........Y  M0 M1 M2       <- Next Transaction Path
 Miss Dirty: M0 M1 M2 .......... M0 M1 M2          <- Evict path
                   M1 M2 .......... M0 M1 M2       <- Refill path - New transaction spawns
 Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
+```
+
+## Running The Code
+
+### Testing
+
+To run all tests including RTL and FL tests:
+
+```
+pytest ../BlockingCache/test/ 
+```
+
+To run RTL tests:
+
+```
+pytest ../BlockingCache/test/BlockingCacheRTL_test.py 
+```
+
+### Translation
+The cache is translatable to Verilog using
+```
+% python ../blocking_cache/translate.py
 ```
