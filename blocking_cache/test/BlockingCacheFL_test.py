@@ -12,7 +12,7 @@ import struct
 import random
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 from blocking_cache.test.DmappedTestCases import DmappedTestCases
 from blocking_cache.test.Asso2WayTestCases import AssoTestCases
@@ -20,11 +20,10 @@ from blocking_cache.BlockingCacheFL import ModelCache
 
 class CacheFL_Tests(DmappedTestCases, AssoTestCases):
 
-  def run_test( s, msgs, mem, CacheMsg, MemMsg, associativity=1,
-    cacheSize=512, stall_prob=0, latency=1, src_delay=0, sink_delay=0):
+  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, associativity=1,
+                cacheSize=512, stall_prob=0, latency=1, src_delay=0, sink_delay=0 ):
 
-    cache = ModelCache(cacheSize, associativity, 0, CacheMsg,
-    MemMsg, mem)
+    cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, MemReqType, MemRespType, mem)
     src = msgs[::2]
     sink = msgs[1::2]
     for trans in src:

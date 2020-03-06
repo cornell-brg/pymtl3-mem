@@ -19,15 +19,15 @@ from pymtl3.passes.backends.yosys import TranslationPass
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 obw       = 8   # Short name for opaque bitwidth
 abw       = 32  # Short name for addr bitwidth
 dbw       = 32  # Short name for data bitwidth
 clw       = 128
-cacheSize = 4098
-CacheMsg  = ReqRespMsgTypes(obw, abw, dbw)
-MemMsg    = ReqRespMsgTypes(obw, abw, clw)
+cacheSize = 4096
+CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 #=========================================================================
 # Command line processing
@@ -69,7 +69,8 @@ def main():
     os.chdir( opts.output_dir )
 
   # Instantiate the cache
-  dut = BlockingCacheRTL(CacheMsg, MemMsg, cacheSize)
+  dut = BlockingCacheRTL(CacheReqType, CacheRespType, MemReqType, \
+    MemRespType, cacheSize)
 
   # Tag the processor as to be translated
   dut.yosys_translate = True

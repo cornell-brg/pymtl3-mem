@@ -11,12 +11,12 @@ Date   : 21 Decemeber 2019
 import struct
 from pymtl3 import *
 
-from pymtl3.passes.backends.sverilog import ImportPass, TranslationPass
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from blocking_cache.test.CacheMemory import CacheMemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
    RecvRTL2SendCL, SendIfcRTL
+# from pymtl3.passes.backends.sverilog import TranslationPass
 
 #----------------------------------------------------------------------
 # Run the simulation
@@ -40,9 +40,10 @@ def run_sim( th, max_cycles = 1000 ):
 # Translate the cache and import the results
 #---------------------------------------------------------------------
 def translate_import( model ):
+  pass
   # model.elaborate()
-  model.yosys_translate = True
-  model.apply( TranslationPass() )
+  # model.yosys_translate = True
+  # model.apply( TranslationPass() )
   # model = TranslationImportPass( )( model )
 
 #-------------------------------------------------------------------------
@@ -51,16 +52,17 @@ def translate_import( model ):
 
 class TestHarness(Component):
 
-  def construct( s, src_msgs, sink_msgs, stall_prob, latency,
-                src_delay, sink_delay, CacheModel, CacheMsg,
-                MemMsg, cacheSize=128, associativity=1):
+  def construct( s, src_msgs, sink_msgs, stall_prob, latency, src_delay,
+                 sink_delay, CacheModel, CacheReqType, CacheRespType,
+                 MemReqType, MemRespType, cacheSize=128, associativity=1 ):
     # Instantiate models
-    s.src   = TestSrcRTL(CacheMsg.Req, src_msgs, 0, src_delay)
-    s.cache = CacheModel(CacheMsg, MemMsg, cacheSize, associativity)
-    s.mem   = CacheMemoryCL( 1, [(MemMsg.Req, MemMsg.Resp)], latency) # Use our own modified mem
-    s.cache2mem = RecvRTL2SendCL(MemMsg.Req)
-    s.mem2cache = RecvCL2SendRTL(MemMsg.Resp)
-    s.sink  = TestSinkRTL(CacheMsg.Resp, sink_msgs, 0, sink_delay)
+    s.src   = TestSrcRTL(CacheReqType, src_msgs, 0, src_delay)
+    s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
+                         cacheSize, associativity)
+    s.mem   = CacheMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.cache2mem = RecvRTL2SendCL(MemReqType)
+    s.mem2cache = RecvCL2SendRTL(MemRespType)
+    s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)
 
     connect( s.src.send,  s.cache.mem_minion_ifc.req  )
     connect( s.sink.recv, s.cache.mem_minion_ifc.resp )
@@ -83,5 +85,3 @@ class TestHarness(Component):
   def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
            + s.mem.line_trace()  + " " + s.sink.line_trace()
-
-

@@ -46,7 +46,7 @@ def mk_MSHR_msg( p ):
       self.addr ,
       p.BitsLen( self.len ),
       p.BitsData( self.data ),
-      p.BitsRep(self.repl)
+      p.BitsAssoclog2(self.repl)
     )
 
   req_cls = mk_bitstruct( cls_name, {

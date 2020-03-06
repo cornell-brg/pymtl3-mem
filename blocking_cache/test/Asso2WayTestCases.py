@@ -12,15 +12,15 @@ import pytest
 import struct
 import random
 from pymtl3.stdlib.test.test_utils import mk_test_case_table
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
+from pymtl3.stdlib.ifcs.MemMsg     import MemMsgType, mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 clw  = 128
-CacheMsg = ReqRespMsgTypes(obw, abw, dbw)
-MemMsg = ReqRespMsgTypes(obw, abw, clw)
+
+CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 #-------------------------------------------------------------------------
 # make messages
@@ -30,13 +30,13 @@ def req( type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Req( type_, opaque, addr, len, data )
+  return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Resp( type_, opaque, test, len, data )
+  return CacheRespType( type_, opaque, test, len, data )
 
 class AssoTestCases:
   def set_assoc_mem0( s ):
@@ -61,7 +61,7 @@ class AssoTestCases:
       req( 'rd', 0x3, 0x00000000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xdeadbeef ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
   #-------------------------------------------------------------------------
   # Test Case: Read Miss 2 way set associative but with 1 way
   #-------------------------------------------------------------------------
@@ -71,7 +71,7 @@ class AssoTestCases:
       req( 'rd', 0x0, 0x00002070, 0, 0 ), resp( 'rd', 0x0, 0,   0,  0x70facade          ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
   def test_2way_1way_only_write_hit( s ):
     msgs = [
       #    type  opq  addr       len data           type  opq  test len data
@@ -80,7 +80,7 @@ class AssoTestCases:
       req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
   def test_2way_1way_only_write_miss( s ):
     msgs = [
       #    type  opq  addr       len data           type  opq  test len data         ),
@@ -88,8 +88,8 @@ class AssoTestCases:
       req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
-  
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
+
   #-------------------------------------------------------------------------
   # Test Case: Read Hit 2 way set associative
   #-------------------------------------------------------------------------
@@ -103,7 +103,7 @@ class AssoTestCases:
       req( 'rd', 0x3, 0x00002000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  212 ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
 
   #-------------------------------------------------------------------------
   # Test Case: Write Miss 2 way set associative
@@ -118,7 +118,7 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2)
 
   #-------------------------------------------------------------------------
   # Test Case: Write Hit 2 way set associative
@@ -134,7 +134,7 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x00000000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0x8713450  ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2)
 
   #-------------------------------------------------------------------------
   # Test Case: Eviction Tests
@@ -148,7 +148,7 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x0000400c, 0, 0        ), resp( 'rd', 0x5, 0,   0,  0x01deffef ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
 
   #-------------------------------------------------------------------------
   # Test Case: test set associtivity
@@ -206,9 +206,9 @@ class AssoTestCases:
       req( 'rd', 0x1d, 0x000a0070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # LRU:1
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 1024)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 1024)
 
-  
+
   #-------------------------------------------------------------------------
   # Hypothesis Test Cases
   #-------------------------------------------------------------------------
@@ -232,9 +232,9 @@ class AssoTestCases:
       req( 'rd', 0x03, 0, 0, 0), resp( 'rd', 0x03, 0, 0,  1  ),
     ]
     mem = s.hypothesis_mem()
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 512)
-  
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
+
   def test_2way_hyp2( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       req( 'wr', 0x00, 0, 0, 0), resp( 'wr', 0x00, 0, 0, 0     ),
@@ -244,8 +244,8 @@ class AssoTestCases:
       req( 'rd', 0x04, 0, 0, 0), resp( 'rd', 0x04, 0, 0,  0    ),
     ]
     mem = s.hypothesis_mem()
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, \
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 256, \
       stall_prob, latency, src_delay, sink_delay)
 
   def test_2way_hyp1_lat(s):
@@ -260,8 +260,8 @@ class AssoTestCases:
       req( 'rd', 0x04, 0x08, 0, 0), resp( 'rd', 0x04, 1, 0, 2  ),
     ]
     mem = s.hypothesis_mem()
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, 0,1,0,1)
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 256, 0,1,0,1)
   def test_2way_hyp2_lat2( s ):
     msgs = [
       req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
@@ -271,5 +271,5 @@ class AssoTestCases:
       req( 'rd', 0x04, 0x08, 0, 0), resp( 'rd', 0x04, 1, 0, 2  ),
     ]
     mem = s.hypothesis_mem()
-    MemMsg = ReqRespMsgTypes(obw, abw, 64)
-    s.run_test(msgs, mem, CacheMsg, MemMsg, 2, 256, 0,1,0,0)
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 256, 0,1,0,0)

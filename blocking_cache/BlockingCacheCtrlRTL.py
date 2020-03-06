@@ -13,7 +13,7 @@ from mem_pclib.constants.constants import *
 from pymtl3                        import *
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
-from mem_pclib.rtl.registers       import PiplineRegEnRst
+from mem_pclib.rtl.registers       import CtrlPipelineReg
 
 class BlockingCacheCtrlRTL ( Component ):
 
@@ -186,7 +186,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # M1 Stage
     #--------------------------------------------------------------------------
     
-    s.state_M1 = PiplineRegEnRst( p.CtrlMsg, p.CtrlMsg(0,0,0,0) )(
+    s.state_M1 = CtrlPipelineReg( p )(
       in_ = s.state_M0,
       en  = s.ctrl_out.reg_en_M1,
     )
@@ -344,7 +344,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # M2 Stage
     #--------------------------------------------------------------------------
     
-    s.state_M2 = PiplineRegEnRst(p.CtrlMsg, p.CtrlMsg(0,0,0,0))(
+    s.state_M2 = CtrlPipelineReg( p )(
       en  = s.ctrl_out.reg_en_M2,
       in_ = s.state_M1.out,
     )

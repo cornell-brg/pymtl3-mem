@@ -16,25 +16,23 @@ import random
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
-from mem_pclib.ifcs.ReqRespMsgTypes import ReqRespMsgTypes
-
-# Assumes 32 bit address and 32 bit data 
+# Assumes 32 bit address and 32 bit data
 
 #-------------------------------------------------------------------------
 # make messages
 #-------------------------------------------------------------------------
 
-def req( CacheMsg, type_, opaque, addr, len, data ):
+def req( CacheReqType, type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Req( type_, opaque, addr, len, data )
+  return CacheReqType( type_, opaque, addr, len, data )
 
-def resp( CacheMsg, type_, opaque, test, len, data ):
+def resp( CacheRespType, type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  return CacheMsg.Resp( type_, opaque, test, len, data )
+  return CacheRespType( type_, opaque, test, len, data )
 
 #----------------------------------------------------------------------
 # Enhanced random tests
@@ -133,9 +131,10 @@ class HitMissTracker:
     return hit
 
 class ModelCache:
-  def __init__(self, size, nways, nbanks, CacheMsg, MemMsg, mem=None):
+  def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
     # The hit/miss tracker
-    self.tracker = HitMissTracker(size, nways, nbanks, MemMsg.bitwidth_data)
+    mem_bitwidth_data = MemReqType.get_field_type("data").nbits
+    self.tracker = HitMissTracker(size, nways, nbanks, mem_bitwidth_data)
 
     self.mem = {}
 
@@ -152,19 +151,20 @@ class ModelCache:
     # the stream of read/write calls on this model
     self.transactions = []
     self.opaque = 0
-    self.CacheMsg = CacheMsg
-    self.MemMsg = MemMsg
-
-    self.nlines = int(size // MemMsg.bitwidth_data)
+    self.CacheReqType = CacheReqType
+    self.CacheRespType = CacheRespType
+    self.MemReqType = MemReqType
+    self.MemRespType = MemRespType
+    self.nlines = int(size // mem_bitwidth_data)
     self.nsets = int(self.nlines // nways)
     # Compute how the address is sliced
     self.offset_start = 0
-    self.offset_end = self.offset_start + int(math.log(MemMsg.bitwidth_data//8, 2))
+    self.offset_end = self.offset_start + int(math.log(mem_bitwidth_data//8, 2))
     self.idx_start = self.offset_end
     self.idx_end = self.idx_start + int(math.log(self.nsets, 2))
     self.tag_start = self.idx_end
     self.tag_end = 32
-    
+
 
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
@@ -185,15 +185,15 @@ class ModelCache:
         value = self.mem[new_addr.int()][(offset*8):((offset+1)*8)]
       elif len_ == 2: # half word access
         offset = offset[1:2].uint()
-        value = self.mem[new_addr.int()][offset*16:(offset+1)*16]  
+        value = self.mem[new_addr.int()][offset*16:(offset+1)*16]
       else:
         value = self.mem[new_addr.int()]
     else:
       value = Bits(32, 0)
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'rd', opaque, addr, len_, 0))
-    self.transactions.append(resp(self.CacheMsg,'rd', opaque, hit, len_, value))
+    self.transactions.append(req(self.CacheReqType,'rd', opaque, addr, len_, 0))
+    self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit, len_, value))
     self.opaque += 1
 
   def write(self, addr, value, opaque, len_):
@@ -204,23 +204,23 @@ class ModelCache:
     hit = self.check_hit(new_addr)
 
     if len_ == 1: # byte access
-     
+
       offset = offset[0:2].uint()
       self.mem[new_addr.int()][(offset*8):((offset+1)*8)] = Bits8(value)
     elif len_ == 2: # half word access
       offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
     else:
       self.mem[new_addr.int()] = value
 
     # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheMsg,'wr', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheMsg,'wr', opaque, hit, len_, 0))
+    self.transactions.append(req(self.CacheReqType,'wr', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit, len_, 0))
     self.opaque += 1
-  
+
   def init(self, addr, value, opaque, len_):
     value = Bits(32, value)
-    
+
     offset = addr[self.offset_start:self.offset_end]
     new_addr = addr & Bits32(0xfffffffc)
     hit = self.check_hit(new_addr)
@@ -230,12 +230,12 @@ class ModelCache:
       self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
     elif len_ == 2: # half word access
       offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)  
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
     else:
       self.mem[new_addr.int()] = value
 
-    self.transactions.append(req(self.CacheMsg,'in', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheMsg,'in', opaque, 0, len_, 0))
+    self.transactions.append(req(self.CacheReqType,'in', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
   def get_transactions(self):

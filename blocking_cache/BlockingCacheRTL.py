@@ -8,10 +8,6 @@ dpath
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 20 February 2020
 """
-
-from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
-from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
-from .CacheDerivedParams                  import CacheDerivedParams
 from pymtl3                               import *
 from pymtl3.stdlib.connects               import connect_pairs
 from pymtl3.stdlib.ifcs.MemMsg            import MemMsgType, mk_mem_msg
@@ -19,17 +15,33 @@ from pymtl3.stdlib.ifcs.SendRecvIfc       import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
+from .BlockingCacheCtrlRTL                import BlockingCacheCtrlRTL
+from .BlockingCacheDpathRTL               import BlockingCacheDpathRTL
+from .CacheDerivedParams                  import CacheDerivedParams
+
 class BlockingCacheRTL ( Component ):
 
-  def construct( s,
-    CacheMsg,             # Cache req/resp msg type
-    MemMsg,               # Memory req/resp msg type
-    num_bytes     = 4096, # cache size in bytes
-    associativity = 1     # Associativity
-  ):
+  def construct( s, CacheReqType, CacheRespType, MemReqType, MemRespType,
+    num_bytes = 4096, associativity = 1 ):
+    """
+      Parameters
+      ----------
+      CacheReqType  : type
+          Request type for mem_minion_ifc (e.g. between processor and cache)
+      CacheRespType : type
+          Response type for mem_minion_ifc
+      MemReqType    : type
+          Request type for mem_master_ifc (e.g. between this cache and memory)
+      MemRespType   : type
+          Response type for mem_master_ifc
+      num_bytes     : int
+          Cache size in bytes
+      associativity : int
+    """
 
     # Generate additional constants and bitstructs from the given parameters
-    p = CacheDerivedParams( CacheMsg, MemMsg, num_bytes, associativity )
+    p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType, MemRespType,
+                            num_bytes, associativity )
     s.param = p # params for line trace
 
     #---------------------------------------------------------------------
@@ -37,9 +49,9 @@ class BlockingCacheRTL ( Component ):
     #---------------------------------------------------------------------
 
     # Memory-Minion Interface (e.g. proc <-> cache)
-    s.mem_minion_ifc = MemMinionIfcRTL( CacheMsg.Req, CacheMsg.Resp )
+    s.mem_minion_ifc = MemMinionIfcRTL( CacheReqType, CacheRespType )
     # Memory-Master Interface (e.g. cache <-> main memory or lower-level cache)
-    s.mem_master_ifc = MemMasterIfcRTL( MemMsg.Req, MemMsg.Resp )
+    s.mem_master_ifc = MemMasterIfcRTL( MemReqType, MemRespType )
 
     #---------------------------------------------------------------------
     # Structural Composition
@@ -74,7 +86,7 @@ class BlockingCacheRTL ( Component ):
     # Memory Request Message
     s.mem_master_ifc.req.msg.opaque  //= s.cacheDpath.dpath_out.memreq_opaque_M2
     s.mem_master_ifc.req.msg.type_   //= s.cacheCtrl.ctrl_out.memreq_type
-                              # Bits32                         # StructAddr
+                            # Bits32                       # StructAddr
     connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.dpath_out.memreq_addr_M2 )
     s.mem_master_ifc.req.msg.data    //= s.cacheDpath.dpath_out.memreq_data_M2
 
