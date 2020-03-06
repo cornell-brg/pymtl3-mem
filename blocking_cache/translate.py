@@ -14,8 +14,8 @@ import sys
 
 sys.path.append('../')
 
-# Import the translation pass from yosys backend
-from pymtl3.passes.backends.yosys import TranslationPass
+# Import the translation pass from verilog backend
+from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
@@ -33,23 +33,7 @@ MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 # Command line processing
 #=========================================================================
 
-class ArgumentParserWithCustomError(argparse.ArgumentParser):
-  def error( self, msg = "" ):
-    if ( msg ): print("\n"+f" ERROR: {msg}")
-    print("")
-    file = open( sys.argv[0] )
-    for ( lineno, line ) in enumerate( file ):
-      if ( line[0] != '#' ): sys.exit(msg != "")
-      if ( (lineno == 2) or (lineno >= 4) ): print(line[1:].rstrip("\n"))
-
-
 def parse_cmdline():
-  def valid_dir(string):
-    assert not string or (os.path.isdir(string) and os.path.exists(string)), \
-      "the given path {} does not exist or is not a directory!".format(string)
-    return string
-
-  p = ArgumentParserWithCustomError( add_help=False )
 
   # Standard command line arguments
   p.add_argument( "-h", "--help", action="store_true" )
@@ -65,18 +49,18 @@ def parse_cmdline():
 def main():
   opts = parse_cmdline()
   # If output directory was specified, change to that directory
-  if opts.output_dir:
-    os.chdir( opts.output_dir )
+  # if opts.output_dir:
+  #   os.chdir( opts.output_dir )
 
   # Instantiate the cache
   dut = BlockingCacheRTL(CacheReqType, CacheRespType, MemReqType, \
     MemRespType, cacheSize)
 
   # Tag the processor as to be translated
-  dut.yosys_translate = True
-
+  dut.verilog_translate = True
   # Perform translation
   success = False
+  dut.config_verilog_translate = TranslationConfigs() 
 
   try:
     dut.elaborate()
@@ -84,9 +68,9 @@ def main():
     success = True
   finally:
     if success:
-      path = os.path.join(os.getcwd(), f"{dut.translated_top_module_name}.sv")
+      # path = os.path.join(os.getcwd(), f"{dut.translated_top_module_name}.sv")
       print("\nTranslation finished successfully!")
-      print(f"You can find the generated SystemVerilog file at {path}.")
+      # print(f"You can find the generated SystemVerilog file at {path}.")
     else:
       print("\nTranslation failed!")
 

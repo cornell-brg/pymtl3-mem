@@ -450,7 +450,6 @@ class BlockingCacheCtrlRTL ( Component ):
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "
 
-    states = ["Go","Rf","Ev","Wf","Wr"]
     stage1 = "{}|{}".format(msg_memresp,msg_M0) if s.memresp_en \
       else "  {}".format(msg_M0)
     stage2 = "|{}".format(msg_M1)
