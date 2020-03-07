@@ -1,7 +1,4 @@
 # Pipelined Blocking Cache 
-1. Written in PyMTL3 and tested using new method based testing.
-2. NOPE support (eventually?)
-3. SRAM tag array and data array 
 
 ## Datapath
 ![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache_compact2.svg)
@@ -77,4 +74,13 @@ pytest ../BlockingCache/test/BlockingCacheRTL_test.py
 The cache is translatable to Verilog using
 ```
 % python ../blocking_cache/translate.py
+```
+To control the cache paramemters, use the optional flags
+```
+--size: cache size in bytes (default 4096)
+--clw : cache line bitwidth (default 128)
+--dbw : data bitwidth (default 32)
+--abw : address bitwidth (default 32)
+--obw : opaque bitwidth (default 8)
+--asso: associativity (default 1)
 ```
