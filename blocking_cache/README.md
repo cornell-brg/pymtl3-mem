@@ -61,18 +61,19 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 To run all tests including RTL and FL tests:
 
 ```
-pytest ../BlockingCache/test/ 
+% pytest ../BlockingCache/test/ 
 ```
 
 To run RTL tests:
 
 ```
-pytest ../BlockingCache/test/BlockingCacheRTL_test.py 
+% pytest ../BlockingCache/test/BlockingCacheRTL_test.py 
 ```
 
 ### Translation
 The cache is translatable to Verilog using
 ```
+% cd blocking_cache/build
 % python ../blocking_cache/translate.py
 ```
 To control the cache paramemters, use the optional flags
