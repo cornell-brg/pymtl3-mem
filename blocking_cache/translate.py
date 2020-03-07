@@ -21,9 +21,6 @@ from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
-
-
-
 #=========================================================================
 # Command line processing
 #=========================================================================
@@ -41,6 +38,9 @@ def parse_cmdline():
   opts = p.parse_args()
   return opts
 
+#=========================================================================
+# Runs the translation script
+#=========================================================================
 
 def main():
   opts = parse_cmdline()
@@ -49,9 +49,12 @@ def main():
   # Instantiate the cache
   dut = BlockingCacheRTL(CacheReqType, CacheRespType, MemReqType, \
     MemRespType, opts.size, opts.asso)
-  dut.verilog_translate = True
   success = False
-  dut.config_verilog_translate = TranslationConfigs() 
+  dut.verilog_translate = True
+  # dut.config_verilog_translate = TranslationConfigs(
+  #     explicit_module_name = 'BlockingCache_{}_{}_{}_{}_{}'.format(opts.size, 
+  #     opts.clw, opts.abw, opts.dbw, opts.asso),
+  #   ) 
   try:
     dut.elaborate()
     dut.apply( TranslationPass() )

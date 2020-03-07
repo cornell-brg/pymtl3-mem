@@ -40,9 +40,14 @@ class BlockingCacheRTL ( Component ):
     """
 
     # Generate additional constants and bitstructs from the given parameters
-    p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType, MemRespType,
-                            num_bytes, associativity )
-    s.param = p # params for line trace
+    s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType, 
+    MemRespType, num_bytes, associativity )
+    
+    # For translation 
+    s.config_verilog_translate = TranslationConfigs(
+      explicit_module_name = 'BlockingCache_{}_{}_{}_{}_{}'.format(num_bytes, 
+      p.bitwidth_cacheline, p.bitwidth_addr, p.bitwidth_data, associativity),
+    )
 
     #---------------------------------------------------------------------
     # Interface
@@ -57,38 +62,39 @@ class BlockingCacheRTL ( Component ):
     # Structural Composition
     #---------------------------------------------------------------------
 
+    s.ctrl_bypass = Wire(p.StructCtrl) # pass the ctrl signals back to dpath
     s.cacheDpath = BlockingCacheDpathRTL( p )(
-      cachereq_Y          = s.mem_minion_ifc.req.msg,
-      memresp_Y           = s.mem_master_ifc.resp.msg
+      cachereq_Y = s.mem_minion_ifc.req.msg,
+      memresp_Y  = s.mem_master_ifc.resp.msg,
+      ctrl       = s.ctrl_bypass
     )
 
     s.cacheCtrl = BlockingCacheCtrlRTL( p )(
-      cachereq_en           = s.mem_minion_ifc.req.en,
-      cachereq_rdy          = s.mem_minion_ifc.req.rdy,
-      memresp_en            = s.mem_master_ifc.resp.en,
-      memresp_rdy           = s.mem_master_ifc.resp.rdy,
-      cacheresp_en          = s.mem_minion_ifc.resp.en,
-      cacheresp_rdy         = s.mem_minion_ifc.resp.rdy,
-      memreq_en             = s.mem_master_ifc.req.en,
-      memreq_rdy            = s.mem_master_ifc.req.rdy,
+      cachereq_en   = s.mem_minion_ifc.req.en,
+      cachereq_rdy  = s.mem_minion_ifc.req.rdy,
+      memresp_en    = s.mem_master_ifc.resp.en,
+      memresp_rdy   = s.mem_master_ifc.resp.rdy,
+      cacheresp_en  = s.mem_minion_ifc.resp.en,
+      cacheresp_rdy = s.mem_minion_ifc.resp.rdy,
+      memreq_en     = s.mem_master_ifc.req.en,
+      memreq_rdy    = s.mem_master_ifc.req.rdy,
+      status        = s.cacheDpath.status,
+      ctrl          = s.ctrl_bypass
     )
 
-    connect( s.cacheDpath.dpath_out, s.cacheCtrl.dpath_in )
-    connect( s.cacheDpath.ctrl_in  , s.cacheCtrl.ctrl_out )
-
     # Cache Response Message
-    s.mem_minion_ifc.resp.msg.opaque //= s.cacheDpath.dpath_out.cacheresp_opaque_M2
-    s.mem_minion_ifc.resp.msg.type_  //= s.cacheDpath.dpath_out.cacheresp_type_M2
-    s.mem_minion_ifc.resp.msg.data   //= s.cacheDpath.dpath_out.cacheresp_data_M2
-    s.mem_minion_ifc.resp.msg.len    //= s.cacheDpath.dpath_out.cacheresp_len_M2
-    s.mem_minion_ifc.resp.msg.test   //= s.cacheCtrl.ctrl_out.hit_M2
+    s.mem_minion_ifc.resp.msg.opaque //= s.cacheDpath.status.cacheresp_opaque_M2
+    s.mem_minion_ifc.resp.msg.type_  //= s.cacheDpath.status.cacheresp_type_M2
+    s.mem_minion_ifc.resp.msg.data   //= s.cacheDpath.status.cacheresp_data_M2
+    s.mem_minion_ifc.resp.msg.len    //= s.cacheDpath.status.cacheresp_len_M2
+    s.mem_minion_ifc.resp.msg.test   //= s.cacheCtrl.ctrl.hit_M2
 
     # Memory Request Message
-    s.mem_master_ifc.req.msg.opaque  //= s.cacheDpath.dpath_out.memreq_opaque_M2
-    s.mem_master_ifc.req.msg.type_   //= s.cacheCtrl.ctrl_out.memreq_type
+    s.mem_master_ifc.req.msg.opaque  //= s.cacheDpath.status.memreq_opaque_M2
+    s.mem_master_ifc.req.msg.type_   //= s.cacheCtrl.ctrl.memreq_type
                             # Bits32                       # StructAddr
-    connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.dpath_out.memreq_addr_M2 )
-    s.mem_master_ifc.req.msg.data    //= s.cacheDpath.dpath_out.memreq_data_M2
+    connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.status.memreq_addr_M2 )
+    s.mem_master_ifc.req.msg.data    //= s.cacheDpath.status.memreq_data_M2
 
   # Line tracing
   def line_trace( s ):

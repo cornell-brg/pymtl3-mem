@@ -9,8 +9,6 @@ Date:   10 February 2020
 """
 
 from pymtl3 import *
-from mem_pclib.ifcs.dpathStructs   import *
-from mem_pclib.ifcs.ctrlStructs    import *
 from mem_pclib.ifcs.cacheStructs   import *
 
 class CacheDerivedParams:
@@ -96,7 +94,7 @@ class CacheDerivedParams:
 
     self.full_sram = False if self.bitwidth_tag_array - self.bitwidth_tag \
       - 2 > 0 else True
-    self.DpathSignalsOut = mk_dpath_signals_out_struct( self )
+    self.StructStatus = mk_dpath_status_struct( self )
 
     # Structs used within dpath module
     self.PipelineMsg    = mk_pipeline_msg( self )
@@ -107,7 +105,7 @@ class CacheDerivedParams:
     # Msgs for Ctrl
     #--------------------------------------------------------------------
 
-    self.CtrlSignalsOut = mk_ctrl_signals_out_struct( self )
+    self.StructCtrl = mk_ctrl_signals_struct( self )
 
     # Structs local to the ctrl
     self.CtrlMsg = mk_ctrl_pipeline_struct()

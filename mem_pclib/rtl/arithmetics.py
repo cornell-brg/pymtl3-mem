@@ -24,9 +24,9 @@ class EComp ( Component ):
 class Indexer ( Component ):
 
   def construct ( s, p ):
-    s.index = InPort( p.BitsIdx )
-    s.offset= InPort( p.BitsAssoclog2 )
-    s.out   = OutPort( p.BitsClogNlines )
+    s.index  = InPort( p.BitsIdx )
+    s.offset = InPort( p.BitsAssoclog2 )
+    s.out    = OutPort( p.BitsClogNlines )
     BitsClogNlines  = p.BitsClogNlines
     nblocks_per_way = p.nblocks_per_way
     @s.update

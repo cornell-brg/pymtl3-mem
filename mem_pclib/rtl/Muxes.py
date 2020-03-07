@@ -115,4 +115,4 @@ class PMux( Component ):
       s.sel = InPort ( Bits1 )
       @s.update
       def up_mux():
-        s.out = s.in_[ b1(0) ]
+        s.out = s.in_[0]

@@ -10,8 +10,8 @@ Date   : 19 February 2020
 
 from pymtl3 import *
 
-def mk_dpath_signals_out_struct( p ):
-  cls_name    = "DpathMsg_out"
+def mk_dpath_status_struct( p ):
+  cls_name    = "StructDpathStatus"
   req_cls = mk_bitstruct( cls_name, {
 
     # Interface
@@ -51,8 +51,8 @@ def mk_dpath_signals_out_struct( p ):
   })
   return req_cls
 
-def mk_ctrl_signals_out_struct( p ):
-  cls_name    = f"CtrlMsg_out"
+def mk_ctrl_signals_struct( p ):
+  cls_name    = f"StructCtrlSignals"
 
   req_cls = mk_bitstruct( cls_name, {
     
@@ -92,3 +92,120 @@ def mk_ctrl_signals_out_struct( p ):
     
   })
   return req_cls
+
+# =========================================================================
+#  ctrlStructs.py
+# =========================================================================
+# Bitstructs used within the cache control module
+
+def mk_ctrl_pipeline_struct( ):
+  cls_name    = f"StructCtrlPipeline"
+
+  def req_to_str( self ):
+    return "{}:{}:{}:{}".format(
+      Bits1( self.val ),
+      Bits1( self.is_refill ),
+      Bits1( self.is_write_hit_clean ),
+      Bits1( self.is_write_refill ),
+    )
+
+  req_cls = mk_bitstruct( cls_name, 
+    {
+      'val'               : Bits1,
+      'is_refill'         : Bits1,
+      'is_write_hit_clean': Bits1,
+      'is_write_refill'   : Bits1,
+    },
+    namespace = {'__str__' : req_to_str}
+  )
+
+  return req_cls
+
+# =========================================================================
+#  dpathStructs.py
+# =========================================================================
+
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
+def mk_pipeline_msg( p ):
+  cls_name    = f"StructDpathPipeline"
+
+  def req_to_str( self ):
+    return "{}:{}:{}:{}:{}".format(
+      MemMsgType.str[ int( self.type_ ) ],
+      p.BitsOpaque( self.opaque ),
+      self.addr,
+      p.BitsLen( self.len ),
+      p.BitsData( self.data ),
+    )
+
+  req_cls = mk_bitstruct( cls_name, {
+    'type_':  p.BitsType,
+    'opaque': p.BitsOpaque,
+    'addr':   p.StructAddr,
+    'len':    p.BitsLen,
+    'data':   p.BitsCacheline,
+  },
+  namespace = {
+    '__str__' : req_to_str
+  }
+  )
+  return req_cls
+
+def mk_MSHR_msg( p ):
+  cls_name    = f"StructMSHR"
+
+  def req_to_str( self ):
+    return "{}:{}:{}:{}:{}:{}".format(
+      MemMsgType.str[ int( self.type_ ) ],
+      p.BitsOpaque( self.opaque ),
+      self.addr ,
+      p.BitsLen( self.len ),
+      p.BitsData( self.data ),
+      p.BitsAssoclog2(self.repl)
+    )
+
+  req_cls = mk_bitstruct( cls_name, {
+    'type_':  p.BitsType,
+    'opaque': p.BitsOpaque,
+    'addr':   p.BitsAddr,
+    'len':    p.BitsLen,
+    'data':   p.BitsData,
+    'repl':   p.BitsAssoclog2
+  },
+  namespace = {
+    '__str__' : req_to_str
+  })
+  return req_cls
+
+def mk_addr_struct( p ):
+  def req_to_str( self ):
+    return "{}{}{}".format(
+      self.tag, self.index, self.offset 
+    )
+  # declaration alignment MATTERS here
+  struct = mk_bitstruct( "StructAddr", {
+    'tag'   : p.BitsTag,
+    'index' : p.BitsIdx,
+    'offset': p.BitsOffset
+  },
+  namespace = {
+    '__str__' : req_to_str
+  } )
+  return struct
+
+def mk_tag_array_struct( p ):
+  if p.full_sram:
+    struct = mk_bitstruct( "StructTag", {
+      'val': Bits1,
+      'dty': Bits1,
+      'tag': p.BitsTag,
+    } )
+  else:
+    struct = mk_bitstruct( "StructTag", {
+      'val': Bits1,
+      'dty': Bits1,
+      'tag': p.BitsTag,
+      'tmp': p.BitsTagArrayTmp
+    } )
+  return struct

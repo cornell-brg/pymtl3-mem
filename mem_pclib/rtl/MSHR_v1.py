@@ -58,7 +58,7 @@ class MSHR (Component):
         s.empty = y
 
     if entries == BitsEntries(1):
-      s.MSHR = MSHRReg( p )(
+      s.storage_regs = MSHRReg( p )(
         in_ = s.alloc_in,
         out = s.dealloc_out,
         en  = s.alloc_en

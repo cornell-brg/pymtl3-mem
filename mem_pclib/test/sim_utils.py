@@ -16,13 +16,17 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from blocking_cache.test.CacheMemory import CacheMemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
    RecvRTL2SendCL, SendIfcRTL
-# from pymtl3.passes.backends.sverilog import TranslationPass
+from pymtl3.passes.backends.verilog import TranslationImportPass
 
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
-def run_sim( th, max_cycles = 1000 ):
+def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0 ):
   # print (" -----------starting simulation----------- ")
+  if translation:
+    th.cache.verilog_translate_import = True
+    th = TranslationImportPass()( th )
+
   th.apply( SimulationPass() )
   th.sim_reset()
   ncycles  = 0
@@ -35,16 +39,6 @@ def run_sim( th, max_cycles = 1000 ):
   assert ncycles < max_cycles
   th.tick()
   th.tick()
-
-#----------------------------------------------------------------------
-# Translate the cache and import the results
-#---------------------------------------------------------------------
-def translate_import( model ):
-  pass
-  # model.elaborate()
-  # model.yosys_translate = True
-  # model.apply( TranslationPass() )
-  # model = TranslationImportPass( )( model )
 
 #-------------------------------------------------------------------------
 # TestHarness
