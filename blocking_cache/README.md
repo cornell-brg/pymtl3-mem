@@ -61,6 +61,7 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 To run all tests including RTL and FL tests:
 
 ```
+% cd blocking_cache/build
 % pytest ../BlockingCache/test/ 
 ```
 
