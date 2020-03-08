@@ -13,16 +13,20 @@ from pymtl3 import *
 
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
-from blocking_cache.test.CacheMemory import CacheMemoryCL
+from pymtl3.stdlib.cl.MemoryCL        import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
    RecvRTL2SendCL, SendIfcRTL
-from pymtl3.passes.backends.verilog import TranslationImportPass
+from pymtl3.passes.backends.verilog import TranslationImportPass, \
+VerilatorImportConfigs
 
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0 ):
   # print (" -----------starting simulation----------- ")
+  if dump_vcd:
+    th.cache.config_verilog_import = VerilatorImportConfigs(vl_trace = True, \
+      vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'])
   if translation:
     th.cache.verilog_translate_import = True
     th = TranslationImportPass()( th )
@@ -53,7 +57,7 @@ class TestHarness(Component):
     s.src   = TestSrcRTL(CacheReqType, src_msgs, 0, src_delay)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
-    s.mem   = CacheMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.mem   = MemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemReqType)
     s.mem2cache = RecvCL2SendRTL(MemRespType)
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)

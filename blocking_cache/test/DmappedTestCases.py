@@ -14,13 +14,13 @@ import random
 from pymtl3                    import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
-OBW  = 8   # Short name for opaque bitwidth
-ABW  = 32  # Short name for addr bitwidth
-DBW  = 32  # Short name for data bitwidth
-CLW  = 128 # cacheline bitwidth
+obw  = 8   # Short name for opaque bitwidth
+abw  = 32  # Short name for addr bitwidth
+dbw  = 32  # Short name for data bitwidth
+clw  = 128 # cacheline bitwidth
 
-CacheReqType, CacheRespType = mk_mem_msg(OBW, ABW, DBW)
-MemReqType, MemRespType = mk_mem_msg(OBW, ABW, CLW)
+CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 #-------------------------------------------------------------------------
 # make messages
@@ -477,7 +477,9 @@ class DmappedTestCases:
   def hypo_mem( s ):
     return [
       0x00000000, 0xa0b0c0d0,
-      0x00000004, 0xc0ffee88
+      0x00000004, 0xc0ffee88,
+      0x00000008, 0x12345678,
+      0x0000000c, 0xdeadbeef,
     ]
 
   def test_dmapped_hypo1( s, dump_vcd, test_verilog ):
@@ -516,7 +518,7 @@ class DmappedTestCases:
       req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xa0b0c0d0          ),
     ]
     mem = s.hypo_mem()
-    MemReqType, MemRespType = mk_mem_msg(OBW, ABW, 64)
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                1, 128, 0, 1, 0, 1, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
@@ -529,3 +531,29 @@ class DmappedTestCases:
     mem = s.hypo_mem()
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                1, 4096, 0, 1, 7, 6, dump_vcd=dump_vcd, test_verilog=test_verilog)
+
+  def test_dmapped_verilog1( s, dump_vcd, test_verilog ):
+    msgs = [
+      #    type  opq   addr    len  data     type  opq test len  data
+      req( 'rd', 0, 0x00000000, 0, 0), resp( 'rd', 0x0, 0, 0, 0xa0b0c0d0          ),
+      req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xa0b0c0d0          ),
+      req( 'rd', 2, 0x00000000, 0, 0), resp( 'rd', 0x2, 1, 0, 0xa0b0c0d0          ),
+    ]
+    mem = s.hypo_mem()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+               1, 128, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
+
+  def test_dmapped_verilog2( s, dump_vcd, test_verilog ):
+    msgs = []
+    for i in range(4):
+      #                  type  opq  addr          len data
+      msgs.append(req(  'in', i, ((0x00012000)<<2)+i*4, 0, i ))
+      msgs.append(resp( 'in', i, 0,             0, 0 ))
+    for i in range(4):
+      msgs.append(req(  'rd', i, ((0x00012000)<<2)+i*4, 0, 0 ))
+      msgs.append(resp( 'rd', i, 1,             0, i ))
+    mem = None
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+               1, 128, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)

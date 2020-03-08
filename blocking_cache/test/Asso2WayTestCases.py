@@ -53,7 +53,7 @@ class AssoTestCases:
   #-------------------------------------------------------------------------
   # Test Case: Read Hit 2 way set associative with only 1 way tested
   #-------------------------------------------------------------------------
-  def test_2way_1way_only_read_hit( s ):
+  def test_2way_1way_only_read_hit( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data                type  opq  test len data
       req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -61,18 +61,20 @@ class AssoTestCases:
       req( 'rd', 0x3, 0x00000000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  0xdeadbeef ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512,
+    dump_vcd=dump_vcd, test_verilog=test_verilog)
   #-------------------------------------------------------------------------
   # Test Case: Read Miss 2 way set associative but with 1 way
   #-------------------------------------------------------------------------
-  def test_2way_1way_only_read_miss( s ):
+  def test_2way_1way_only_read_miss( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data                type  opq  test len data
       req( 'rd', 0x0, 0x00002070, 0, 0 ), resp( 'rd', 0x0, 0,   0,  0x70facade          ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
-  def test_2way_1way_only_write_hit( s ):
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+     2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
+  def test_2way_1way_only_write_hit( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data           type  opq  test len data
       req( 'in', 0x0, 0x00002070, 0, 200 ),   resp( 'in', 0x0, 0,   0,  0          ),
@@ -80,21 +82,23 @@ class AssoTestCases:
       req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
-  def test_2way_1way_only_write_miss( s ):
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+     2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
+  def test_2way_1way_only_write_miss( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data           type  opq  test len data         ),
       req( 'wr', 0x1, 0x00002070, 0, 78787 ), resp( 'wr', 0x1, 0,   0,  0          ),
       req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+     2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
   #-------------------------------------------------------------------------
   # Test Case: Read Hit 2 way set associative
   #-------------------------------------------------------------------------
   # Test case designed for direct-mapped cache where a cache line must be evicted
-  def test_2way_read_hit( s ):
+  def test_2way_read_hit( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len  data                type  opq  test len data
       req( 'in', 0x0, 0x00000000, 0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0          ),
@@ -103,13 +107,14 @@ class AssoTestCases:
       req( 'rd', 0x3, 0x00002000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  212 ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
+    2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
   #-------------------------------------------------------------------------
   # Test Case: Write Miss 2 way set associative
   #-------------------------------------------------------------------------
   # Test case designed for direct-mapped cache where a cache line must be evicted
-  def test_2way_write_miss( s ):
+  def test_2way_write_miss( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data                type  opq  test len data
       req( 'wr', 0x2, 0x00000000, 0, 0x8713450  ), resp( 'wr', 0x2, 0,   0,  0          ),
@@ -118,12 +123,13 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+     2, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
   #-------------------------------------------------------------------------
   # Test Case: Write Hit 2 way set associative
   #-------------------------------------------------------------------------
-  def test_2way_write_hit( s ):
+  def test_2way_write_hit( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data                type  opq  test len data
       req( 'in', 0x1, 0x00000000, 0, 44159     ),  resp( 'in', 0x1, 0,   0,  0          ),
@@ -139,7 +145,7 @@ class AssoTestCases:
   #-------------------------------------------------------------------------
   # Test Case: Eviction Tests
   #-------------------------------------------------------------------------
-  def test_2way_evict( s ):
+  def test_2way_evict( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data              type  opq  test len data         ),
       req( 'wr', 0x2, 0x00002000, 0, 78787    ), resp( 'wr', 0x2, 0,   0,  0          ),
@@ -156,7 +162,7 @@ class AssoTestCases:
   # Test cases designed for two-way set-associative cache. We should set
   # check_test to False if we use it to test set-associative cache.
 
-  def test_2way_msg0( s ):
+  def test_2way_msg0( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
       # Write to cacheline 0 way 0
@@ -224,7 +230,7 @@ class AssoTestCases:
       0x28, 5,
     ]
 
-  def test_2way_hyp1( s ):
+  def test_2way_hyp1( s, dump_vcd, test_verilog ):
     msgs = [
       req( 'rd', 0x00, 0x8, 0, 0), resp( 'rd', 0x00, 0, 0, 2          ),
       req( 'wr', 0x01, 0x20, 0, 0), resp( 'wr', 0x01, 0, 0, 0          ),
@@ -235,7 +241,7 @@ class AssoTestCases:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
 
-  def test_2way_hyp2( s, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
+  def test_2way_hyp2( s, dump_vcd, test_verilog, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
       req( 'wr', 0x00, 0, 0, 0), resp( 'wr', 0x00, 0, 0, 0     ),
       req( 'rd', 0x01, 0x10, 0, 0), resp( 'rd', 0x01, 0, 0, 3  ),
@@ -248,10 +254,10 @@ class AssoTestCases:
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 256, \
       stall_prob, latency, src_delay, sink_delay)
 
-  def test_2way_hyp1_lat(s):
-    s.test_2way_hyp2(1,1,1,1)
+  def test_2way_hyp1_lat(s, dump_vcd, test_verilog ):
+    s.test_2way_hyp2(dump_vcd, test_verilog, 1,1,1,1)
 
-  def test_2way_hyp2_lat( s ):
+  def test_2way_hyp2_lat( s, dump_vcd, test_verilog ):
     msgs = [
       req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
       req( 'rd', 0x01, 0x00, 0, 0), resp( 'rd', 0x01, 1, 0, 1  ),
@@ -262,7 +268,7 @@ class AssoTestCases:
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 256, 0,1,0,1)
-  def test_2way_hyp2_lat2( s ):
+  def test_2way_hyp2_lat2( s, dump_vcd, test_verilog):
     msgs = [
       req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
       req( 'rd', 0x01, 0x00, 0, 0), resp( 'rd', 0x01, 1, 0, 1  ),

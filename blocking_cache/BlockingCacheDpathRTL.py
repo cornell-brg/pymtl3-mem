@@ -313,4 +313,5 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     # msg += s.mshr.line_trace()
+    msg += f"val:{s.ctrl.data_array_val_M1} d:{s.data_array_M2.port0_rdata}"
     return msg

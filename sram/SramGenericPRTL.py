@@ -58,6 +58,8 @@ class SramGenericPRTL( Component ):
       for i in range( nbytes ):
         if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
           s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
+        else:
+          s.ram_next[s.A1][ i*8 : i*8+8 ] = s.ram[s.A1][ i*8 : i*8+8 ]
 
     @s.update
     def comb_logic():
@@ -69,11 +71,9 @@ class SramGenericPRTL( Component ):
     @s.update_ff
     def update_sram():
       s.dout <<= s.dout_next
-      for i in range( num_words ):
-        s.ram[i] <<= s.ram_next[i]
-
-    # s.add_constraints( U(write_logic)<U(update_sram) )
+      if not s.CSB1 and not s.WEB1:
+        for i in range( num_words ):
+          s.ram[i] <<= s.ram_next[i]
 
   def line_trace( s ):
-    # print ([int(x) for x in s.ram], [int(x) for x in s.ram_next])
     return "(WE={} OE={} A1={} I1A={} O1={} s.WBM1={})".format(~s.WEB1, ~s.OEB1, s.A1, s.I1, s.O1, s.WBM1)

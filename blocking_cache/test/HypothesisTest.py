@@ -56,8 +56,8 @@ def gen_reqs( draw ):
 
 class HypothesisTests:
 
-  def hypothesis_test_harness(s, associativity, clw, cacheSize,
-    transactions, req, stall_prob, latency, src_delay, sink_delay):
+  def hypothesis_test_harness(s, associativity, clw, cacheSize, transactions, 
+  req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
     if cacheSize < 2*clw*associativity:
       cacheSize = 2*clw*associativity
     mem = rand_mem(addr_min, addr_max)
@@ -80,11 +80,12 @@ class HypothesisTests:
         model.read(addr, i, len_)
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, associativity, cacheSize, \
-    stall_prob, latency, src_delay, sink_delay)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+     associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
+     dump_vcd, test_verilog)
 
 
-  @hypothesis.settings( deadline = None, max_examples=150 )
+  @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([256,512,1024,4096,8192]),
@@ -96,11 +97,11 @@ class HypothesisTests:
     sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_2way(s, clw, cacheSize, transactions, req,
-    stall_prob, latency, src_delay, sink_delay):
-    s.hypothesis_test_harness(2, clw, cacheSize, transactions, req, \
-      stall_prob, latency, src_delay, sink_delay)
+    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
+    s.hypothesis_test_harness(2, clw, cacheSize, transactions, req, stall_prob,
+    latency, src_delay, sink_delay, dump_vcd, test_verilog)
 
-  @hypothesis.settings( deadline = None, max_examples=150 )
+  @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([128,256,512,1024,4096,8192,16384,32768]),
@@ -112,11 +113,11 @@ class HypothesisTests:
     sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_dmapped(s, clw, cacheSize, transactions, req,
-    stall_prob, latency, src_delay, sink_delay):
-    s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, \
-      stall_prob, latency, src_delay, sink_delay)
+    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
+    s.hypothesis_test_harness(1, clw, cacheSize, transactions, req, stall_prob,
+    latency, src_delay, sink_delay, dump_vcd, test_verilog)
 
-  @hypothesis.settings( deadline = None, max_examples=150 )
+  @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw           = st.sampled_from([64,128,256,512,1024]),
     cacheSize     = st.sampled_from([256,512,1024,4096,8192,16384,32768]),
@@ -129,6 +130,7 @@ class HypothesisTests:
     sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_cache_gen(s, clw, cacheSize, transactions,
-    req, associativity, stall_prob, latency, src_delay, sink_delay):
-    s.hypothesis_test_harness(associativity, clw, cacheSize, \
-      transactions, req, stall_prob, latency, src_delay, sink_delay)
+    req, associativity, stall_prob, latency, src_delay, sink_delay, dump_vcd, 
+    test_verilog):
+    s.hypothesis_test_harness(associativity, clw, cacheSize, transactions, req,
+    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog)

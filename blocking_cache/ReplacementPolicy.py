@@ -46,7 +46,7 @@ class ReplacementPolicy (Component):
       # LRU for 2 way is extra simple since we don't need
       # to keep track   
       @s.update
-      def logic():
+      def pointer_logic():
         if s.reset:
           s.represp_ptr = BitsAssoclog2(0)
         else:
@@ -66,7 +66,3 @@ class ReplacementPolicy (Component):
     msg = ""
     # msg += f" hit-in:{s.repreq_hit_ptr}"
     return msg
-          
-    
-
-
