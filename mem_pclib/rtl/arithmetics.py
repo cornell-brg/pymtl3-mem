@@ -2,12 +2,14 @@
 =========================================================================
 arithmetic.py
 =========================================================================
-Combined arithmetic modules for the cache such as adders and multipliers
+Combined arithmetic modules for the cache such as modified adders, 
+multipliers and comparators
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
 
+from mem_pclib.constants.constants   import *
 from pymtl3 import *
 
 class EComp ( Component ):
@@ -33,3 +35,23 @@ class Indexer ( Component ):
     def index_logic():
       s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
         BitsClogNlines( nblocks_per_way )
+
+class Comparator( Component ):
+
+  def construct(s, p):
+    s.addr_tag  = InPort(p.BitsTag)
+    s.tag_array = [ InPort(p.StructTagArray) for _ in range(p.associativity) ]
+    s.hit       = OutPort(Bits1)
+    s.hit_way   = OutPort(p.BitsAssoclog2)
+
+    BitsAssoclog2 = p.BitsAssoclog2
+    associativity = p.associativity
+    @s.update
+    def comparing_logic():
+      s.hit     = n
+      s.hit_way = BitsAssoclog2(0)
+      for i in range( associativity ):
+        if ( s.tag_array[i].val ):
+          if s.tag_array[i].tag == s.addr_tag:
+            s.hit = y
+            s.hit_way = BitsAssoclog2(i) 

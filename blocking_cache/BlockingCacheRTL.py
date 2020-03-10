@@ -97,16 +97,21 @@ class BlockingCacheRTL ( Component ):
     s.mem_master_ifc.req.msg.data    //= s.cacheDpath.status.memreq_data_M2
 
   # Line tracing
-  def line_trace( s ):
-    memreq_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
-    memresp_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
+  def line_trace( s, verbosity=2 ):
+    if verbosity==1:
+      msg = s.cacheCtrl.line_trace()
+    elif verbosity==2:
+      memreq_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
+      memresp_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
 
-    if s.mem_master_ifc.resp.en:
-      memresp_msg = "{}".format(s.mem_master_ifc.resp.msg)
-    if s.mem_master_ifc.req.en:
-      memreq_msg  = "{}".format(s.mem_master_ifc.req.msg)
-    msg = "{} {}{}{}".format(
-      s.cacheDpath.line_trace(), memresp_msg, s.cacheCtrl.line_trace(),
-      memreq_msg
-    )
+      if s.mem_master_ifc.resp.en:
+        memresp_msg = "{}".format(s.mem_master_ifc.resp.msg)
+      if s.mem_master_ifc.req.en:
+        memreq_msg  = "{}".format(s.mem_master_ifc.req.msg)
+      msg = "{} {}{}{}".format(
+        s.cacheDpath.line_trace(), memresp_msg, s.cacheCtrl.line_trace(),
+        memreq_msg
+      )
+    else:
+      msg = ''
     return msg

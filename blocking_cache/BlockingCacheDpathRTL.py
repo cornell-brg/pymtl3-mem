@@ -9,12 +9,10 @@ Date   : 20 February 2020
 """
 
 from mem_pclib.constants.constants  import *
-from mem_pclib.rtl.AddrDecoder      import AddrDecoder
-from mem_pclib.rtl.Comparator       import Comparator
 from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.Muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
-from mem_pclib.rtl.arithmetics      import Indexer
+from mem_pclib.rtl.arithmetics      import Indexer, Comparator
 from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg
 from sram.SramPRTL                  import SramPRTL
 from pymtl3                         import *
@@ -313,5 +311,4 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     # msg += s.mshr.line_trace()
-    msg += f"val:{s.ctrl.data_array_val_M1} d:{s.data_array_M2.port0_rdata}"
     return msg

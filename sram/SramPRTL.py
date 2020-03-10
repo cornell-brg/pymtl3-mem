@@ -24,9 +24,6 @@
 
 from pymtl3          import *
 from sram.SramGenericPRTL import SramGenericPRTL
-# from sram.SRAM_32x256_1P  import SRAM_32x256_1P
-# from sram.SRAM_128x256_1P import SRAM_128x256_1P
-# from sram.SRAM_128x512_1P import SRAM_128x512_1P
 
 # ''' TUTORIAL TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''
 # Import new SRAM configuration RTL model
@@ -55,18 +52,7 @@ class SramPRTL( Component ):
     def inverters():
       s.port0_val_bar  = ~s.port0_val
       s.port0_type_bar = ~s.port0_type
-      # print ("generate new WEB = " + str(s.port0_type_bar))
 
-    # if you have implemented a new SRAM, make sure use it
-    # here instead of the generic one.
-
-    # if   num_bits == 32 and num_words == 256:
-    #   s.sram = m = SRAM_32x256_1P()
-    # elif num_bits == 128 and num_words == 256:
-    #   s.sram = m = SRAM_128x256_1P()
-    # elif num_bits == 128 and num_words == 512:
-    #   s.sram = m = SRAM_128x512_1P()
-    # else:
     s.sram = m = SramGenericPRTL( num_bits, num_words )
     connect( m.CE1,  s.clk           )
     connect( m.CSB1, s.port0_val_bar  ) # CSB1 low-active

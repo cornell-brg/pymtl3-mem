@@ -532,7 +532,7 @@ class DmappedTestCases:
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                1, 4096, 0, 1, 7, 6, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
-  def test_dmapped_verilog1( s, dump_vcd, test_verilog ):
+  def test_dmapped_verilog( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq   addr    len  data     type  opq test len  data
       req( 'rd', 0, 0x00000000, 0, 0), resp( 'rd', 0x0, 0, 0, 0xa0b0c0d0          ),
@@ -542,18 +542,16 @@ class DmappedTestCases:
     mem = s.hypo_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-               1, 128, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
+               1, 16, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
-  def test_dmapped_verilog2( s, dump_vcd, test_verilog ):
-    msgs = []
-    for i in range(4):
-      #                  type  opq  addr          len data
-      msgs.append(req(  'in', i, ((0x00012000)<<2)+i*4, 0, i ))
-      msgs.append(resp( 'in', i, 0,             0, 0 ))
-    for i in range(4):
-      msgs.append(req(  'rd', i, ((0x00012000)<<2)+i*4, 0, 0 ))
-      msgs.append(resp( 'rd', i, 1,             0, i ))
-    mem = None
-    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+  def test_dmapped_4kb_cache( s, dump_vcd, test_verilog ):
+    msgs = [
+      #    type  opq   addr    len  data     type  opq test len  data
+      req( 'rd', 0, 0x00000000, 0, 0), resp( 'rd', 0x0, 0, 0, 0xa0b0c0d0          ),
+      req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xa0b0c0d0          ),
+      req( 'rd', 2, 0x00000000, 0, 0), resp( 'rd', 0x2, 1, 0, 0xa0b0c0d0          ),
+    ]
+    mem = s.hypo_mem()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-               1, 128, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
+               1, 4096, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)

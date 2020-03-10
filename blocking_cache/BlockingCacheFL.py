@@ -134,6 +134,7 @@ class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
     # The hit/miss tracker
     mem_bitwidth_data = MemReqType.get_field_type("data").nbits
+    size = size*8
     self.tracker = HitMissTracker(size, nways, nbanks, mem_bitwidth_data)
 
     self.mem = {}

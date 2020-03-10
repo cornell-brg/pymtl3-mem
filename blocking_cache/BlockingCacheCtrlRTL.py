@@ -455,7 +455,5 @@ class BlockingCacheCtrlRTL ( Component ):
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
-    add_msgs = ""
-    add_msgs = f"{s.status.hit_M1} alloc:{s.ctrl.MSHR_alloc_en } " 
-
+    add_msgs = f"req_en:{s.cachereq_en} resp_en:{s.cacheresp_en} h:{s.ctrl.hit_M2[0]}"
     return pipeline + add_msgs

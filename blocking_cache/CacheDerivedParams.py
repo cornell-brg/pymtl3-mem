@@ -37,7 +37,8 @@ class CacheDerivedParams:
     self.bitwidth_addr             = MemReqType.get_field_type("addr").nbits
     self.bitwidth_opaque           = MemReqType.get_field_type("opaque").nbits
     self.bitwidth_data             = CacheReqType.get_field_type("addr").nbits
-    self.total_num_cachelines      = self.num_bytes // self.bitwidth_cacheline       # number of cachelines
+    # Convert to total number of bits and then divide 
+    self.total_num_cachelines      = self.num_bytes * 8 // self.bitwidth_cacheline      
     self.nblocks_per_way           = self.total_num_cachelines // self.associativity # cachelines per way
     self.bitwidth_index            = clog2( self.nblocks_per_way )                   # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
@@ -55,8 +56,8 @@ class CacheDerivedParams:
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity )
 
-    print("size[{}], asso[{}], clw[{}], tag[{}]".format(num_bytes, associativity,
-    self.bitwidth_cacheline, self.bitwidth_tag))
+    print("size[{}], asso[{}], clw[{}], tag[{}], idx[{}]".format(num_bytes, associativity,
+    self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index))
 
     #--------------------------------------------------------------------
     # Make Bits object

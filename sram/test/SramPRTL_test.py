@@ -10,6 +10,7 @@ from pymtl3.stdlib.test.test_utils import mk_test_case_table
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
+from pymtl3.stdlib.test import run_sim
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 from sram.SramPRTL     import SramPRTL
 
@@ -117,19 +118,19 @@ def resp( type_, opaque, test, len, data ):
 #----------------------------------------------------------------
 # Run the simulation
 #----------------------------------------------------------------
-def run_sim(th, max_cycles):
-  th.elaborate()
-  # print (" -----------starting simulation----------- ")
-  th.apply( DynamicSim )
-  th.sim_reset()
-  curr_cyc = 0
-  print("")
-  while not th.done():
-    th.tick()
-    print ("{:4d}: {}".format(curr_cyc, th.line_trace()))
-    curr_cyc += 1
-    assert curr_cyc < max_cycles
-  th.tick()
+# def run_sim(th, max_cycles):
+#   th.elaborate()
+#   # print (" -----------starting simulation----------- ")
+#   th.apply( DynamicSim )
+#   th.sim_reset()
+#   curr_cyc = 0
+#   print("")
+#   while not th.done():
+#     th.tick()
+#     print ("{:4d}: {}".format(curr_cyc, th.line_trace()))
+#     curr_cyc += 1
+#     assert curr_cyc < max_cycles
+#   th.tick()
 
 #----------------------------------------------------------------------
 # Test Case: read hit path
