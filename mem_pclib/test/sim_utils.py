@@ -88,5 +88,5 @@ class TestHarness( Component ):
     return s.src.done() and s.sink.done()
 
   def line_trace( s, trace ):
-    return s.src.line_trace() + " " + s.cache.line_trace(trace) + " " \
+    return s.src.line_trace() + " " + s.cache.line_trace() + " " \
         + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
