@@ -61,14 +61,17 @@ Hit       : Y  Y  Y  Y  ...........Y  M0 M1 M2    <- Hit path
 To run all tests including RTL and FL tests:
 
 ```
-% cd blocking_cache/build
-% pytest ../BlockingCache/test/ 
+% git clone git@github.com:cornell-brg/pymtl3-mem.git
+% cd pymtl3-mem
+% mkdir build && cd build
+% pytest ../blocking_cache/test/ 
 ```
+All commands will be run from the `build` directory.
 
 To run RTL tests:
 
 ```
-% pytest ../BlockingCache/test/BlockingCacheRTL_test.py 
+% pytest ../blocking_cache/test/BlockingCacheRTL_test.py 
 ```
 
 Flags:
@@ -81,10 +84,11 @@ Flags:
 ### Translation
 The cache is translatable to Verilog using
 ```
-% cd blocking_cache/build
 % python ../blocking_cache/translate.py
 ```
-To control the cache paramemters, use the optional flags
+This command will translate the cache to a Verilog (.v) file and not run the tests.
+
+To change the cache paramemters, use the optional flags
 ```
 --size: cache size in bytes (default 4096)
 --clw : cache line bitwidth (default 128)
