@@ -71,6 +71,13 @@ To run RTL tests:
 % pytest ../BlockingCache/test/BlockingCacheRTL_test.py 
 ```
 
+Flags:
+```
+--test-verilog: translate the cache to verilog and run all test cases
+--dump-vcd    : dumps vcd waveforms after translation and running the tests
+--trace       : controls verbosity of the line trace [0 - no trace, 2 - all the trace]
+```
+
 ### Translation
 The cache is translatable to Verilog using
 ```
