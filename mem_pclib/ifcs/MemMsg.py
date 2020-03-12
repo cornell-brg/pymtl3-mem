@@ -23,7 +23,7 @@ def mk_mem_req_msg( opq, addr, data ):
   cls_name      = "MemReqMsg_{}_{}_{}".format( opq, addr, data )
 
   def req_to_str( self ):
-    return "{}:{}:{}:{}:{}".format(
+    return "{}:{}:{}:{}:{}:{}".format(
       MemMsgType.str[ int( self.type_ ) ],
       OpqType( self.opaque ),
       AddrType( self.addr ),
