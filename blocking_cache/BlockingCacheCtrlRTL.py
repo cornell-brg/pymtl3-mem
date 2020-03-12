@@ -141,14 +141,14 @@ class BlockingCacheCtrlRTL ( Component ):
       
       #                 tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
       s.cs0 = concat( tg_wbenf  , b1(0)  , b1(0)  ,    x    ,  rd , x , x ) # default value
-      if s.state_M0.val: #                                               tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
-        if s.state_M0.is_refill:                       s.cs0 = concat(   tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n , y )
-        elif s.state_M0.is_write_refill:               s.cs0 = concat(   tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y , y )
-        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat(   tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y , y )
+      if s.state_M0.val: #                                             tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
+        if s.state_M0.is_refill:                       s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n , y )
+        elif s.state_M0.is_write_refill:               s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y , y )
+        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat( tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y , y )
         else:
-          if (s.status.cachereq_type_M0 == INIT):    s.cs0 = concat(   tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , n , y )
-          elif (s.status.cachereq_type_M0 == READ):  s.cs0 = concat(   tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
-          elif (s.status.cachereq_type_M0 == WRITE): s.cs0 = concat(   tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
+          if (s.status.cachereq_type_M0 == INIT):      s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , n , y )
+          elif (s.status.cachereq_type_M0 == READ):    s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
+          elif (s.status.cachereq_type_M0 == WRITE):   s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
 
       s.ctrl.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl.wdata_mux_sel_M0   = s.cs0[ CS_wdata_mux_sel_M0   ]

@@ -7,6 +7,7 @@ Test for Pipelined Blocking Cache FL model
 Author : Xiaoyu Yan, Eric Tang
 Date   : 17 November 2019
 """
+
 import pytest
 import struct
 import random
@@ -20,8 +21,10 @@ from blocking_cache.BlockingCacheFL import ModelCache
 
 class CacheFL_Tests(DmappedTestCases, AssoTestCases):
 
-  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, associativity=1,
-                cacheSize=512, stall_prob=0, latency=1, src_delay=0, sink_delay=0 ):
+  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, 
+                MemRespType, associativity=1, cacheSize=512, stall_prob=0, 
+                latency=1, src_delay=0, sink_delay=0, dump_vcd=False, 
+                test_verilog=False ):
 
     cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, MemReqType, MemRespType, mem)
     src = msgs[::2]

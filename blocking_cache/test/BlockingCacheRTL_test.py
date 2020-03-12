@@ -9,7 +9,9 @@ Date   : 23 December 2019
 """
 
 import pytest
+
 from pymtl3      import *
+
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
 from blocking_cache.test.DmappedTestCases import DmappedTestCases
 from blocking_cache.test.Asso2WayTestCases import AssoTestCases

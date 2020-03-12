@@ -4,7 +4,7 @@
 =========================================================================
 Direct mapped cache test cases
 
-Author : Xiaoyu Yan, Eric Tang
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 11 November 2019
 """
 
