@@ -30,6 +30,11 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
       vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'])
   if translation:
     th.cache.verilog_translate_import = True
+    th.cache.config_verilog_import = VerilatorImportConfigs(
+          vl_xinit = 'ones',
+          # vl_xinit = 'zeros',
+          # vl_xinit = 'rand',
+      )
     th = TranslationImportPass()( th )
 
   th.apply( SimulationPass() )
@@ -65,14 +70,14 @@ class TestHarness( Component ):
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)
 
     # Set the test signals to better model the processor
-    
+
     # Connect the src and sink to model proc
     s.src.send  //= s.proc_model.proc.req
     s.sink.recv //= s.proc_model.proc.resp
     # Connect the proc model to the cache
     s.proc_model.cache //= s.cache.mem_minion_ifc
 
-    # Connect the cache req and resp ports to test memory 
+    # Connect the cache req and resp ports to test memory
     connect( s.mem.ifc[0].resp, s.mem2cache.recv )
     connect( s.cache.mem_master_ifc.resp, s.mem2cache.send )
     connect( s.cache.mem_master_ifc.req, s.cache2mem.recv )
