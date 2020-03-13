@@ -32,7 +32,7 @@ class Indexer ( Component ):
     BitsClogNlines  = p.BitsClogNlines
     nblocks_per_way = p.nblocks_per_way
     @s.update
-    def index_logic():
+    def index_logic(): 
       s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
         BitsClogNlines( nblocks_per_way )
 
