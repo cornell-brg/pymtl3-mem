@@ -155,9 +155,10 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.addr_mux_sel_M0    = s.cs0[ CS_addr_mux_sel_M0    ]
       s.ctrl.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
       s.ctrl.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
-      s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
       s.ctrl.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
       
+      s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
+
       s.stall_M0  = s.ostall_M0 | s.ostall_M1 | s.ostall_M2
       s.ctrl.reg_en_M0 = ~s.stall_M0
 

@@ -29,7 +29,7 @@ def mk_dpath_status_struct( p ):
     
     # M1 Dpath Signals
     'cachereq_type_M1'    : p.BitsType,
-    'ctrl_bit_dty_rd_M1'  : p.BitsAssoc,
+    'ctrl_bit_dty_rd_M1'  : p.BitsDirty,
     'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
@@ -65,7 +65,7 @@ def mk_ctrl_signals_struct( p ):
     'tag_array_type_M0' : Bits1,
     'tag_array_wben_M0' : p.BitsTagwben,
     'ctrl_bit_val_wr_M0': Bits1,
-    'ctrl_bit_dty_wr_M0': Bits1,
+    'ctrl_bit_dty_wr_M0': p.BitsDirty,
     'ctrl_bit_rep_wr_M0': Bits1,
 
     # M1 Ctrl Signals
@@ -196,16 +196,36 @@ def mk_addr_struct( p ):
 
 def mk_tag_array_struct( p ):
   if p.full_sram:
-    struct = mk_bitstruct( "StructTag", {
+    struct = mk_bitstruct( "StructTagArray", {
       'val': Bits1,
-      'dty': Bits1,
+      'dty': Bits1, 
       'tag': p.BitsTag,
     } )
   else:
-    struct = mk_bitstruct( "StructTag", {
+    struct = mk_bitstruct( "StructTagArray", {
       'val': Bits1,
       'dty': Bits1,
       'tag': p.BitsTag,
-      'tmp': p.BitsTagArrayTmp
+      'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
     } )
   return struct
+
+def mk_cipher_tag_array_struct( p ):
+  if p.full_sram:
+    struct = mk_bitstruct( "StructCipherTagArray", {
+      'val': Bits1,
+      'dty': p.BitsDirty, 
+      'tag': p.BitsTag,
+    } )
+  else:
+    struct = mk_bitstruct( "StructCipherTagArray", {
+      'val': Bits1,
+      'dty': p.BitsDirty,
+      'tag': p.BitsTag,
+      'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
+    } )
+  return struct
+
+# def mk_dirt_struct( p ):
+#   for i in range( p.associativity ):
+#     struct = mk_bitstruct( "" )
