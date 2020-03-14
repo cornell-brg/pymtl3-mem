@@ -5,9 +5,13 @@
 # so the outer module corresponds to an SRAM generated with the
 # CACTI-based memory compiler.
 
-from pymtl3 import *
+from os.path import dirname
 
-class SramGenericPRTL( Component ):
+from pymtl3 import *
+from pymtl3.passes.backends.verilog import VerilogPlaceholderConfigs, \
+    TranslationConfigs
+
+class SramGenericPRTL( Component, Placeholder ):
 
   def construct( s, num_bits = 32, num_words = 256 ):
 
@@ -30,46 +34,54 @@ class SramGenericPRTL( Component ):
     s.O1   = OutPort( dtype )   # read data
     s.WBM1 = InPort ( mk_bits(nbytes) )     # byte write en
 
-    # memory array
+    # Placeholder config
 
-    s.ram      = [ Wire( dtype ) for x in range( num_words ) ]
-    s.ram_next = [ Wire( dtype ) for x in range( num_words ) ]
+    s.config_placeholder = VerilogPlaceholderConfigs(
+      src_file = dirname(__file__) + '/brg_gf14_sram_generic.v',
+    )
 
-    # read path
+    s.verilog_translate_import = True
 
-    s.dout = Wire( dtype )
-    s.dout_next = Wire( dtype )
+    # # memory array
+
+    # s.ram      = [ Wire( dtype ) for x in range( num_words ) ]
+    # s.ram_next = [ Wire( dtype ) for x in range( num_words ) ]
+
+    # # read path
+
+    # s.dout = Wire( dtype )
+    # s.dout_next = Wire( dtype )
 
 
-    @s.update
-    def read_logic():
-      if ( not s.CSB1 ) and s.WEB1:
-        s.dout_next = s.ram[ s.A1 ]
-      else:
-        s.dout_next = dtype(0)
+    # @s.update
+    # def read_logic():
+    #   if ( not s.CSB1 ) and s.WEB1:
+    #     s.dout_next = s.ram[ s.A1 ]
+    #   else:
+    #     s.dout_next = dtype(0)
 
-    # write path
-    @s.update
-    def write_logic():
-      for i in range( nbytes ):
-        if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
-          s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
-        else:
-          s.ram_next[s.A1][ i*8 : i*8+8 ] = s.ram[s.A1][ i*8 : i*8+8 ]
+    # # write path
+    # @s.update
+    # def write_logic():
+    #   for i in range( nbytes ):
+    #     if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
+    #       s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
+    #     else:
+    #       s.ram_next[s.A1][ i*8 : i*8+8 ] = s.ram[s.A1][ i*8 : i*8+8 ]
 
-    @s.update
-    def comb_logic():
-      if not s.OEB1:
-        s.O1 = s.dout
-      else:
-        s.O1 = dtype(0)
+    # @s.update
+    # def comb_logic():
+    #   if not s.OEB1:
+    #     s.O1 = s.dout
+    #   else:
+    #     s.O1 = dtype(0)
 
-    @s.update_ff
-    def update_sram():
-      s.dout <<= s.dout_next
-      if not s.CSB1 and not s.WEB1:
-        for i in range( num_words ):
-          s.ram[i] <<= s.ram_next[i]
+    # @s.update_ff
+    # def update_sram():
+    #   s.dout <<= s.dout_next
+    #   if not s.CSB1 and not s.WEB1:
+    #     for i in range( num_words ):
+    #       s.ram[i] <<= s.ram_next[i]
 
   def line_trace( s ):
     return "(WE={} OE={} A1={} I1A={} O1={} s.WBM1={})".format(~s.WEB1, ~s.OEB1, s.A1, s.I1, s.O1, s.WBM1)

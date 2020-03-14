@@ -17,7 +17,7 @@ from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
    RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog import TranslationImportPass, \
-VerilatorImportConfigs
+VerilatorImportConfigs, VerilogPlaceholderPass
 from .proc_model import ProcModel
 
 #----------------------------------------------------------------------
@@ -25,6 +25,7 @@ from .proc_model import ProcModel
 #---------------------------------------------------------------------
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
   # print (" -----------starting simulation----------- ")
+  th.apply( VerilogPlaceholderPass() )
   if dump_vcd:
     th.cache.config_verilog_import = VerilatorImportConfigs(vl_trace = True, \
       vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'])
