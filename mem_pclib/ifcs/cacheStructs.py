@@ -209,3 +209,25 @@ def mk_tag_array_struct( p ):
       'tmp': p.BitsTagArrayTmp
     } )
   return struct
+
+def mk_shorted_tag_array_struct( p ):
+  if p.full_sram:
+    struct = mk_bitstruct( "StructTagSRAM", {
+      'dty': Bits1,
+      'tag': p.BitsTag,
+    } )
+  else:
+    struct = mk_bitstruct( "StructTagSRAM", {
+      'dty': Bits1,
+      'tag': p.BitsTag,
+      'tmp': p.BitsTagArrayTmp
+    } )
+  return struct
+
+def mk_tag_ctrl_M1_struct( p ):
+  struct = mk_bitstruct( "StructTagCtrl", {
+    'val': Bits1,
+    'dty': Bits1,
+    'tag': p.BitsTag,
+  } )
+  return struct

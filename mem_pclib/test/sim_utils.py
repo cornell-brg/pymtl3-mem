@@ -25,9 +25,6 @@ from .proc_model import ProcModel
 #---------------------------------------------------------------------
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
   # print (" -----------starting simulation----------- ")
-  if dump_vcd:
-    th.cache.config_verilog_import = VerilatorImportConfigs(vl_trace = True, \
-      vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'])
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_import = VerilatorImportConfigs(
@@ -36,6 +33,9 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
           # vl_xinit = 'rand',
       )
     th = TranslationImportPass()( th )
+  if dump_vcd:
+    th.cache.config_verilog_import = VerilatorImportConfigs(vl_trace = True, \
+      vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'])
 
   th.apply( SimulationPass() )
   th.sim_reset()
