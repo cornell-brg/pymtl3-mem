@@ -19,28 +19,27 @@ class BlockingCacheCtrlRTL ( Component ):
 
   def construct( s, p ):
     
-    # Constants - required for translation to work
-
+    # Constants (required for translation to work)
     associativity = p.associativity
 
     #--------------------------------------------------------------------------
     # Interface
     #--------------------------------------------------------------------------
 
-    s.cachereq_en   = InPort(Bits1)
-    s.cachereq_rdy  = OutPort(Bits1)
+    s.cachereq_en   = InPort ( Bits1 )
+    s.cachereq_rdy  = OutPort( Bits1 )
 
-    s.cacheresp_en  = OutPort(Bits1)
-    s.cacheresp_rdy = InPort(Bits1)
+    s.cacheresp_en  = OutPort( Bits1 )
+    s.cacheresp_rdy = InPort ( Bits1 )
 
-    s.memreq_en     = OutPort(Bits1)
-    s.memreq_rdy    = InPort(Bits1)
+    s.memreq_en     = OutPort( Bits1 )
+    s.memreq_rdy    = InPort ( Bits1 )
 
-    s.memresp_en    = InPort(Bits1)
-    s.memresp_rdy   = OutPort(Bits1)
+    s.memresp_en    = InPort ( Bits1 )
+    s.memresp_rdy   = OutPort( Bits1 )
 
-    s.status        = InPort(p.StructStatus)
-    s.ctrl          = OutPort(p.StructCtrl)
+    s.status        = InPort ( p.StructStatus )
+    s.ctrl          = OutPort( p.StructCtrl )
 
     #--------------------------------------------------------------------------
     # Y Stage
@@ -48,8 +47,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def mem_resp_rdy():
-      # TODO Update for Non-blocking capability
-      s.memresp_rdy = y # Always yes for blocking cache
+      s.memresp_rdy = y # Always yes
 
     #--------------------------------------------------------------------------
     # M0 Stage
@@ -57,12 +55,13 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.memresp_en_M0 = RegEnRst( Bits1 )( 
       in_ = s.memresp_en,
-      en  = s.ctrl.reg_en_M0,
+      en  = s.ctrl.reg_en_M0
     )
+
     s.MSHR_replay_next_M0 = Wire( Bits1 )
     s.MSHR_replay_reg_M0 = RegEnRst( Bits1 )(
       in_ = s.MSHR_replay_next_M0,
-      en  = s.ctrl.reg_en_M0,
+      en  = s.ctrl.reg_en_M0
     )
 
     s.state_M0 = Wire( p.CtrlMsg )
@@ -139,7 +138,7 @@ class BlockingCacheCtrlRTL ( Component ):
       else: 
         s.state_M0.val = n
       
-      #                 tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
+      #                tag_wben |wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
       s.cs0 = concat( tg_wbenf  , b1(0)  , b1(0)  ,    x    ,  rd , x , x ) # default value
       if s.state_M0.val: #                                             tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
         if s.state_M0.is_refill:                       s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n , y )
@@ -256,8 +255,8 @@ class BlockingCacheCtrlRTL ( Component ):
           if   not s.status.hit_M1 and     s.is_dty_M1:
             s.is_evict_M1 = y
           elif     s.status.hit_M1 and not s.is_dty_M1:
-            if not s.state_M1.out.is_write_hit_clean and s.status.cachereq_type_M1 \
-              == WRITE:
+            if not s.state_M1.out.is_write_hit_clean and \
+              s.status.cachereq_type_M1 == WRITE:
               s.state_M0.is_write_hit_clean = y 
 
           if not s.is_evict_M1 and not s.state_M1.out.is_write_hit_clean:

@@ -54,7 +54,7 @@ class CacheDerivedParams:
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity )
     
-    # Cipher chip variables 
+    # Cifer chip variables 
     self.bitwidth_dirty            = self.bitwidth_cacheline // 32 # number of 32 bit words
     # sum of the tag bitwidth, 1 bit valid, and dirty bit per word and rounded 
     # up to multiple of 8
@@ -91,7 +91,7 @@ class CacheDerivedParams:
     self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
     self.BitsClogNlines    = mk_bits(clog2(self.total_num_cachelines))
 
-    # Cipher Bits objects
+    # Cifer Bits objects
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )
     #--------------------------------------------------------------------
     # Specialize structs

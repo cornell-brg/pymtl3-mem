@@ -11,7 +11,7 @@ Date   : 20 February 2020
 
 from pymtl3                         import *
 from pymtl3.stdlib.connects         import connect_pairs
-#from pymtl3.stdlib.ifcs.MemMsg      import MemMsgType, mk_mem_msg
+# from pymtl3.stdlib.ifcs.MemMsg      import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.mem_ifcs    import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
@@ -48,8 +48,8 @@ class BlockingCacheRTL ( Component ):
     
     # For translation 
     s.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = 'BlockingCache_{}_{}_{}_{}_{}'.format(num_bytes, 
-      p.bitwidth_cacheline, p.bitwidth_addr, p.bitwidth_data, associativity),
+      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline} \
+        _{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}' 
     )
 
     #---------------------------------------------------------------------
@@ -82,7 +82,7 @@ class BlockingCacheRTL ( Component ):
       memreq_en     = s.mem_master_ifc.req.en,
       memreq_rdy    = s.mem_master_ifc.req.rdy,
       status        = s.cacheDpath.status,
-      ctrl          = s.ctrl_bypass
+      ctrl          = s.cacheDpath.ctrl
     )
 
     # Cache Response Message
@@ -104,7 +104,7 @@ class BlockingCacheRTL ( Component ):
     if verbosity==1:
       msg = s.cacheCtrl.line_trace()
     elif verbosity==2:
-      memreq_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
+      memreq_msg = f"{' '*(10 + s.param.bitwidth_cacheline//4)}"
       memresp_msg = "{}".format(" "*(10 + s.param.bitwidth_cacheline//4))
 
       if s.mem_master_ifc.resp.en:

@@ -16,7 +16,7 @@ from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 from mem_pclib.constants.constants  import *
 from mem_pclib.rtl.MSHR_v1          import MSHR
-from mem_pclib.rtl.Muxes            import *
+from mem_pclib.rtl.muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
 from mem_pclib.rtl.arithmetics      import Indexer, Comparator
 from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg
@@ -97,6 +97,7 @@ class BlockingCacheDpathRTL (Component):
     # Tag Array Inputs
     s.tag_array_idx_M0          = Wire( p.BitsIdx )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
+
     s.tag_array_struct_M0       = Wire( p.StructTagArray )
     s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
     s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
