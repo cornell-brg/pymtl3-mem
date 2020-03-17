@@ -15,6 +15,7 @@ from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 from mem_pclib.constants.constants  import *
+from mem_pclib.rtl.cifer            import *
 from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
@@ -193,13 +194,23 @@ class BlockingCacheDpathRTL (Component):
       dealloc_out= s.MSHR_dealloc_out,
     )
 
+    # dirty_line_detector_M1 = []
+    # for i in range( p.associativity ):
+    #   dirty_line_detector_M1.append( 
+    #     DirtyLineDetector( p )(
+    #       dirty_bits = s.tag_array_rdata_mux_M1[i].out.dty
+    #     )
+    #   )
+    # s.dirty_line_detector_M1 = dirty_line_detector_M1
+
     for i in range( p.associativity ):
-      s.status.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_mux_M1[i].out.dty
+      s.status.ctrl_bit_dty_rd_M1[i] //= b1(0)
+      # s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
 
     s.comparator_set = Comparator( p )(
-      addr_tag       = s.cachereq_M1.out.addr.tag,
-      hit            = s.status.hit_M1,
-      hit_way        = s.status.hit_way_M1,
+      addr_tag = s.cachereq_M1.out.addr.tag,
+      hit      = s.status.hit_M1,
+      hit_way  = s.status.hit_way_M1,
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out

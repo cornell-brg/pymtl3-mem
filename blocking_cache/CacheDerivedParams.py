@@ -93,6 +93,7 @@ class CacheDerivedParams:
 
     # Cifer Bits objects
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )
+    
     #--------------------------------------------------------------------
     # Specialize structs
     #--------------------------------------------------------------------

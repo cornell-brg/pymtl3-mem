@@ -212,7 +212,7 @@ class BlockingCacheCtrlRTL ( Component ):
       repreq_hit_ptr  = s.repreq_hit_ptr_M1,
       repreq_is_hit   = s.repreq_is_hit_M1,
       repreq_ptr      = s.status.ctrl_bit_rep_rd_M1, # Read replacement mask
-      represp_ptr     = s.ctrl.ctrl_bit_rep_wr_M0, # Bypass to M0 stage? 
+      represp_ptr     = s.ctrl.ctrl_bit_rep_wr_M0,   # Bypass to M0 stage? 
       #TODO Need more work
     )
 
@@ -235,6 +235,7 @@ class BlockingCacheCtrlRTL ( Component ):
       # Determines the status of the M1 stage  
       s.is_evict_M1 = n
       s.state_M0.is_write_hit_clean = n # bypasses the write_hit_clean flag to M0
+      # TODO Adjust is_dty_M1 to OR all word dirty bits
       s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.ctrl_bit_rep_rd_M1]
       # Bits for set associative caches
       s.repreq_is_hit_M1  = n
@@ -244,6 +245,7 @@ class BlockingCacheCtrlRTL ( Component ):
       if s.state_M1.out.val:
         if s.status.hit_M1: # if hit, dty bit will come from the way where the 
           # hit occured
+          # TODO change this to use all word dirty bits as well
           s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
         
         if not s.state_M1.out.is_refill and not s.state_M1.out.is_write_refill: 
@@ -252,9 +254,10 @@ class BlockingCacheCtrlRTL ( Component ):
             s.repreq_en_M1      = y
             s.repreq_is_hit_M1  = n   
 
-          if   not s.status.hit_M1 and     s.is_dty_M1:
+          if not s.status.hit_M1 and s.is_dty_M1:
             s.is_evict_M1 = y
-          elif     s.status.hit_M1 and not s.is_dty_M1:
+          # elif s.status.hit_M1 and not s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1][ s.status.offset_M1 ]: 
+          elif s.status.hit_M1 and not s.is_dty_M1: 
             if not s.state_M1.out.is_write_hit_clean and \
               s.status.cachereq_type_M1 == WRITE:
               s.state_M0.is_write_hit_clean = y 
@@ -302,7 +305,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def signal_select_logic_M1():
       wben  = s.WbenGen.out
-      #               wben| ty|val|ostall|evict mux|alloc_en  
+      #              wben | ty|val|ostall|evict mux|alloc_en  
       s.cs1 = concat(wben0, x , n , n    , b1(0)   , n    )
       if s.state_M1.out.val: #                                       wben| ty|val|ostall|evict mux|alloc_en  
         if s.state_M1.out.is_refill:                 s.cs1 = concat(wbenf, wr, y , n    , b1(0)   ,   n   )
