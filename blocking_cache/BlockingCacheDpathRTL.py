@@ -13,7 +13,8 @@ from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.Muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
 from mem_pclib.rtl.arithmetics      import Indexer, Comparator
-from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ValReg
+from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg,\
+   ValReg, ReplacementBitsReg
 from sram.SramPRTL                  import SramPRTL
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
@@ -122,12 +123,19 @@ class BlockingCacheDpathRTL (Component):
 
     # Register File to store the replacement info
     s.ctrl_bit_rep_M1 = Wire(p.BitsAssoclog2)
-    s.replacement_bits_M1 = RegisterFile( p.BitsAssoclog2, p.nblocks_per_way )
-    s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.out.addr.index
-    s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
-    s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.out.addr.index
-    s.replacement_bits_M1.wdata[0] //= s.ctrl.ctrl_bit_rep_wr_M0
-    s.replacement_bits_M1.wen  [0] //= s.ctrl.ctrl_bit_rep_en_M1
+    s.replacement_bits_M1 = ReplacementBitsReg( p )(
+      raddr = s.cachereq_M1.out.addr.index,
+      rdata = s.ctrl_bit_rep_M1,
+      waddr = s.cachereq_M1.out.addr.index, 
+      wdata = s.ctrl.ctrl_bit_rep_wr_M0,
+      wen   = s.ctrl.ctrl_bit_rep_en_M1
+    )
+    # s.replacement_bits_M1 = RegisterFile( p.BitsAssoclog2, p.nblocks_per_way )
+    # s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.out.addr.index
+    # s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
+    # s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.out.addr.index
+    # s.replacement_bits_M1.wdata[0] //= s.ctrl.ctrl_bit_rep_wr_M0
+    # s.replacement_bits_M1.wen  [0] //= s.ctrl.ctrl_bit_rep_en_M1
 
     tag_arrays_M1 = []
     for i in range( p.associativity ):
@@ -215,7 +223,8 @@ class BlockingCacheDpathRTL (Component):
       addr_tag = s.cachereq_M1.out.addr.tag,
       hit      = s.status.hit_M1,
       hit_way  = s.status.hit_way_M1,
-      type_    = s.cachereq_M1.out.type_
+      type_    = s.cachereq_M1.out.type_,
+      line_val = s.status.line_valid_M1,
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out
@@ -287,7 +296,7 @@ class BlockingCacheDpathRTL (Component):
       port0_wben  = s.ctrl.data_array_wben_M1
     )
 
-    s.stall_reg_M2 = RegEn( p.BitsCacheline )(
+    s.stall_reg_M2 = RegEnRst( p.BitsCacheline )(
       en  = s.ctrl.stall_reg_en_M2,
       in_ = s.data_array_M2.port0_rdata
     )
@@ -329,6 +338,6 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    msg += s.valid_bits[0].line_trace()
-    msg += f"--{s.ctrl.way_offset_M1}" 
+    # msg += s.valid_bits[0].line_trace()
+    # msg += f"--{s.ctrl.way_offset_M1}" 
     return msg

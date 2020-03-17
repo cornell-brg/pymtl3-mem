@@ -110,9 +110,11 @@ class ValReg( Component ):
     s.raddr = InPort( p.BitsIdx )
 
     s.storage_reg = RegEnRst( p.BitsNlinesPerWay, 0 )
+    
     s.en_req = RegRst( Bits1 )(
       in_ = s.en,
     )    
+    
     BitsIdx = p.BitsIdx
     nblocks_per_way  = p.nblocks_per_way
     @s.update
@@ -133,3 +135,31 @@ class ValReg( Component ):
     msg += f"waddr:{s.waddr} raddr:{s.raddr} out:{s.out} en:{s.en} wen:{s.wen} "
     # msg += f"reg:{s.reg.out} "
     return msg
+
+class ReplacementBitsReg( Component ):
+  """
+  Wrapper for the replacement bits register. We need it because we need more 
+  control on the bit level
+  Works for 2 way asso
+  """
+  def construct( s, p ):
+    s.wdata = InPort( Bits1 )
+    s.wen   = InPort( Bits1 )
+    s.waddr = InPort( p.BitsIdx )
+    s.raddr = InPort( p.BitsIdx )
+    s.rdata = OutPort( Bits1 )
+
+    s.replacement_register = RegEnRst( p.BitsNlinesPerWay )(
+      en  = s.wen,
+    )
+    nblocks_per_way  = p.nblocks_per_way
+    BitsIdx = p.BitsIdx
+    @s.update
+    def update_register_bits():
+      for i in range( nblocks_per_way ):
+        if s.waddr == BitsIdx(i):
+          s.replacement_register.in_[i] = s.wdata
+        else:
+          s.replacement_register.in_[i] = s.replacement_register.out[i]
+
+      s.rdata = s.replacement_register.out[s.raddr]

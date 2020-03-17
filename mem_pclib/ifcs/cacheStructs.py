@@ -33,6 +33,7 @@ def mk_dpath_status_struct( p ):
     'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
+    'line_valid_M1'       : Bits1,
 
     # MSHR Signals
     'MSHR_full'           : Bits1,

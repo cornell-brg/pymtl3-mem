@@ -44,13 +44,14 @@ class Comparator( Component ):
     s.type_     = InPort( p.BitsType )
     s.hit       = OutPort(Bits1)
     s.hit_way   = OutPort(p.BitsAssoclog2)
+    s.line_val  = OutPort( Bits1 )
 
     BitsAssoclog2 = p.BitsAssoclog2
     associativity = p.associativity
     @s.update
     def comparing_logic():
-      s.hit     = n
-      s.hit_way = BitsAssoclog2(0)
+      s.hit      = n
+      s.hit_way  = BitsAssoclog2(0)
       if s.type_ == INIT:
         s.hit = n
         s.hit_way = BitsAssoclog2(0)

@@ -177,10 +177,7 @@ class BlockingCacheCtrlRTL ( Component ):
           s.ctrl.tag_array_val_M0[s.status.hit_way_M1] = y
         else:
           for i in range( associativity ):
-            if s.status.cachereq_type_M0 == READ or s.status.cachereq_type_M0 == WRITE: 
-              s.ctrl.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
-            else:
-              s.ctrl.tag_array_val_M0[i] = n
+            s.ctrl.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
               
     #--------------------------------------------------------------------------
     # M1 Stage
@@ -253,13 +250,14 @@ class BlockingCacheCtrlRTL ( Component ):
           if s.status.cachereq_type_M1 == INIT:
             s.repreq_en_M1      = y
             s.repreq_is_hit_M1  = n   
-
-          if   not s.hit_M1 and     s.is_dty_M1:
-            s.is_evict_M1 = y
-          elif     s.hit_M1 and not s.is_dty_M1:
-            if not s.state_M1.out.is_write_hit_clean and s.status.cachereq_type_M1 \
-              == WRITE:
-              s.state_M0.is_write_hit_clean = y 
+          
+          if s.status.line_valid_M1:
+            if   not s.hit_M1 and     s.is_dty_M1:
+              s.is_evict_M1 = y
+            elif     s.hit_M1 and not s.is_dty_M1:
+              if not s.state_M1.out.is_write_hit_clean and s.status.cachereq_type_M1 \
+                == WRITE:
+                s.state_M0.is_write_hit_clean = y 
 
           if not s.is_evict_M1 and not s.state_M1.out.is_write_hit_clean:
             # Better to update replacement bit right away because we need it 
