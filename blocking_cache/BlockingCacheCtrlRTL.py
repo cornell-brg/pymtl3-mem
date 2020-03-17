@@ -228,6 +228,7 @@ class BlockingCacheCtrlRTL ( Component ):
           s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
 
     s.is_dty_M1 = Wire(Bits1)
+    s.is_line_valid_M1 = Wire(Bits1)
     @s.update
     def status_logic_M1():
       # Determines the status of the M1 stage  
@@ -239,19 +240,21 @@ class BlockingCacheCtrlRTL ( Component ):
       s.repreq_en_M1      = n
       s.repreq_hit_ptr_M1 = x
       s.hit_M1 = n
-      
-      if s.state_M1.out.val:
+      s.is_line_valid_M1 = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
+
+      if s.state_M1.out.val: # pipeline transaction is valid
         if not s.state_M1.out.is_refill and not s.state_M1.out.is_write_refill: 
           s.hit_M1 = s.status.hit_M1
           if s.hit_M1: # if hit, dty bit will come from the way where 
             # the hit occured
             s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
+            s.is_line_valid_M1 = s.status.line_valid_M1[s.status.hit_way_M1]
 
           if s.status.cachereq_type_M1 == INIT:
             s.repreq_en_M1      = y
             s.repreq_is_hit_M1  = n   
           
-          if s.status.line_valid_M1:
+          if s.is_line_valid_M1:
             if   not s.hit_M1 and     s.is_dty_M1:
               s.is_evict_M1 = y
             elif     s.hit_M1 and not s.is_dty_M1:
