@@ -1,8 +1,17 @@
 # PyMTL3 Memory
 Project repo for cache/memory related components implemented in pymtl3
 
+[![Build Status](https://travis-ci.com/cornell-brg/pymtl3-mem.svg?branch=master)](https://travis-ci.com/cornell-brg/pymtl3-mem)
 
-## PyMTL3 
+## License
+
+pymtl3-mem is offered under the terms of the Open Source Initiative BSD
+3-Clause License. More information about this license can be found here:
+
+  - http://choosealicense.com/licenses/bsd-3-clause
+  - http://opensource.org/licenses/BSD-3-Clause
+
+## Guide
 ### Create virtual environment
 
 While not strictly necessary, we strongly recommend using [virtualenv][5]
