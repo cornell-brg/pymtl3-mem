@@ -109,6 +109,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
     connect_bits2bitstruct( s.tag_array_wdata_M0, s.tag_array_struct_M0 )
     s.status.cachereq_type_M0 //= s.MSHR_mux_M0.out.type_
+    s.status.offset_M0        //= s.addr_mux_M0.out
 
     #--------------------------------------------------------------------
     # M1 Stage
@@ -194,19 +195,6 @@ class BlockingCacheDpathRTL (Component):
       dealloc_out= s.MSHR_dealloc_out,
     )
 
-    # dirty_line_detector_M1 = []
-    # for i in range( p.associativity ):
-    #   dirty_line_detector_M1.append( 
-    #     DirtyLineDetector( p )(
-    #       dirty_bits = s.tag_array_rdata_mux_M1[i].out.dty
-    #     )
-    #   )
-    # s.dirty_line_detector_M1 = dirty_line_detector_M1
-
-    for i in range( p.associativity ):
-      s.status.ctrl_bit_dty_rd_M1[i] //= b1(0)
-      # s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
-
     s.comparator_set = Comparator( p )(
       addr_tag = s.cachereq_M1.out.addr.tag,
       hit      = s.status.hit_M1,
@@ -214,6 +202,20 @@ class BlockingCacheDpathRTL (Component):
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out
+
+    dirty_line_detector_M1 = []
+    for i in range( p.associativity ):
+      dirty_line_detector_M1.append( 
+        DirtyLineDetector( p )(
+          is_hit     = s.comparator_set.hit,
+          offset     = s.cachereq_M1.out.addr.offset,
+          dirty_bits = s.tag_array_rdata_mux_M1[i].out.dty
+        )
+      )
+    s.dirty_line_detector_M1 = dirty_line_detector_M1
+
+    for i in range( p.associativity ):
+      s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
 
     # Mux for choosing which way to evict
     s.evict_way_mux_M1 = PMux( p.BitsTag, p.associativity )(

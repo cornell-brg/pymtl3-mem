@@ -26,11 +26,13 @@ def mk_dpath_status_struct( p ):
     # M0 Dpath Signals 
     'cachereq_type_M0'    : p.BitsType,
     'memresp_type_M0'     : p.BitsType,
-    
+    'offset_M0'           : p.BitsOffset,
+
+
     # M1 Dpath Signals
     'cachereq_type_M1'    : p.BitsType,
-    'ctrl_bit_dty_rd_M1'  : p.BitsDirty,
-    'hit_M1'              : Bits1,
+    'ctrl_bit_dty_rd_M1'  : p.BitsAssoc,
+    'new_dirty_bits_M1'   : p.BitsDirty,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
 

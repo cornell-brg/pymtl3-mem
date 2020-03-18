@@ -119,7 +119,6 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_addr_mux_sel_M0    = slice( 4, 5 )
     CS_memresp_mux_sel_M0 = slice( 3, 4 )
     CS_tag_array_type_M0  = slice( 2, 3 )
-    CS_ctrl_bit_dty_wr_M0 = slice( 1, 2 )
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
     s.cs0 = Wire( mk_bits( 6 + p.bitwidth_tag_wben ) ) # Bits for control signal table
@@ -140,14 +139,14 @@ class BlockingCacheCtrlRTL ( Component ):
       
       #                tag_wben |wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
       s.cs0 = concat( tg_wbenf  , b1(0)  , b1(0)  ,    x    ,  rd , x , x ) # default value
-      if s.state_M0.val: #                                             tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|dty|val
-        if s.state_M0.is_refill:                       s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n , y )
-        elif s.state_M0.is_write_refill:               s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y , y )
-        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat( tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y , y )
+      if s.state_M0.val: #                                             tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|val
+        if s.state_M0.is_refill:                       s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , y )
+        elif s.state_M0.is_write_refill:               s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y )
+        elif s.state_M0.is_write_hit_clean:            s.cs0 = concat( tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y )
         else:
-          if (s.status.cachereq_type_M0 == INIT):      s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , n , y )
-          elif (s.status.cachereq_type_M0 == READ):    s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
-          elif (s.status.cachereq_type_M0 == WRITE):   s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n , n )
+          if (s.status.cachereq_type_M0 == INIT):      s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , y )
+          elif (s.status.cachereq_type_M0 == READ):    s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n )
+          elif (s.status.cachereq_type_M0 == WRITE):   s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n )
 
       s.ctrl.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
       s.ctrl.wdata_mux_sel_M0   = s.cs0[ CS_wdata_mux_sel_M0   ]
@@ -155,11 +154,19 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
       s.ctrl.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
       s.ctrl.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
-      
-      s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
+      # s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
 
       s.stall_M0  = s.ostall_M0 | s.ostall_M1 | s.ostall_M2
       s.ctrl.reg_en_M0 = ~s.stall_M0
+
+    s.dirty_bit_writer = DirtyBitWriter( p )(
+      offset             = s.status.offset_M0
+      dirty_bits         = InPort ( p.BitsDirty )
+      is_write_refill    = s.state_M0.is_write_refill
+      is_write_hit_clean = s.state_M0.is_write_hit_clean
+    )
+
+    s.ctrl.ctrl_bit_dty_wr_M0 = s.dirty_bit_writer.out
 
     @s.update
     def tag_array_val_logic_M0():
@@ -245,7 +252,6 @@ class BlockingCacheCtrlRTL ( Component ):
       if s.state_M1.out.val:
         if s.status.hit_M1: # if hit, dty bit will come from the way where the 
           # hit occured
-          # TODO change this to use all word dirty bits as well
           s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
         
         if not s.state_M1.out.is_refill and not s.state_M1.out.is_write_refill: 
@@ -256,8 +262,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
           if not s.status.hit_M1 and s.is_dty_M1:
             s.is_evict_M1 = y
-          # elif s.status.hit_M1 and not s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1][ s.status.offset_M1 ]: 
-          elif s.status.hit_M1 and not s.is_dty_M1: 
+          elif s.status.hit_M1 and not s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]: 
             if not s.state_M1.out.is_write_hit_clean and \
               s.status.cachereq_type_M1 == WRITE:
               s.state_M0.is_write_hit_clean = y 

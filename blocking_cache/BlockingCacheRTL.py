@@ -66,6 +66,7 @@ class BlockingCacheRTL ( Component ):
     #---------------------------------------------------------------------
 
     s.ctrl_bypass = Wire(p.StructCtrl) # pass the ctrl signals back to dpath
+    
     s.cacheDpath = BlockingCacheDpathRTL( p )(
       cachereq_Y = s.mem_minion_ifc.req.msg,
       memresp_Y  = s.mem_master_ifc.resp.msg,
@@ -82,7 +83,7 @@ class BlockingCacheRTL ( Component ):
       memreq_en     = s.mem_master_ifc.req.en,
       memreq_rdy    = s.mem_master_ifc.req.rdy,
       status        = s.cacheDpath.status,
-      ctrl          = s.cacheDpath.ctrl
+      ctrl          = s.ctrl_bypass
     )
 
     # Cache Response Message
