@@ -39,7 +39,7 @@ class DirtyLineDetector( Component ):
   
   def line_trace( s ):
     msg = ""
-    msg += f"Detector:{s.is_dirty} "
+    msg += f"o:{s.is_dirty} mask:{s.dirty_bits}"
     return msg
 
 class DirtyBitWriter( Component ):

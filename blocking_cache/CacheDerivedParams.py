@@ -61,11 +61,14 @@ class CacheDerivedParams:
     self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + \
       self.bitwidth_dirty + 7 ) // 8 * 8
     self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
-    self.bitwdith_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag \
+    self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag \
       - self.bitwidth_dirty - 1
 
-    print("size[{}], asso[{}], clw[{}], tag[{}], idx[{}]".format(num_bytes, associativity,
-    self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index))
+    print("size[{}], asso[{}], clw[{}], tag[{}], idx[{}], tarr[{}]".format(num_bytes, associativity,
+    self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index, 
+    self.bitwidth_tag_array))
+
+    print(f"rm:{self.bitwidth_tag_remainder} ")
 
     #--------------------------------------------------------------------
     # Make Bits object
@@ -81,7 +84,7 @@ class CacheDerivedParams:
     self.BitsTag           = mk_bits( self.bitwidth_tag )           # tag
     self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset
     self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
-    self.BitsTagArrayTmp   = mk_bits( self.bitwdith_tag_remainder ) # number of bits free in tag array
+    self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_remainder ) # number of bits free in tag array
     self.BitsTagwben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write byte enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write byte enable
     self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2
@@ -105,14 +108,14 @@ class CacheDerivedParams:
     #--------------------------------------------------------------------
 
     self.full_sram = False if self.bitwidth_tag_array - self.bitwidth_tag \
-      - 2 > 0 else True
+      - 1 - self.bitwidth_dirty > 0 else True
     self.StructStatus = mk_dpath_status_struct( self )
 
     # Structs used within dpath module
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     # special cipher tag array struct
-    self.StructTagArray = mk_cipher_tag_array_struct( self )
+    self.StructTagArray = mk_cifer_tag_array_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

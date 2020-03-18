@@ -112,7 +112,7 @@ class BlockingCacheDpathRTL (Component):
     # Tag Array Inputs
     s.tag_array_idx_M0          = Wire( p.BitsIdx )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
-
+    # we use cifer tag array
     s.tag_array_struct_M0       = Wire( p.StructTagArray )
     s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
     s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
@@ -345,5 +345,5 @@ class BlockingCacheDpathRTL (Component):
     msg = ""
     msg += s.dirty_bit_writer.line_trace()
     msg += s.dirty_line_detector_M1[0].line_trace()
-    msg += f"{s.tag_arrays_M1[0].port0_rdata}"
+    msg += f"tg:{s.tag_arrays_M1[0].port0_rdata}"
     return msg

@@ -214,22 +214,18 @@ def mk_tag_array_struct( p ):
     } )
   return struct
 
-def mk_cipher_tag_array_struct( p ):
+def mk_cifer_tag_array_struct( p ):
   if p.full_sram:
-    struct = mk_bitstruct( "StructCipherTagArray", {
+    struct = mk_bitstruct( "StructCiferTagArray", {
       'val': Bits1,
       'dty': p.BitsDirty, 
       'tag': p.BitsTag,
     } )
   else:
-    struct = mk_bitstruct( "StructCipherTagArray", {
+    struct = mk_bitstruct( "StructCiferTagArray", {
       'val': Bits1,
       'dty': p.BitsDirty,
       'tag': p.BitsTag,
       'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
     } )
   return struct
-
-# def mk_dirt_struct( p ):
-#   for i in range( p.associativity ):
-#     struct = mk_bitstruct( "" )

@@ -259,8 +259,7 @@ class BlockingCacheCtrlRTL ( Component ):
           if not s.status.hit_M1 and s.is_dty_M1:
             s.is_evict_M1 = y
           elif s.status.hit_M1 and not s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]: 
-            if not s.state_M1.out.is_write_hit_clean and \
-              s.status.cachereq_type_M1 == WRITE:
+            if not s.state_M1.out.is_write_hit_clean and s.status.cachereq_type_M1 == WRITE:
               s.state_M0.is_write_hit_clean = y 
 
           if not s.is_evict_M1 and not s.state_M1.out.is_write_hit_clean:
@@ -460,5 +459,5 @@ class BlockingCacheCtrlRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
     add_msgs = ""
-    # add_msgs = f"req_en:{s.cachereq_en} resp_en:{s.cacheresp_en} h:{s.ctrl.hit_M2[0]}"
+    add_msgs = f"dty:{s.status.ctrl_bit_dty_rd_M1}"
     return pipeline + add_msgs
