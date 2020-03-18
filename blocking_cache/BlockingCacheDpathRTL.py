@@ -95,6 +95,20 @@ class BlockingCacheDpathRTL (Component):
       out = s.cachereq_M0.data,
     )
 
+    # s.status.offset_M0        //= s.addr_mux_M0.out.offset
+    s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
+    s.dirty_mask_M1_bypass = [ Wire( p.BitsDirty ) for _ in range( p.associativity ) ]
+    s.dirty_bit_writer = DirtyBitWriter( p )(
+      offset             = s.cachereq_M0.addr.offset,
+      # dirty_bits         = s.dirty_mask_M1_bypass,
+      hit_way            = s.hit_way_M1_bypass,
+      is_write_refill    = s.ctrl.is_write_refill_M0,
+      is_write_hit_clean = s.ctrl.is_write_hit_clean_M0
+    )
+    s.status.new_dirty_bits_M0 //= s.dirty_bit_writer.out
+    for i in range( p.associativity ):
+      s.dirty_bit_writer.dirty_bits[i] //= s.dirty_mask_M1_bypass[i]
+
     # Tag Array Inputs
     s.tag_array_idx_M0          = Wire( p.BitsIdx )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
@@ -173,15 +187,8 @@ class BlockingCacheDpathRTL (Component):
         )
       )
     s.tag_array_rdata_mux_M1 = stall_muxes_M1
-
-    # s.status.offset_M0        //= s.addr_mux_M0.out.offset
-    s.dirty_bit_writer = DirtyBitWriter( p )(
-      offset             = s.cachereq_M0.addr.offset,
-      dirty_bits         = s.tag_array_rdata_mux_M1[].out.dty,
-      is_write_refill    = s.ctrl.is_write_refill_M0,
-      is_write_hit_clean = s.ctrl.is_write_hit_clean_M0
-    )
-    s.status.new_dirty_bits_M0 //= s.dirty_bit_writer.out
+    for i in range( p.associativity ):
+      s.dirty_mask_M1_bypass[i] //= s.tag_array_rdata_mux_M1[i].out.dty 
 
     # MSHR (1 entry)
     s.MSHR_alloc_in = Wire(p.MSHRMsg)
@@ -211,6 +218,7 @@ class BlockingCacheDpathRTL (Component):
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out
+    s.hit_way_M1_bypass //= s.comparator_set.hit_way
 
     dirty_line_detector_M1 = []
     for i in range( p.associativity ):
@@ -335,5 +343,7 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.mshr.line_trace()
+    msg += s.dirty_bit_writer.line_trace()
+    msg += s.dirty_line_detector_M1[0].line_trace()
+    msg += f"{s.tag_arrays_M1[0].port0_rdata}"
     return msg

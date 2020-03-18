@@ -114,14 +114,14 @@ class BlockingCacheCtrlRTL ( Component ):
         # no space in MSHR or we have replay
         s.cachereq_rdy = n
 
-    CS_tag_array_wben_M0  = slice( 6, 6 + p.bitwidth_tag_wben )
-    CS_wdata_mux_sel_M0   = slice( 5, 6 )
-    CS_addr_mux_sel_M0    = slice( 4, 5 )
-    CS_memresp_mux_sel_M0 = slice( 3, 4 )
-    CS_tag_array_type_M0  = slice( 2, 3 )
+    CS_tag_array_wben_M0  = slice( 5, 5 + p.bitwidth_tag_wben )
+    CS_wdata_mux_sel_M0   = slice( 4, 5 )
+    CS_addr_mux_sel_M0    = slice( 3, 4 )
+    CS_memresp_mux_sel_M0 = slice( 2, 3 )
+    CS_tag_array_type_M0  = slice( 1, 2 )
     CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
 
-    s.cs0 = Wire( mk_bits( 6 + p.bitwidth_tag_wben ) ) # Bits for control signal table
+    s.cs0 = Wire( mk_bits( 5 + p.bitwidth_tag_wben ) ) # Bits for control signal table
     s.ostall_M0 = Wire(Bits1) 
     s.ostall_M1 = Wire(Bits1) # Stalls originating from earlier in pipeline
     s.ostall_M2 = Wire(Bits1) 
@@ -162,7 +162,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.stall_M0  = s.ostall_M0 | s.ostall_M1 | s.ostall_M2
       s.ctrl.reg_en_M0 = ~s.stall_M0
 
-    s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
+      s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
 
     @s.update
     def tag_array_val_logic_M0():
@@ -459,5 +459,6 @@ class BlockingCacheCtrlRTL ( Component ):
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
-    add_msgs = f"req_en:{s.cachereq_en} resp_en:{s.cacheresp_en} h:{s.ctrl.hit_M2[0]}"
+    add_msgs = ""
+    # add_msgs = f"req_en:{s.cachereq_en} resp_en:{s.cacheresp_en} h:{s.ctrl.hit_M2[0]}"
     return pipeline + add_msgs
