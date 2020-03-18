@@ -156,17 +156,13 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
       # s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
 
+      s.ctrl.is_write_refill_M0 = s.state_M0.is_write_refill
+      s.ctrl.is_write_hit_clean_M0 = s.state_M0.is_write_hit_clean
+
       s.stall_M0  = s.ostall_M0 | s.ostall_M1 | s.ostall_M2
       s.ctrl.reg_en_M0 = ~s.stall_M0
 
-    s.dirty_bit_writer = DirtyBitWriter( p )(
-      offset             = s.status.offset_M0
-      dirty_bits         = InPort ( p.BitsDirty )
-      is_write_refill    = s.state_M0.is_write_refill
-      is_write_hit_clean = s.state_M0.is_write_hit_clean
-    )
-
-    s.ctrl.ctrl_bit_dty_wr_M0 = s.dirty_bit_writer.out
+    s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
 
     @s.update
     def tag_array_val_logic_M0():

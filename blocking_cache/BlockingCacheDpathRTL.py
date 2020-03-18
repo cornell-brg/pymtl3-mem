@@ -109,7 +109,6 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
     connect_bits2bitstruct( s.tag_array_wdata_M0, s.tag_array_struct_M0 )
     s.status.cachereq_type_M0 //= s.MSHR_mux_M0.out.type_
-    s.status.offset_M0        //= s.addr_mux_M0.out
 
     #--------------------------------------------------------------------
     # M1 Stage
@@ -147,8 +146,9 @@ class BlockingCacheDpathRTL (Component):
         )
       )
     s.tag_arrays_M1 = tag_arrays_M1
-    s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
+
     # Saves output of the SRAM during stall
+    s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     stall_regs_M1 = []
     for i in range( p.associativity ):
       # Connect the Bits object output of SRAM to a struct
@@ -173,6 +173,15 @@ class BlockingCacheDpathRTL (Component):
         )
       )
     s.tag_array_rdata_mux_M1 = stall_muxes_M1
+
+    # s.status.offset_M0        //= s.addr_mux_M0.out.offset
+    s.dirty_bit_writer = DirtyBitWriter( p )(
+      offset             = s.cachereq_M0.addr.offset,
+      dirty_bits         = s.tag_array_rdata_mux_M1[].out.dty,
+      is_write_refill    = s.ctrl.is_write_refill_M0,
+      is_write_hit_clean = s.ctrl.is_write_hit_clean_M0
+    )
+    s.status.new_dirty_bits_M0 //= s.dirty_bit_writer.out
 
     # MSHR (1 entry)
     s.MSHR_alloc_in = Wire(p.MSHRMsg)
