@@ -164,9 +164,18 @@ class BlockingCacheDpathRTL (Component):
     # Saves output of the SRAM during stall
     s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     stall_regs_M1 = []
+    # connect_bits2bitstruct( s.tag_array_out_M1[0], s.tag_arrays_M1[0].port0_rdata )
+    # connect_bits2bitstruct( s.tag_array_out_M1[1], s.tag_arrays_M1[1].port0_rdata )
+    s.tag_array_out_M1[0].val //= s.tag_arrays_M1[0].port0_rdata[31]
+    s.tag_array_out_M1[0].dty //= s.tag_arrays_M1[0].port0_rdata[29:31]
+    s.tag_array_out_M1[0].tag //= s.tag_arrays_M1[0].port0_rdata[1:29]
+    s.tag_array_out_M1[0].tmp //= s.tag_arrays_M1[0].port0_rdata[0]
+    s.tag_array_out_M1[1].val //= s.tag_arrays_M1[1].port0_rdata[31]
+    s.tag_array_out_M1[1].dty //= s.tag_arrays_M1[0].port0_rdata[29:31]
+    s.tag_array_out_M1[1].tag //= s.tag_arrays_M1[1].port0_rdata[1:29]
+    s.tag_array_out_M1[1].tmp //= s.tag_arrays_M1[1].port0_rdata[0]
     for i in range( p.associativity ):
       # Connect the Bits object output of SRAM to a struct
-      connect_bits2bitstruct( s.tag_arrays_M1[i].port0_rdata, s.tag_array_out_M1[i] )
       stall_regs_M1.append(
         RegEn( p.StructTagArray )(
           en  = s.ctrl.stall_reg_en_M1,
@@ -343,7 +352,7 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    msg += s.dirty_bit_writer.line_trace()
-    msg += s.dirty_line_detector_M1[0].line_trace()
-    msg += f"tg:{s.tag_arrays_M1[0].port0_rdata}"
+    # msg += s.dirty_bit_writer.line_trace()
+    # msg += s.dirty_line_detector_M1[0].line_trace()
+    msg += f"tb:{s.tag_arrays_M1[0].port0_rdata} ts:{s.tag_array_out_M1[0]} dty:{s.dirty_mask_M1_bypass} "
     return msg

@@ -459,5 +459,5 @@ class BlockingCacheCtrlRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
     add_msgs = ""
-    add_msgs = f"dty:{s.status.ctrl_bit_dty_rd_M1}"
+    # add_msgs = f"dty:{s.status.ctrl_bit_dty_rd_M1}"
     return pipeline + add_msgs

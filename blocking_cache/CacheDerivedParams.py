@@ -68,7 +68,7 @@ class CacheDerivedParams:
     self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index, 
     self.bitwidth_tag_array))
 
-    print(f"rm:{self.bitwidth_tag_remainder} ")
+    # print(f"rm:{self.bitwidth_tag_remainder} ")
 
     #--------------------------------------------------------------------
     # Make Bits object
