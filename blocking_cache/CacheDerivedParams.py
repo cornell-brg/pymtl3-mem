@@ -44,7 +44,7 @@ class CacheDerivedParams:
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
     # 1 bit for dirty and val. Rest for tag. Need to make sure multiple of 8.
-    self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 1 + 7 ) // 8 * 8
+    self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 7 ) // 8 * 8
     self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
     self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8         # Data array write byte bitwidth
     self.bitwidth_rd_wd_mux_sel    = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read word mux bitwidth
@@ -73,7 +73,7 @@ class CacheDerivedParams:
     self.BitsTag           = mk_bits( self.bitwidth_tag )           # tag
     self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset
     self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
-    self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_array - self.bitwidth_tag - 2 )
+    self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_array - self.bitwidth_tag - 1 )
     self.BitsTagwben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write byte enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write byte enable
     self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2
@@ -81,7 +81,8 @@ class CacheDerivedParams:
     self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
     self.BitsAssoc         = mk_bits( self.associativity )
     self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
-    self.BitsClogNlines    = mk_bits(clog2(self.total_num_cachelines))
+    self.BitsClogNlines    = mk_bits( clog2(self.total_num_cachelines) )
+    self.BitsNlinesPerWay  = mk_bits( self.nblocks_per_way )
 
     #--------------------------------------------------------------------
     # Specialize structs
@@ -94,13 +95,15 @@ class CacheDerivedParams:
     #--------------------------------------------------------------------
 
     self.full_sram = False if self.bitwidth_tag_array - self.bitwidth_tag \
-      - 2 > 0 else True
+      - 1 > 0 else True
     self.StructStatus = mk_dpath_status_struct( self )
 
     # Structs used within dpath module
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     self.StructTagArray = mk_tag_array_struct( self )
+    self.StructShortTagArray = mk_shorted_tag_array_struct( self )
+    self.StructTagCtrl = mk_tag_ctrl_M1_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

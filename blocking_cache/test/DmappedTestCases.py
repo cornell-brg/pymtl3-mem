@@ -555,3 +555,15 @@ class DmappedTestCases:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                1, 4096, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
+  
+  def test_dmapped_hypo3( s, dump_vcd, test_verilog ):
+    msgs = [
+      #    type  opq   addr    len  data     type  opq test len  data
+      req( 'rd', 0, 0x00000000, 0, 0), resp( 'rd', 0x0, 0, 0, 0xa0b0c0d0          ),
+      req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 0x1, 1, 0, 0xa0b0c0d0          ),
+      req( 'rd', 2, 0x00000000, 0, 0), resp( 'rd', 0x2, 1, 0, 0xa0b0c0d0          ),
+    ]
+    mem = s.hypo_mem()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+               1, 1024, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)

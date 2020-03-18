@@ -28,9 +28,9 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_import = VerilatorImportConfigs(
-          vl_xinit = 'ones',
+          # vl_xinit = 'ones',
           # vl_xinit = 'zeros',
-          # vl_xinit = 'rand',
+          vl_xinit = 'rand',
           vl_trace = True if dump_vcd else False,
           vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
       )
