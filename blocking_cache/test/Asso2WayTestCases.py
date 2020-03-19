@@ -140,8 +140,7 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x00000000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0x8713450  ),
     ]
     mem = None
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    dump_vcd=dump_vcd, test_verilog=test_verilog)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2)
 
   #-------------------------------------------------------------------------
   # Test Case: Eviction Tests
@@ -155,8 +154,7 @@ class AssoTestCases:
       req( 'rd', 0x5, 0x0000400c, 0, 0        ), resp( 'rd', 0x5, 0,   0,  0x01deffef ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-     2, 512,dump_vcd=dump_vcd, test_verilog=test_verilog)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 512)
 
   #-------------------------------------------------------------------------
   # Test Case: test set associtivity
@@ -214,8 +212,7 @@ class AssoTestCases:
       req( 'rd', 0x1d, 0x000a0070, 0, 0         ), resp( 'rd', 0x1d, 0, 0, 0xffffff00 ), # LRU:1
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-     2, 1024,dump_vcd=dump_vcd, test_verilog=test_verilog)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 1024)
 
 
   #-------------------------------------------------------------------------
@@ -242,8 +239,7 @@ class AssoTestCases:
     ]
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-     2, 64, dump_vcd=dump_vcd, test_verilog=test_verilog)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 64)
 
   def test_2way_hyp2( s, dump_vcd, test_verilog, stall_prob=0, latency=1, src_delay=0, sink_delay=0  ):
     msgs = [
@@ -256,7 +252,7 @@ class AssoTestCases:
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 32, \
-      stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, test_verilog=test_verilog)
+      stall_prob, latency, src_delay, sink_delay)
 
   def test_2way_hyp1_lat(s, dump_vcd, test_verilog ):
     s.test_2way_hyp2(dump_vcd, test_verilog, 1,1,1,1)
@@ -271,8 +267,7 @@ class AssoTestCases:
     ]
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 32,
-     0,1,0,1,dump_vcd=dump_vcd, test_verilog=test_verilog)
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 32, 0,1,0,1)
   def test_2way_hyp2_lat2( s, dump_vcd, test_verilog):
     msgs = [
       req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
@@ -284,16 +279,4 @@ class AssoTestCases:
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
-    2, 32, 0,1,0,0, dump_vcd=dump_vcd, test_verilog=test_verilog)
-
-  def test_2way_hyp3( s, dump_vcd, test_verilog):
-    msgs = [
-      req( 'rd', 0x0,  0x10, 0, 0), resp( 'rd', 0x00, 0, 0, 3  ),
-      req( 'rd', 0x01, 0x0, 0, 0),  resp( 'rd', 0x01, 0, 0, 1  ),
-      req( 'rd', 0x02, 0x20, 0, 0), resp( 'rd', 0x02, 0, 0, 4  ),
-      req( 'rd', 0x03, 0x00, 0, 0), resp( 'rd', 0x03, 1, 0, 1  ),
-    ]
-    mem = s.hypothesis_mem()
-    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
-    2, 32, 0,1,0,0, dump_vcd=dump_vcd, test_verilog=test_verilog)
+    2, 32, 0,1,0,0)

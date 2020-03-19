@@ -51,6 +51,5 @@ class ProcModel( Component ):
         s.trans_in_flight.in_ = s.trans_in_flight.out - b2(1)
 
   def line_trace( s ):
-    msg = ''
-    # msg = f"{s.trans_in_flight.out}"
+    msg = f"{s.trans_in_flight.out}"
     return msg

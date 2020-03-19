@@ -40,27 +40,18 @@ class Comparator( Component ):
 
   def construct(s, p):
     s.addr_tag  = InPort(p.BitsTag)
-    s.tag_array = [ InPort(p.StructTagCtrl) for _ in range(p.associativity) ]
-    s.type_     = InPort( p.BitsType )
+    s.tag_array = [ InPort(p.StructTagArray) for _ in range(p.associativity) ]
     s.hit       = OutPort(Bits1)
     s.hit_way   = OutPort(p.BitsAssoclog2)
-    s.line_val  = OutPort( p.BitsAssoc )
 
     BitsAssoclog2 = p.BitsAssoclog2
-    BitsAssoc = p.BitsAssoc
     associativity = p.associativity
     @s.update
     def comparing_logic():
-      s.hit      = n
-      s.hit_way  = BitsAssoclog2(0)
-      s.line_val = BitsAssoc(0)
-      if s.type_ == INIT:
-        s.hit = n
-        s.hit_way = BitsAssoclog2(0)
-      else:
-        for i in range( associativity ):
-          if ( s.tag_array[i].val ):
-            s.line_val[i] = y
-            if s.tag_array[i].tag == s.addr_tag:
-              s.hit = y
-              s.hit_way = BitsAssoclog2(i) 
+      s.hit     = n
+      s.hit_way = BitsAssoclog2(0)
+      for i in range( associativity ):
+        if ( s.tag_array[i].val ):
+          if s.tag_array[i].tag == s.addr_tag:
+            s.hit = y
+            s.hit_way = BitsAssoclog2(i) 

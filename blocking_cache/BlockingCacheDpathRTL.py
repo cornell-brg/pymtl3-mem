@@ -13,8 +13,7 @@ from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.Muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
 from mem_pclib.rtl.arithmetics      import Indexer, Comparator
-from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg,\
-   ValReg, ReplacementBitsReg
+from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg
 from sram.SramPRTL                  import SramPRTL
 from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
@@ -96,8 +95,8 @@ class BlockingCacheDpathRTL (Component):
     # Tag Array Inputs
     s.tag_array_idx_M0   = Wire( p.BitsIdx )
     s.tag_array_idx_M0 //= s.cachereq_M0.addr.index
-    s.tag_array_struct_M0       = Wire( p.StructShortTagArray )
-    # s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
+    s.tag_array_struct_M0       = Wire( p.StructTagArray )
+    s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
     s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
     s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
     if not p.full_sram:
@@ -123,19 +122,12 @@ class BlockingCacheDpathRTL (Component):
 
     # Register File to store the replacement info
     s.ctrl_bit_rep_M1 = Wire(p.BitsAssoclog2)
-    s.replacement_bits_M1 = ReplacementBitsReg( p )(
-      raddr = s.cachereq_M1.out.addr.index,
-      rdata = s.ctrl_bit_rep_M1,
-      waddr = s.cachereq_M1.out.addr.index, 
-      wdata = s.ctrl.ctrl_bit_rep_wr_M0,
-      wen   = s.ctrl.ctrl_bit_rep_en_M1
-    )
-    # s.replacement_bits_M1 = RegisterFile( p.BitsAssoclog2, p.nblocks_per_way )
-    # s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.out.addr.index
-    # s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
-    # s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.out.addr.index
-    # s.replacement_bits_M1.wdata[0] //= s.ctrl.ctrl_bit_rep_wr_M0
-    # s.replacement_bits_M1.wen  [0] //= s.ctrl.ctrl_bit_rep_en_M1
+    s.replacement_bits_M1 = RegisterFile( p.BitsAssoclog2, p.nblocks_per_way )
+    s.replacement_bits_M1.raddr[0] //= s.cachereq_M1.out.addr.index
+    s.replacement_bits_M1.rdata[0] //= s.ctrl_bit_rep_M1
+    s.replacement_bits_M1.waddr[0] //= s.cachereq_M1.out.addr.index
+    s.replacement_bits_M1.wdata[0] //= s.ctrl.ctrl_bit_rep_wr_M0
+    s.replacement_bits_M1.wen  [0] //= s.ctrl.ctrl_bit_rep_en_M1
 
     tag_arrays_M1 = []
     for i in range( p.associativity ):
@@ -149,35 +141,17 @@ class BlockingCacheDpathRTL (Component):
           port0_wben  = s.ctrl.tag_array_wben_M0,
         )
       )
-
-    # We use number-of-cachelines bits register to store valid bits for easy 
-    # reset and access. 
-    valid_bits = []
-    for i in range( p.associativity ):
-      valid_bits.append( ValReg( p )(
-        in_   = s.ctrl.ctrl_bit_val_wr_M0,
-        en    = s.ctrl.tag_array_val_M0[i],
-        wen   = s.ctrl.tag_array_type_M0,
-        waddr = s.cachereq_M0.addr.index,
-        raddr = s.cachereq_M1.out.addr.index
-      ))
-    s.valid_bits = valid_bits
-
     s.tag_arrays_M1 = tag_arrays_M1
-    s.tag_array_out_M1 = [ Wire( p.StructShortTagArray ) for _ in range( p.associativity ) ]
-    s.ctrl_msg         = [ Wire( p.StructTagCtrl ) for _ in range( p.associativity ) ]
+    s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     # Saves output of the SRAM during stall
     stall_regs_M1 = []
     for i in range( p.associativity ):
       # Connect the Bits object output of SRAM to a struct
       connect_bits2bitstruct( s.tag_arrays_M1[i].port0_rdata, s.tag_array_out_M1[i] )
-      s.ctrl_msg[i].dty //= s.tag_array_out_M1[i].dty
-      s.ctrl_msg[i].tag //= s.tag_array_out_M1[i].tag
-      s.ctrl_msg[i].val //= s.valid_bits[i].out
       stall_regs_M1.append(
-        RegEn( p.StructTagCtrl )(
+        RegEn( p.StructTagArray )(
           en  = s.ctrl.stall_reg_en_M1,
-          in_ = s.ctrl_msg[i],
+          in_ = s.tag_array_out_M1[i],
         )
       )
     s.stall_reg_M1 = stall_regs_M1
@@ -185,9 +159,9 @@ class BlockingCacheDpathRTL (Component):
     stall_muxes_M1 = []
     for i in range( p.associativity ):
       stall_muxes_M1.append(
-        Mux( p.StructTagCtrl, 2 )(
+        Mux( p.StructTagArray, 2 )(
           in_ = {
-            0: s.ctrl_msg[i],
+            0: s.tag_array_out_M1[i],
             1: s.stall_reg_M1[i].out
           },
           sel = s.ctrl.stall_mux_sel_M1,
@@ -220,11 +194,9 @@ class BlockingCacheDpathRTL (Component):
       s.status.ctrl_bit_dty_rd_M1[i] //= s.tag_array_rdata_mux_M1[i].out.dty
 
     s.comparator_set = Comparator( p )(
-      addr_tag = s.cachereq_M1.out.addr.tag,
-      hit      = s.status.hit_M1,
-      hit_way  = s.status.hit_way_M1,
-      type_    = s.cachereq_M1.out.type_,
-      line_val = s.status.line_valid_M1,
+      addr_tag       = s.cachereq_M1.out.addr.tag,
+      hit            = s.status.hit_M1,
+      hit_way        = s.status.hit_way_M1,
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out
@@ -296,7 +268,7 @@ class BlockingCacheDpathRTL (Component):
       port0_wben  = s.ctrl.data_array_wben_M1
     )
 
-    s.stall_reg_M2 = RegEnRst( p.BitsCacheline )(
+    s.stall_reg_M2 = RegEn( p.BitsCacheline )(
       en  = s.ctrl.stall_reg_en_M2,
       in_ = s.data_array_M2.port0_rdata
     )
@@ -338,6 +310,5 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.valid_bits[0].line_trace()
-    # msg += f"--{s.ctrl.way_offset_M1}" 
+    # msg += s.mshr.line_trace()
     return msg
