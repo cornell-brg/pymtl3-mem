@@ -171,7 +171,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_out_M1[0].tag //= s.tag_arrays_M1[0].port0_rdata[1:29]
     s.tag_array_out_M1[0].tmp //= s.tag_arrays_M1[0].port0_rdata[0]
     s.tag_array_out_M1[1].val //= s.tag_arrays_M1[1].port0_rdata[31]
-    s.tag_array_out_M1[1].dty //= s.tag_arrays_M1[0].port0_rdata[29:31]
+    s.tag_array_out_M1[1].dty //= s.tag_arrays_M1[1].port0_rdata[29:31]
     s.tag_array_out_M1[1].tag //= s.tag_arrays_M1[1].port0_rdata[1:29]
     s.tag_array_out_M1[1].tmp //= s.tag_arrays_M1[1].port0_rdata[0]
     for i in range( p.associativity ):
