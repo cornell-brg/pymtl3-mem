@@ -51,8 +51,11 @@ script:
  # - python --version | grep "Python 3" && futurize --write --stage2 ./pymtl3 &> /dev/null || true
  - mkdir -p build
  - cd build
+ - git checkout cifer
  - py.test ../blocking_cache/test/BlockingCacheRTL_test.py $CONFIG
- - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog zeros $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog ones $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog rand $CONFIG
 
 #-------------------------------------------------------------------------
 # after success
