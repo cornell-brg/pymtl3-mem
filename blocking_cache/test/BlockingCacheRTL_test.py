@@ -13,9 +13,10 @@ import pytest
 from pymtl3      import *
 
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from blocking_cache.test.DmappedTestCases import DmappedTestCases
-from blocking_cache.test.Asso2WayTestCases import AssoTestCases
-from blocking_cache.test.HypothesisTest import HypothesisTests
+from .DmappedTestCases import DmappedTestCases
+from .Asso2WayTestCases import AssoTestCases
+from .HypothesisTest import HypothesisTests
+from .CiferTests import CiferTests
 # commented since it will also run FL tests...
 # from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests
 from mem_pclib.test.sim_utils import run_sim, TestHarness
@@ -23,7 +24,8 @@ from mem_pclib.test.sim_utils import run_sim, TestHarness
 max_cycles = 500
 
 # class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases):
-class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests ):
+class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
+CiferTests ):
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64,
                 stall_prob=0, latency=1, src_delay=0, sink_delay=0,

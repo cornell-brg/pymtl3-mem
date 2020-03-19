@@ -100,14 +100,13 @@ class BlockingCacheDpathRTL (Component):
     s.dirty_mask_M1_bypass = [ Wire( p.BitsDirty ) for _ in range( p.associativity ) ]
     s.dirty_bit_writer = DirtyBitWriter( p )(
       offset             = s.cachereq_M0.addr.offset,
-      # dirty_bits         = s.dirty_mask_M1_bypass,
       hit_way            = s.hit_way_M1_bypass,
       is_write_refill    = s.ctrl.is_write_refill_M0,
       is_write_hit_clean = s.ctrl.is_write_hit_clean_M0
     )
     s.status.new_dirty_bits_M0 //= s.dirty_bit_writer.out
     for i in range( p.associativity ):
-      s.dirty_bit_writer.dirty_bits[i] //= s.dirty_mask_M1_bypass[i]
+      s.dirty_bit_writer.dirty_bit[i] //= s.dirty_mask_M1_bypass[i]
 
     # Tag Array Inputs
     s.tag_array_idx_M0          = Wire( p.BitsIdx )
@@ -115,7 +114,7 @@ class BlockingCacheDpathRTL (Component):
     # we use cifer tag array
     s.tag_array_struct_M0       = Wire( p.StructTagArray )
     s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
-    s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
+    s.tag_array_struct_M0.dty //= s.dirty_bit_writer.out#s.ctrl.ctrl_bit_dty_wr_M0
     s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
     if not p.full_sram:
       s.tag_array_struct_M0.tmp //= p.BitsTagArrayTmp( 0 )
@@ -164,17 +163,8 @@ class BlockingCacheDpathRTL (Component):
     # Saves output of the SRAM during stall
     s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     stall_regs_M1 = []
-    # connect_bits2bitstruct( s.tag_array_out_M1[0], s.tag_arrays_M1[0].port0_rdata )
-    # connect_bits2bitstruct( s.tag_array_out_M1[1], s.tag_arrays_M1[1].port0_rdata )
-    s.tag_array_out_M1[0].val //= s.tag_arrays_M1[0].port0_rdata[31]
-    s.tag_array_out_M1[0].dty //= s.tag_arrays_M1[0].port0_rdata[29:31]
-    s.tag_array_out_M1[0].tag //= s.tag_arrays_M1[0].port0_rdata[1:29]
-    s.tag_array_out_M1[0].tmp //= s.tag_arrays_M1[0].port0_rdata[0]
-    s.tag_array_out_M1[1].val //= s.tag_arrays_M1[1].port0_rdata[31]
-    s.tag_array_out_M1[1].dty //= s.tag_arrays_M1[1].port0_rdata[29:31]
-    s.tag_array_out_M1[1].tag //= s.tag_arrays_M1[1].port0_rdata[1:29]
-    s.tag_array_out_M1[1].tmp //= s.tag_arrays_M1[1].port0_rdata[0]
     for i in range( p.associativity ):
+      connect_bits2bitstruct( s.tag_array_out_M1[i], s.tag_arrays_M1[i].port0_rdata )
       # Connect the Bits object output of SRAM to a struct
       stall_regs_M1.append(
         RegEn( p.StructTagArray )(
@@ -198,7 +188,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_rdata_mux_M1 = stall_muxes_M1
     for i in range( p.associativity ):
       s.dirty_mask_M1_bypass[i] //= s.tag_array_rdata_mux_M1[i].out.dty 
-
+      
     # MSHR (1 entry)
     s.MSHR_alloc_in = Wire(p.MSHRMsg)
     s.MSHR_alloc_in.type_  //= s.cachereq_M1.out.type_
@@ -352,7 +342,6 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.dirty_bit_writer.line_trace()
     # msg += s.dirty_line_detector_M1[0].line_trace()
-    msg += f"tb:{s.tag_arrays_M1[0].port0_rdata} ts:{s.tag_array_out_M1[0]} dty:{s.dirty_mask_M1_bypass} "
+    # msg += s.dirty_bit_writer.line_trace()
     return msg

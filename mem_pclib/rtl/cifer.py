@@ -50,23 +50,26 @@ class DirtyBitWriter( Component ):
 
   def construct( s, p ):
     s.offset             = InPort ( p.BitsOffset )
-    s.dirty_bits         = [InPort ( p.BitsDirty ) for _ in range(p.associativity)]
+    s.dirty_bit          = [InPort ( p.BitsDirty ) for _ in range(p.associativity)]
     s.hit_way            = InPort ( p.BitsAssoclog2 )
     s.is_write_refill    = InPort ( Bits1 )
     s.is_write_hit_clean = InPort ( Bits1 )
     s.out                = OutPort( p.BitsDirty )
 
     bitwidth_offset = p.bitwidth_offset
+    bitwidth_dirty  = p.bitwidth_dirty
+    BitsDirty       = p.BitsDirty   
     @s.update
     def new_dirty_bit_logic():
-      s.out = p.BitsDirty( 0 )
+      s.out = BitsDirty(0)
       if s.is_write_refill: 
-        s.out[s.offset[2:bitwidth_offset]] = b1(1)
+        s.out[s.offset[2:bitwidth_offset]] = BitsDirty(1)
       elif s.is_write_hit_clean:
-        s.out = s.dirty_bits[s.hit_way]
-        s.out[s.offset[2:bitwidth_offset]] = b1(1)
+        for i in range( bitwidth_dirty ):
+          s.out[i] = s.dirty_bit[s.hit_way][i]
+        s.out[s.offset[2:bitwidth_offset]] = BitsDirty(1)
 
   def line_trace( s ):
     msg = ""
-    msg += f"writer:{s.out} "
+    msg += f"writer:{s.out} dty:{s.dirty_bit}"
     return msg

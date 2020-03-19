@@ -115,7 +115,7 @@ class CacheDerivedParams:
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     # special cipher tag array struct
-    self.StructTagArray = mk_cifer_tag_array_struct( self, self.bitwidth_dirty )
+    self.StructTagArray = mk_cifer_tag_array_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl
