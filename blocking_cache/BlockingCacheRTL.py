@@ -11,8 +11,6 @@ Date   : 20 February 2020
 
 from pymtl3                         import *
 from pymtl3.stdlib.connects         import connect_pairs
-from pymtl3.stdlib.ifcs.MemMsg      import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.ifcs.mem_ifcs    import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
@@ -20,7 +18,6 @@ from .BlockingCacheCtrlRTL          import BlockingCacheCtrlRTL
 from .BlockingCacheDpathRTL         import BlockingCacheDpathRTL
 from .CacheDerivedParams            import CacheDerivedParams
 
-# from mem_pclib.ifcs.MemMsg          import MemMsgType, mk_mem_msg
 
 class BlockingCacheRTL ( Component ):
 
@@ -48,8 +45,7 @@ class BlockingCacheRTL ( Component ):
     
     # For translation 
     s.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline} \
-        _{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}' 
+      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}' 
     )
 
     #---------------------------------------------------------------------

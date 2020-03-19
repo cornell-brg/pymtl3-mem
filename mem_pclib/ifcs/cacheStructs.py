@@ -35,6 +35,7 @@ def mk_dpath_status_struct( p ):
     'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
+    'line_valid_M1'       : p.BitsAssoc,
 
     # MSHR Signals
     'MSHR_full'           : Bits1,
@@ -202,30 +203,37 @@ def mk_tag_array_struct( p ):
   if p.full_sram:
     struct = mk_bitstruct( "StructTagArray", {
       'val': Bits1,
-      'dty': Bits1, 
+      'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
       'tag': p.BitsTag,
     } )
   else:
     struct = mk_bitstruct( "StructTagArray", {
       'val': Bits1,
-      'dty': Bits1,
+      'dty': p.BitsDirty,
       'tag': p.BitsTag,
       'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
     } )
   return struct
 
-def mk_cifer_tag_array_struct( p ):
+def mk_short_tag_array_struct( p ):
   if p.full_sram:
-    struct = mk_bitstruct( "StructCiferTagArray", {
-      'val': Bits1,
-      'dty': p.BitsDirty, 
+    struct = mk_bitstruct( "StructShortTagArray", {
+      'dty': p.BitsDirty,
       'tag': p.BitsTag,
     } )
   else:
-    struct = mk_bitstruct( "StructCiferTagArray", {
-      'val': Bits1,
+    struct = mk_bitstruct( "StructShortTagArray", {
       'dty': p.BitsDirty,
       'tag': p.BitsTag,
-      'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
+      'tmp': p.BitsTagArrayTmp
     } )
+  return struct
+
+def mk_tag_ctrl_M1_struct( p ):
+  # Aggreate the ctrl signals together
+  struct = mk_bitstruct( "StructTagValAggregate", {
+    'val': Bits1,
+    'dty': p.BitsDirty,
+    'tag': p.BitsTag,
+  } )
   return struct

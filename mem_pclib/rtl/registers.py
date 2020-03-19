@@ -8,7 +8,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
 
-from pymtl3                        import *
+from pymtl3                      import *
+from pymtl3.stdlib.rtl.registers import RegEnRst, RegEn, RegRst
 
 class DpathPipelineRegM0 ( Component ):
   def construct( s, p ):
@@ -93,3 +94,72 @@ class MSHRReg( Component ):
 
   def line_trace( s ):
     return f"[{'en' if s.en else '  '}|{s.in_} > {s.out}]"
+
+
+class ValReg( Component ):  
+  """
+  Wrapper for the valid bits register. We need it because we need more control
+  on the bit level
+  """
+  def construct( s, p ):
+    s.out   = OutPort( Bits1 )
+    s.in_   = InPort( Bits1 )
+    s.en    = InPort( Bits1 )
+    s.wen   = InPort( Bits1 )
+    s.waddr = InPort( p.BitsIdx )
+    s.raddr = InPort( p.BitsIdx )
+
+    s.storage_reg = RegEnRst( p.BitsNlinesPerWay, 0 )
+    
+    s.en_req = RegRst( Bits1 )(
+      in_ = s.en,
+    )    
+    
+    BitsIdx = p.BitsIdx
+    nblocks_per_way  = p.nblocks_per_way
+    @s.update
+    def reg_logic():
+      for i in range( nblocks_per_way ):
+        if s.waddr == BitsIdx(i):
+          s.storage_reg.in_[i] = s.in_
+        else:
+          s.storage_reg.in_[i] = s.storage_reg.out[i]
+      s.storage_reg.en  = s.en & s.wen 
+      if s.en_req.out:
+        s.out = s.storage_reg.out[s.raddr]
+      else:
+        s.out = b1(0)
+
+  def line_trace( s ):
+    msg = ""
+    msg += f"waddr:{s.waddr} raddr:{s.raddr} out:{s.out} en:{s.en} wen:{s.wen} "
+    # msg += f"reg:{s.reg.out} "
+    return msg
+
+class ReplacementBitsReg( Component ):
+  """
+  Wrapper for the replacement bits register. We need it because we need more 
+  control on the bit level
+  Works for 2 way asso
+  """
+  def construct( s, p ):
+    s.wdata = InPort( Bits1 )
+    s.wen   = InPort( Bits1 )
+    s.waddr = InPort( p.BitsIdx )
+    s.raddr = InPort( p.BitsIdx )
+    s.rdata = OutPort( Bits1 )
+
+    s.replacement_register = RegEnRst( p.BitsNlinesPerWay )(
+      en  = s.wen,
+    )
+    nblocks_per_way  = p.nblocks_per_way
+    BitsIdx = p.BitsIdx
+    @s.update
+    def update_register_bits():
+      for i in range( nblocks_per_way ):
+        if s.waddr == BitsIdx(i):
+          s.replacement_register.in_[i] = s.wdata
+        else:
+          s.replacement_register.in_[i] = s.replacement_register.out[i]
+
+      s.rdata = s.replacement_register.out[s.raddr]

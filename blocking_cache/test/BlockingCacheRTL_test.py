@@ -29,7 +29,7 @@ CiferTests ):
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64,
                 stall_prob=0, latency=1, src_delay=0, sink_delay=0,
-                dump_vcd=False, test_verilog=0, trace=2 ):
+                dump_vcd=False, test_verilog='zeros', trace=2 ):
 
     harness = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
                            src_delay, sink_delay, BlockingCacheRTL,

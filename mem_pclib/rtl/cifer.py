@@ -2,7 +2,7 @@
 =========================================================================
 cifer.py
 =========================================================================
-Modules used in cifer project
+Modules used in cifer project 
 
 Author: Eric Tang (et396), Xiaoyu Yan (xy97)
 Date:   17 March 2020
@@ -25,6 +25,7 @@ class DirtyLineDetector( Component ):
     s.is_dirty   = OutPort( Bits1 )
 
     bitwidth_offset = p.bitwidth_offset
+    bitwidth_dirty = p.bitwidth_dirty
     @s.update
     def is_dirty_logic():
       if s.is_hit:
@@ -33,7 +34,7 @@ class DirtyLineDetector( Component ):
       else:
         s.is_dirty = b1(0)
         # OR all the wires together to see if a line is dirty
-        for i in range( p.bitwidth_dirty ):
+        for i in range( bitwidth_dirty ):
           if s.dirty_bits[i]:
             s.is_dirty = b1(1)
   
@@ -63,11 +64,11 @@ class DirtyBitWriter( Component ):
     def new_dirty_bit_logic():
       s.out = BitsDirty(0)
       if s.is_write_refill: 
-        s.out[s.offset[2:bitwidth_offset]] = BitsDirty(1)
+        s.out[s.offset[2:bitwidth_offset]] = b1(1)
       elif s.is_write_hit_clean:
         for i in range( bitwidth_dirty ):
           s.out[i] = s.dirty_bit[s.hit_way][i]
-        s.out[s.offset[2:bitwidth_offset]] = BitsDirty(1)
+        s.out[s.offset[2:bitwidth_offset]] = b1(1)
 
   def line_trace( s ):
     msg = ""
