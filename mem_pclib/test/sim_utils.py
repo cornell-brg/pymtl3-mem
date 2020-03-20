@@ -23,11 +23,12 @@ from .proc_model import ProcModel
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
-def run_sim( th, max_cycles = 1000, dump_vcd = False, translation=0, trace=2 ):
+def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
   # print (" -----------starting simulation----------- ")
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_import = VerilatorImportConfigs(
+          vl_xinit = translation,
           vl_trace = True if dump_vcd else False,
           vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
       )
