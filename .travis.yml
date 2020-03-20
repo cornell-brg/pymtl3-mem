@@ -52,7 +52,9 @@ script:
  - mkdir -p build
  - cd build
  - py.test ../blocking_cache/test/BlockingCacheRTL_test.py $CONFIG
- - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog zeros $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog ones $CONFIG
+ - py.test ../blocking_cache/test/BlockingCacheRTL_test.py --test-verilog rand $CONFIG
 
 #-------------------------------------------------------------------------
 # after success
