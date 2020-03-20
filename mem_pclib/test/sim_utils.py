@@ -14,23 +14,22 @@ from pymtl3 import *
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
-from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
-   RecvRTL2SendCL, SendIfcRTL
-from pymtl3.passes.backends.verilog import TranslationImportPass, \
-VerilatorImportConfigs
+from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
+from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
 from .proc_model import ProcModel
 
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------
 # Run the simulation
-#---------------------------------------------------------------------
-def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
+#------------------------------------------------------------------------
+
+def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2 ):
   # print (" -----------starting simulation----------- ")
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_import = VerilatorImportConfigs(
           vl_xinit = translation,
           vl_trace = True if dump_vcd else False,
-          vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
+          vl_Wno_list = ['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
       )
     th = TranslationImportPass()( th )
 
@@ -61,7 +60,7 @@ class TestHarness( Component ):
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
-    s.mem   = MemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.mem   = MemoryCL(1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemReqType)
     s.mem2cache = RecvCL2SendRTL(MemRespType)
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)

@@ -66,6 +66,7 @@ class BlockingCacheCtrlRTL( Component ):
 
     s.state_M0 = Wire( p.CtrlMsg )
     s.memresp_val_M0 = Wire( Bits1 )
+
     @s.update
     def replay_logic_M0():
       # Controls the refill/write_refill request generation
