@@ -1,7 +1,7 @@
 # PyMTL3 Memory
 Project repo for cache/memory related components implemented in pymtl3
 
-[![Build Status](https://travis-ci.com/cornell-brg/pymtl3-mem.svg?branch=master)](https://travis-ci.com/cornell-brg/pymtl3-mem)
+[![Build Status](https://travis-ci.com/cornell-brg/pymtl3-mem.svg?branch=cifer)](https://travis-ci.com/cornell-brg/pymtl3-mem)
 
 ## License
 

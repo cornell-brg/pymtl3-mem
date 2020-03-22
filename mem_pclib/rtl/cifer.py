@@ -2,7 +2,7 @@
 =========================================================================
 cifer.py
 =========================================================================
-Modules used in cifer project 
+Modules used in cifer project
 
 Author: Eric Tang (et396), Xiaoyu Yan (xy97)
 Date:   17 March 2020
@@ -15,21 +15,22 @@ class DirtyLineDetector( Component ):
   Arbitrates the dirty cache line.
   If we have a hit, then we check for dirty bits at the word level.
   If we have a miss, then we check for dirty bits at the line level.
-  This block will output is_dirty based on these facts. 
+  This block will output is_dirty based on these facts.
   """
 
   def construct( s, p ):
     s.is_hit     = InPort ( Bits1 )
-    s.offset     = InPort ( p.BitsOffset)
+    s.offset     = InPort ( p.BitsOffset )
     s.dirty_bits = InPort ( p.BitsDirty )
     s.is_dirty   = OutPort( Bits1 )
 
     bitwidth_offset = p.bitwidth_offset
     bitwidth_dirty = p.bitwidth_dirty
+
     @s.update
     def is_dirty_logic():
       if s.is_hit:
-        # Check if the specific word is dirty 
+        # Check if the specific word is dirty
         s.is_dirty = s.dirty_bits[s.offset[2:bitwidth_offset]]
       else:
         s.is_dirty = b1(0)
@@ -37,7 +38,7 @@ class DirtyLineDetector( Component ):
         for i in range( bitwidth_dirty ):
           if s.dirty_bits[i]:
             s.is_dirty = b1(1)
-  
+
   def line_trace( s ):
     msg = ""
     msg += f"o:{s.is_dirty} mask:{s.dirty_bits} "
@@ -45,7 +46,7 @@ class DirtyLineDetector( Component ):
 
 class DirtyBitWriter( Component ):
   """
-  Generates the dirty bit per word mask at the M0 stage to be written into 
+  Generates the dirty bit per word mask at the M0 stage to be written into
   the Tag array SRAM
   """
 
@@ -59,11 +60,12 @@ class DirtyBitWriter( Component ):
 
     bitwidth_offset = p.bitwidth_offset
     bitwidth_dirty  = p.bitwidth_dirty
-    BitsDirty       = p.BitsDirty   
+    BitsDirty       = p.BitsDirty
+
     @s.update
     def new_dirty_bit_logic():
       s.out = BitsDirty(0)
-      if s.is_write_refill: 
+      if s.is_write_refill:
         s.out[s.offset[2:bitwidth_offset]] = b1(1)
       elif s.is_write_hit_clean:
         for i in range( bitwidth_dirty ):
