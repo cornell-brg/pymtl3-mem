@@ -9,7 +9,6 @@ Date   : 11 November 2019
 """
 
 import pytest
-import struct
 import random
 from pymtl3                    import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg

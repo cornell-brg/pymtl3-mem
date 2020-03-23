@@ -16,7 +16,7 @@ from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 from .BlockingCacheCtrlRTL          import BlockingCacheCtrlRTL
 from .BlockingCacheDpathRTL         import BlockingCacheDpathRTL
-from .CacheDerivedParams            import CacheDerivedParams
+from mem_pclib.utils.CacheDerivedParams  import CacheDerivedParams
 
 
 class BlockingCacheRTL ( Component ):
