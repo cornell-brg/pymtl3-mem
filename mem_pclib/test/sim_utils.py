@@ -25,7 +25,6 @@ from .proc_model import ProcModel
 #---------------------------------------------------------------------
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
   # print (" -----------starting simulation----------- ")
-  print (f"dump:{dump_vcd}")
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_import = VerilatorImportConfigs(
