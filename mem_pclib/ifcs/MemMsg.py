@@ -18,7 +18,7 @@ def mk_mem_req_msg( opq, addr, data ):
   OpqType       = mk_bits( opq            )
   AddrType      = mk_bits( addr           )
   LenType       = mk_bits( clog2(data>>3) )
-  WriteMaskType = mk_bits( clog2(data>>5) )
+  WriteMaskType = mk_bits( data>>5 )
   DataType      = mk_bits( data           )
   cls_name      = "MemReqMsg_{}_{}_{}".format( opq, addr, data )
 
@@ -51,7 +51,7 @@ def mk_mem_req_msg( opq, addr, data ):
 def mk_mem_resp_msg( opq, data ):
   OpqType       = mk_bits( opq            )
   LenType       = mk_bits( clog2(data>>3) )
-  WriteMaskType = mk_bits( clog2(data>>5) )
+  WriteMaskType = mk_bits( data>>5 )
   DataType      = mk_bits( data           )
   cls_name = "MemRespMsg_{}_{}".format( opq, data )
 

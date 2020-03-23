@@ -89,7 +89,11 @@ class MemoryCL( Component ):
           if len_ == 0: len_ = req_classes[i].data_nbits >> 3
 
           if   req.type_ == MemMsgType.READ:
-            resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
+            if hasattr( req, "wr_mask" ):
+              resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
+                                    req.wr_mask, s.mem.read( req.addr, len_ ) )
+            else:
+              resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
                                     s.mem.read( req.addr, len_ ) )
 
           elif req.type_ == MemMsgType.WRITE:

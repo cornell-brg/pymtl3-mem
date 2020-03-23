@@ -8,10 +8,7 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 11 November 2019
 """
 
-import pytest
-import struct
 import random
-from pymtl3                    import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 # cifer specific memory req/resp msg
@@ -23,7 +20,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128 # cacheline bitwidth
 
 CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
-MemReqType, MemRespType = mk_cache_msg(obw, abw, clw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 #-------------------------------------------------------------------------
 # make messages
@@ -68,5 +65,5 @@ class CiferTests:
       ]
     mem = s.cifer_test_memory()
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    64, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+    32, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
     test_verilog=test_verilog )

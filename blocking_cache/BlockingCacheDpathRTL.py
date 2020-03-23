@@ -212,7 +212,7 @@ class BlockingCacheDpathRTL (Component):
       s.dirty_mask_M1_bypass[i] //= s.tag_array_rdata_mux_M1[i].out.dty
 
     # An one-entry MSHR for holding the cache request during a miss
-    s.MSHR_alloc_in = Wire(p.MSHRMsg)
+    s.MSHR_alloc_in = Wire( p.MSHRMsg )
     s.MSHR_alloc_in.type_  //= s.cachereq_M1.out.type_
     connect_bits2bitstruct( s.MSHR_alloc_in.addr, s.cachereq_M1.out.addr )
     s.MSHR_alloc_in.opaque //= s.cachereq_M1.out.opaque
@@ -254,6 +254,9 @@ class BlockingCacheDpathRTL (Component):
         )
       )
     s.dirty_line_detector_M1 = dirty_line_detector_M1
+    s.write_mask_M1 = Wire( p.BitsDirty )
+    # m = int(s.ctrl_bit_rep_M1)
+    s.write_mask_M1 //= s.tag_array_rdata_mux_M1[0].out.dty
 
     for i in range( p.associativity ):
       s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
@@ -309,8 +312,13 @@ class BlockingCacheDpathRTL (Component):
 
     # Pipeline registers
     s.cachereq_M2 = DpathPipelineReg( p )(
-      en  = s.ctrl.reg_en_M2,
       in_ = s.cachereq_M1_2,
+      en  = s.ctrl.reg_en_M2,
+    )
+
+    s.write_mask_M2 = RegEnRst( p.BitsDirty )(
+      in_ = s.write_mask_M1,
+      en  = s.ctrl.reg_en_M2
     )
 
     s.status.len_M2              //= s.cachereq_M2.out.len
@@ -361,6 +369,7 @@ class BlockingCacheDpathRTL (Component):
     s.memreq_addr_out.offset //= p.BitsOffset(0)
 
     # Send the M2 status signals to control
+    s.status.write_mask_M2     //= s.write_mask_M2.out
     s.status.cacheresp_data_M2 //= s.data_size_mux_M2.out
     s.status.cacheresp_type_M2 //= s.status.cachereq_type_M2
     s.status.offset_M2         //= s.cachereq_M2.out.addr.offset

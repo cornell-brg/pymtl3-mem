@@ -71,26 +71,28 @@ def test_req_str():
 
 def test_resp_fields():
 
-  RespType = mk_mem_resp_msg(8,40)
+  RespType = mk_mem_resp_msg(8,128)
 
   # Create msg
-  msg = RespType( MemMsgType.READ, 7, 2, 3, 0xf000adbeef )
+  msg = RespType( MemMsgType.READ, 7, 2, 3, 0, 0xf000adbeef )
 
   # Verify msg
   assert msg.type_  == 0
   assert msg.opaque == 7
   assert msg.test   == 2
   assert msg.len    == 3
+  assert msg.wr_mask == 0
   assert msg.data   == 0xf000adbeef
 
   # Create msg
-  msg = RespType( MemMsgType.WRITE, 9, 1, 0, 0 )
+  msg = RespType( MemMsgType.WRITE, 9, 1, 0, 1, 0 )
 
   # Verify msg
   assert msg.type_  == 1
   assert msg.opaque == 9
   assert msg.test   == 1
   assert msg.len    == 0
+  assert msg.wr_mask    == 1
   assert msg.data   == 0
 
 #-------------------------------------------------------------------------
@@ -102,10 +104,10 @@ def test_resp_str():
   RespType = mk_mem_resp_msg(8,40)
 
   # Create msg
-  msg = RespType( MemMsgType.READ, 7, 2, 3, 0x0000adbeef )
+  msg = RespType( MemMsgType.READ, 7, 2, 3, 1, 0x0000adbeef )
 
   # Verify string
-  assert str(msg) == "rd:07:2:3:0000adbeef"
+  assert str(msg) == "rd:07:2:3:1:0000adbeef"
 
   RespType = mk_mem_resp_msg(4,40)
 
@@ -113,4 +115,4 @@ def test_resp_str():
   msg = RespType( MemMsgType.WRITE, 9, 1, 0, 0 )
 
   # Verify string
-  assert str(msg) == "wr:9:1:0:          "
+  assert str(msg) == "wr:9:1:0:0:          "

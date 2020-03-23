@@ -8,18 +8,18 @@ Author : Xiaoyu Yan, Eric Tang
 Date   : 16 November 2019
 """
 
-import pytest
-import struct
 import random
-from pymtl3.stdlib.test.test_utils import mk_test_case_table
-from pymtl3.stdlib.ifcs.MemMsg     import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+# cifer specific memory req/resp msg
+from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 clw  = 128
 
-CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 #-------------------------------------------------------------------------

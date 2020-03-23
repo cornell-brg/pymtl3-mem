@@ -20,6 +20,8 @@ from .CiferTests import CiferTests
 # commented since it will also run FL tests...
 # from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests
 from mem_pclib.test.sim_utils import run_sim, TestHarness
+# from mem_pclib.test.sim_utils import TestHarness
+# from pymtl3.stdlib.test.test_utils import run_sim
 
 max_cycles = 500
 
@@ -38,4 +40,5 @@ CiferTests ):
     harness.elaborate()
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
+    # run_sim( harness, dump_vcd, test_verilog, trace, max_cycles )
     run_sim( harness, max_cycles, dump_vcd, test_verilog, trace )

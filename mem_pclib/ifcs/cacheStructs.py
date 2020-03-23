@@ -51,6 +51,7 @@ def mk_dpath_status_struct( p ):
     'cachereq_type_M2'    : p.BitsType,
     'offset_M2'           : p.BitsOffset,
     'len_M2'              : p.BitsLen,
+    'write_mask_M2'       : p.BitsDirty,
   })
   return req_cls
 

@@ -19,6 +19,7 @@ from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
 from pymtl3.passes.backends.verilog import TranslationImportPass, \
 VerilatorImportConfigs
 from .proc_model import ProcModel
+from .MemoryCL   import MemoryCL as CiferMemoryCL
 
 #----------------------------------------------------------------------
 # Run the simulation
@@ -61,7 +62,7 @@ class TestHarness( Component ):
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
-    s.mem   = MemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemReqType)
     s.mem2cache = RecvCL2SendRTL(MemRespType)
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)
