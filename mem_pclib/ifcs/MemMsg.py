@@ -49,27 +49,30 @@ def mk_mem_req_msg( opq, addr, data ):
   return req_cls
 
 def mk_mem_resp_msg( opq, data ):
-  OpqType  = mk_bits( opq            )
-  LenType  = mk_bits( clog2(data>>3) )
-  DataType = mk_bits( data           )
+  OpqType       = mk_bits( opq            )
+  LenType       = mk_bits( clog2(data>>3) )
+  WriteMaskType = mk_bits( clog2(data>>5) )
+  DataType      = mk_bits( data           )
   cls_name = "MemRespMsg_{}_{}".format( opq, data )
 
   def resp_to_str( self ):
-    return "{}:{}:{}:{}:{}".format(
+    return "{}:{}:{}:{}:{}:{}".format(
       MemMsgType.str[ int( self.type_ ) ],
       OpqType( self.opaque ),
       Bits2( self.test ),
       LenType( self.len ),
+      WriteMaskType( self.wr_mask ),
       DataType( self.data ) if self.type_ != MemMsgType.WRITE else
       " " * ( data//4 ),
     )
 
   resp_cls = mk_bitstruct( cls_name, {
-    'type_':  Bits4,
-    'opaque': OpqType,
-    'test':   Bits2,
-    'len':    LenType,
-    'data':   DataType,
+    'type_':   Bits4,
+    'opaque':  OpqType,
+    'test':    Bits2,
+    'len':     LenType,
+    'wr_mask': WriteMaskType,
+    'data':    DataType,
   },
   namespace = {
     '__str__' : resp_to_str
