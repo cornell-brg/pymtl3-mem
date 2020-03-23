@@ -56,7 +56,7 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_dealloc_mux_in_M0.data   //= s.MSHR_dealloc_out.data
     s.MSHR_dealloc_mux_in_M0.addr   //= s.MSHR_dealloc_out.addr
 
-    # Chooses to servce the cache request from proc or MSHR
+    # Chooses the cache request from proc or MSHR
     s.MSHR_mux_M0 = Mux( p.CacheReqType, 2 )(
       in_ = {
         0: s.cachereq_Y,
