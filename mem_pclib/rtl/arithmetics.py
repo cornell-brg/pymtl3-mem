@@ -56,7 +56,8 @@ class Comparator( Component ):
       s.line_val = BitsAssoc(0)
       if s.type_ == INIT:
         s.hit = n
-        s.hit_way = BitsAssoclog2(0)
+      elif s.type_ > INIT:
+        s.hit = n
       else:
         for i in range( associativity ):
           if ( s.tag_array[i].val ):
