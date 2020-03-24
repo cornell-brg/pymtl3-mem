@@ -15,11 +15,6 @@ from pymtl3.stdlib.ifcs.MemMsg       import MemMsgType
 wr = y             = b1(1)
 rd = n = x         = b1(0)
 
-STATE_GO           = b3(0)
-STATE_REFILL       = b3(1)
-STATE_EVICT        = b3(2)
-STATE_REFILL_WRITE = b3(3)
-
 data_array_double_mask = 0xff
 data_array_word_mask   = 0xf
 data_array_2byte_mask  = 0x3
@@ -28,3 +23,28 @@ data_array_byte_mask   = 0x1
 READ  = b4(MemMsgType.READ)
 WRITE = b4(MemMsgType.WRITE)
 INIT  = b4(MemMsgType.WRITE_INIT)
+AMO_ADD    = b4(MemMsgType.AMO_ADD)
+AMO_AND    = 4
+AMO_OR     = 5
+AMO_SWAP   = 6
+AMO_MIN    = 7
+AMO_MINU   = 8
+AMO_MAX    = 9
+AMO_MAXU   = 10
+AMO_XOR    = 11 
+
+
+#=========================================================================
+#  Ctrl states
+#=========================================================================
+
+IDLE   = b1(0)
+REPLAY = b1(1)
+
+
+# INVALID         = 0
+# VALID           = 1
+# REFILL          = 2 # valid and refilling
+# WRITE_REFILL    = 3
+# WRITE_HIT_CLEAN = 4
+# AMO             = 5

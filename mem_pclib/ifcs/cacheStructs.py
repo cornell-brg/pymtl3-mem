@@ -124,10 +124,9 @@ def mk_ctrl_pipeline_struct( ):
       'is_refill'         : Bits1,
       'is_write_hit_clean': Bits1,
       'is_write_refill'   : Bits1,
+      'is_amo'            : Bits1,
     },
-    namespace = {'__str__' : req_to_str}
   )
-
   return req_cls
 
 # =========================================================================

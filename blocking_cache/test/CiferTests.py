@@ -13,6 +13,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 # cifer specific memory req/resp msg
 from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
+from mem_pclib.constants.constants import *
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -30,12 +31,14 @@ def req( type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheRespType( type_, opaque, test, len, data )
 
 class CiferTests:
@@ -75,8 +78,22 @@ class CiferTests:
     msgs = [
         #    type  opq   addr      len  data       type  opq test len  data
         req( 'wr', 0x00, 0x0000005c, 0, 0xfff), resp( 'wr', 0x00, 0, 0, 0 ), #refill-write
-        req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),          #evict
+        req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),     #evict
         req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 7 ),     #read new written data
+      ]
+    mem = s.cifer_test_memory()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
+    16, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+    test_verilog=test_verilog )
+  
+  def test_cifer_amo( s, dump_vcd, test_verilog, stall_prob=0, latency=1, \
+    src_delay=0, sink_delay=0 ):
+    msgs = [
+        #    type  opq   addr   len  data     type  opq test len  data
+        req( 'ad', 0x00, 0x00000, 0, 0), resp( 'ad', 0x00, 0, 0, 1 ), 
+        # req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),          
+        # req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 7 ),    
       ]
     mem = s.cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)

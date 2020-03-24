@@ -258,7 +258,10 @@ class BlockingCacheDpathRTL (Component):
     s.dirty_line_detector_M1 = dirty_line_detector_M1
 
     s.write_mask_M1 = Wire( p.BitsDirty )
-    s.write_mask_M1 //= lambda: s.tag_array_rdata_mux_M1[s.ctrl_bit_rep_M1].out.dty
+    @s.update
+    def dirty_mask_choice_logic(): #Need update block for this
+      # //= does not support indexing
+      s.write_mask_M1 = s.tag_array_rdata_mux_M1[s.ctrl_bit_rep_M1].out.dty
 
     for i in range( p.associativity ):
       s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
@@ -380,9 +383,5 @@ class BlockingCacheDpathRTL (Component):
     s.status.memreq_data_M2    //= s.read_data_mux_M2.out
 
   def line_trace( s ):
-    # msg = f"tidx={s.tag_array_idx_mux_M0.out},twdata={s.tag_array_wdata_mux_M0.out},trdata={s.tag_array_out_M1[0]},ttype={s.ctrl.tag_array_type_M0}"
     msg = ""
-    # msg = f"val0={s.ctrl.tag_array_val_M0[0]},val1={s.ctrl.tag_array_val_M0[1]},type={s.ctrl.tag_array_type_M0},idx={s.tag_array_idx_mux_M0.out},wdata={s.tag_array_wdata_mux_M0.out},wben={s.ctrl.tag_array_wben_M0}"
-    # msg += s.dirty_line_detector_M1[0].line_trace()
-    # msg += s.dirty_bit_writer.line_trace()
     return msg

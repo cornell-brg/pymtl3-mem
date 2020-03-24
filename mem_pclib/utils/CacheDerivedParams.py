@@ -129,6 +129,7 @@ class CacheDerivedParams:
 
     # Structs local to the ctrl
     self.CtrlMsg = mk_ctrl_pipeline_struct()
+    self.BitsCtrlStates = mk_bits(clog2(6))
 
     #--------------------------------------------------------------------
     # Default Values
