@@ -14,7 +14,10 @@ import random
 import hypothesis
 from hypothesis import strategies as st
 from blocking_cache.BlockingCacheFL import ModelCache
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+# cifer specific memory req/resp msg
+from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
 
 
 obw  = 8   # Short name for opaque bitwidth
@@ -60,7 +63,7 @@ class HypothesisTests:
   req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
     cacheSize = (clw * associativity * num_blocks) // 8
     mem = rand_mem(addr_min, addr_max)
-    CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+    CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
     MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
     # FL Model to generate expected transactions
     model = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,

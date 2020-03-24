@@ -61,7 +61,6 @@ class MemoryCL( Component ):
     s.nports = nports
     req_classes  = [ x for (x,y) in mem_ifc_dtypes ]
     resp_classes = [ y for (x,y) in mem_ifc_dtypes ]
-
     s.mem = MemoryFL( mem_nbytes )
 
     # Interface
@@ -101,15 +100,16 @@ class MemoryCL( Component ):
             if hasattr(req, "wr_mask"):
               # check if the request has a word-level write mask (1 word = 32 bits)
               assert req.wr_mask.nbits == req.data.nbits // 32
-              for i in range(req.wr_mask.nbits):
-                if req.wr_mask[i]:
-                  s.mem.write( req.addr + 4 * i, 8, req.data[32*i:32*(i+1)] )
+              for j in range(req.wr_mask.nbits):
+                if req.wr_mask[j]:
+                  s.mem.write( req.addr + 4 * j, 4, req.data[32*j:32*(j+1)] )
+              resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0, 0 )
             else:
               # no write mask
               s.mem.write( req.addr, len_, req.data )
             # FIXME do we really set len=0 in response when doing subword wr?
             # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
-            resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
+              resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
 
           else: # AMOS
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,

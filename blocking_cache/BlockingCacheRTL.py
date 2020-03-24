@@ -103,7 +103,7 @@ class BlockingCacheRTL ( Component ):
     if verbosity==1:
       msg = s.cacheCtrl.line_trace()
     elif verbosity==2:
-      memreq_msg = f"{' '*(12 + s.param.bitwidth_cacheline//4)}"
+      memreq_msg = f"{' '*(19 + s.param.bitwidth_cacheline//4)}"
       memresp_msg = f"{' '*(12 + s.param.bitwidth_cacheline//4)}"
 
       if s.mem_master_ifc.resp.en:
