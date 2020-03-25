@@ -255,8 +255,10 @@ class BlockingCacheDpathRTL (Component):
       )
     s.dirty_line_detector_M1 = dirty_line_detector_M1
     s.write_mask_M1 = Wire( p.BitsDirty )
-    # m = int(s.ctrl_bit_rep_M1)
-    s.write_mask_M1 //= s.tag_array_rdata_mux_M1[0].out.dty
+    @s.update
+    def dirty_mask_choice_logic(): #Need update block for this
+      # //= does not support indexing
+      s.write_mask_M1 = s.tag_array_rdata_mux_M1[s.ctrl_bit_rep_M1].out.dty
 
     for i in range( p.associativity ):
       s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
