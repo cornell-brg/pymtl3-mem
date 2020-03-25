@@ -87,9 +87,10 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.memresp_val_M0:
           # Recv memresp that's not a write
           # If read or amo transaction, then we dealloc and run 
-          if s.status.MSHR_type == READ: 
-            s.state_M0.is_refill = y         
-            s.ctrl.MSHR_dealloc_en = y # the read cachereq with the refill
+          if s.status.MSHR_type == READ or s.status.MSHR_type == WRITE: 
+            s.state_M0.is_refill = y
+            if s.status.MSHR_type == READ:         
+              s.ctrl.MSHR_dealloc_en = y # the read cachereq with the refill
           elif s.status.MSHR_type >= AMO_ADD: 
             s.ctrl.MSHR_dealloc_en = y # the read cachereq with the refill
             s.state_M0.is_amo = y
@@ -147,7 +148,7 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.state_M0.is_refill:                     s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , y )
         elif s.state_M0.is_write_refill:             s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(1)   ,  wr , y )
         elif s.state_M0.is_write_hit_clean:          s.cs0 = concat( tg_wbenf, b1(0)  , b1(1)  , b1(0)   ,  wr , y )
-        elif s.state_M0.is_amo:                      s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  x  , n )
+        elif s.state_M0.is_amo:                      s.cs0 = concat( tg_wbenf, b1(1)  , b1(0)  , b1(1)   ,  wr , n )
         else:
           if (s.status.cachereq_type_M0 == INIT):    s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  wr , y )
           elif (s.status.cachereq_type_M0 == READ):  s.cs0 = concat( tg_wbenf, b1(0)  , b1(0)  , b1(0)   ,  rd , n )
@@ -174,7 +175,7 @@ class BlockingCacheCtrlRTL ( Component ):
       for i in range( associativity ):
         s.ctrl.tag_array_val_M0[i] = n # Enable all SRAMs since we are reading
       if s.state_M0.val:
-        if s.state_M0.is_refill or s.state_M0.is_write_refill:
+        if s.state_M0.is_refill or s.state_M0.is_write_refill or s.state_M0.is_amo:
           s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y  
         elif s.status.cachereq_type_M0 == INIT:
           s.ctrl.tag_array_val_M0[s.status.ctrl_bit_rep_rd_M1] = y
@@ -398,12 +399,15 @@ class BlockingCacheCtrlRTL ( Component ):
             if s.state_M2.out.is_write_refill:     s.cs2 = concat(   n   ,  b1(0)  ,  n   ,   WRITE   ,    n ,     y   )
             elif  s.ctrl.hit_M2[0]:                s.cs2 = concat(   n   ,  b1(0)  ,  n   ,   READ    ,    n ,     y   )
             elif ~s.ctrl.hit_M2[0]:                s.cs2 = concat(   n   ,  b1(0)  ,  n   ,   READ    ,    y ,     n   )
-          elif s.status.cachereq_type_M2>=AMO_ADD: s.cs2 = concat(   n   ,  b1(0)  ,  n   ,   READ    ,    y ,     n   )
+          elif s.status.cachereq_type_M2>=AMO_ADD: s.cs2 = concat(   n   ,  b1(1)  ,  n   ,   AMO     ,    y ,     n   )
 
       s.ctrl.data_size_mux_en_M2  = s.cs2[ CS_data_size_mux_en_M2  ]
       s.ctrl.read_data_mux_sel_M2 = s.cs2[ CS_read_data_mux_sel_M2 ]
       s.ostall_M2                 = s.cs2[ CS_ostall_M2            ]
-      s.ctrl.memreq_type          = s.cs2[ CS_memreq_type          ]
+      if s.cs2[ CS_memreq_type ] >= AMO:
+        s.ctrl.memreq_type        = s.status.cachereq_type_M2
+      else:
+        s.ctrl.memreq_type        = s.cs2[ CS_memreq_type          ]
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
       s.stall_M2  = s.ostall_M2
@@ -466,5 +470,5 @@ class BlockingCacheCtrlRTL ( Component ):
     stage3 = "|{}{}".format(msg_M2,msg_memreq)
     pipeline = stage1 + stage2 + stage3
     add_msgs = ""
-    # add_msgs = f"dty:{s.status.ctrl_bit_dty_rd_M1}"
+    # add_msgs = f"vla:{s.is_line_valid_M1}"
     return pipeline + add_msgs

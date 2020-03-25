@@ -23,6 +23,7 @@ data_array_byte_mask   = 0x1
 READ  = b4(MemMsgType.READ)
 WRITE = b4(MemMsgType.WRITE)
 INIT  = b4(MemMsgType.WRITE_INIT)
+AMO   = b4(3)
 AMO_ADD    = b4(MemMsgType.AMO_ADD)
 AMO_AND    = 4
 AMO_OR     = 5
