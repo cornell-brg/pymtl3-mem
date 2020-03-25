@@ -37,14 +37,15 @@ class CacheDerivedParams:
     self.bitwidth_addr             = MemReqType.get_field_type("addr").nbits
     self.bitwidth_opaque           = MemReqType.get_field_type("opaque").nbits
     self.bitwidth_data             = CacheReqType.get_field_type("addr").nbits
-    # Convert to total number of bits and then divide 
-    self.total_num_cachelines      = self.num_bytes * 8 // self.bitwidth_cacheline      
+    # Convert to total number of bits and then divide
+    self.total_num_cachelines      = self.num_bytes * 8 // self.bitwidth_cacheline
     self.nblocks_per_way           = self.total_num_cachelines // self.associativity # cachelines per way
+    self.bitwidth_num_lines        = clog2( self.total_num_cachelines )
     self.bitwidth_index            = clog2( self.nblocks_per_way )                   # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
     # 1 bit for dirty and val. Rest for tag. Need to make sure multiple of 8.
-    self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 7 ) // 8 * 8
+    self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 1 + 7 ) // 8 * 8
     self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
     self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8         # Data array write byte bitwidth
     self.bitwidth_rd_wd_mux_sel    = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read word mux bitwidth
@@ -55,25 +56,22 @@ class CacheDerivedParams:
       self.bitwidth_clog_asso      = 1
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity )
-    
-    # Cifer chip variables 
+
+    # Cifer chip variables
     # number of 32 bit words for cifer chip tapeout. Normally, we would only
     # have 1 bit for dirty
-    self.bitwidth_dirty            = self.bitwidth_cacheline // 32 
-    # we're storing valid in registers, otherwise, we should have 1 bit valid in sram
-    self.bitwidth_val              = 0 
-    
-    # sum of the tag bitwidth, 1 bit valid, and dirty bit per word and rounded 
+    self.bitwidth_dirty            = self.bitwidth_cacheline // 32
+    self.bitwidth_val              = 1
+
+    # sum of the tag bitwidth, 1 bit valid, and dirty bit per word and rounded
     # up to multiple of 8
-    self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val\
-       + self.bitwidth_dirty + 7 ) // 8 * 8
+    self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty + 7 ) // 8 * 8
     self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
-    self.bitwidth_tag_remainder    = self.bitwidth_tag_array - \
-      self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
-      
-    print("size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
-    self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index, 
-    self.bitwidth_tag_remainder))
+    self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
+
+    print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
+           self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index,
+           self.bitwidth_tag_remainder) )
 
     # print(f"rm:{self.bitwidth_tag_remainder} ")
 
@@ -104,7 +102,7 @@ class CacheDerivedParams:
 
     # Cifer Bits objects
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )
-    
+
     #--------------------------------------------------------------------
     # Specialize structs
     #--------------------------------------------------------------------
@@ -114,17 +112,14 @@ class CacheDerivedParams:
     #--------------------------------------------------------------------
     # Msgs for Dpath
     #--------------------------------------------------------------------
-    # sram is "full" if each bit is used for either tag, valid, or dirty 
-    self.full_sram = False if (self.bitwidth_tag_array - self.bitwidth_tag \
-      - self.bitwidth_dirty - self.bitwidth_val) > 0 else True 
+    # sram is "full" if each bit is used for either tag, valid, or dirty
+    self.full_sram = False if (self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val) > 0 else True
     self.StructStatus = mk_dpath_status_struct( self )
 
     # Structs used within dpath module
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     self.StructTagArray = mk_tag_array_struct( self )
-    self.StructShortTagArray = mk_short_tag_array_struct( self )
-    self.StructTagCtrl = mk_tag_ctrl_M1_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

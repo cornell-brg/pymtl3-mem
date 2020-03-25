@@ -20,7 +20,7 @@ from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.muxes            import *
 from mem_pclib.rtl.Replicator       import CacheDataReplicator
 from mem_pclib.rtl.arithmetics      import Indexer, Comparator
-from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ValReg, ReplacementBitsReg
+from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 from sram.SramPRTL                  import SramPRTL
 
 class BlockingCacheDpathRTL (Component):
@@ -110,10 +110,11 @@ class BlockingCacheDpathRTL (Component):
 
     # Tag array inputs
     s.tag_array_idx_M0    = Wire( p.BitsIdx )
-    s.tag_array_struct_M0 = Wire( p.StructShortTagArray )
+    s.tag_array_struct_M0 = Wire( p.StructTagArray )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
     s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
     s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
+    s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
     if not p.full_sram:
       s.tag_array_struct_M0.tmp //= p.BitsTagArrayTmp( 0 )
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
@@ -155,7 +156,7 @@ class BlockingCacheDpathRTL (Component):
     connect_bits2bitstruct( s.cachereq_addr_M1_forward, s.cachereq_M1.out.addr )
 
     # Register file to store the replacement info
-    s.ctrl_bit_rep_M1 = Wire(p.BitsAssoclog2)
+    s.ctrl_bit_rep_M1 = Wire( p.BitsAssoclog2 )
     s.replacement_bits_M1 = ReplacementBitsReg( p )(
       raddr = s.cachereq_M1.out.addr.index,
       rdata = s.ctrl_bit_rep_M1,
@@ -179,36 +180,18 @@ class BlockingCacheDpathRTL (Component):
       )
     s.tag_arrays_M1 = tag_arrays_M1
 
-    # We use number-of-cachelines bits register to store valid bits for easy
-    # reset and access.
-    valid_bits = []
-    for i in range( p.associativity ):
-      valid_bits.append( ValReg( p )(
-        in_   = s.ctrl.ctrl_bit_val_wr_M0,
-        en    = s.ctrl.tag_array_val_M0[i],
-        wen   = s.ctrl.tag_array_type_M0,
-        waddr = s.cachereq_M0.addr.index,
-        raddr = s.cachereq_M1.out.addr.index
-      ))
-    s.valid_bits = valid_bits
-
     # Struct for the tag array output
-    s.tag_array_out_M1 = [ Wire( p.StructShortTagArray ) for _ in range( p.associativity ) ]
-    s.ctrl_msg         = [ Wire( p.StructTagCtrl ) for _ in range( p.associativity ) ]
+    s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
 
     # Saves output of the SRAM during stall
     stall_regs_M1 = []
     for i in range( p.associativity ):
-      connect_bits2bitstruct( s.tag_array_out_M1[i], s.tag_arrays_M1[i].port0_rdata )
       # Connect the Bits object output of SRAM to a struct
       connect_bits2bitstruct( s.tag_arrays_M1[i].port0_rdata, s.tag_array_out_M1[i] )
-      s.ctrl_msg[i].dty //= s.tag_array_out_M1[i].dty
-      s.ctrl_msg[i].tag //= s.tag_array_out_M1[i].tag
-      s.ctrl_msg[i].val //= s.valid_bits[i].out
       stall_regs_M1.append(
-        RegEn( p.StructTagCtrl )(
+        RegEn( p.StructTagArray )(
           en  = s.ctrl.stall_reg_en_M1,
-          in_ = s.ctrl_msg[i],
+          in_ = s.tag_array_out_M1[i],
         )
       )
     s.stall_reg_M1 = stall_regs_M1
@@ -216,9 +199,9 @@ class BlockingCacheDpathRTL (Component):
     stall_muxes_M1 = []
     for i in range( p.associativity ):
       stall_muxes_M1.append(
-        Mux( p.StructTagCtrl, 2 )(
+        Mux( p.StructTagArray, 2 )(
           in_ = {
-            0: s.ctrl_msg[i],
+            0: s.tag_array_out_M1[i],
             1: s.stall_reg_M1[i].out
           },
           sel = s.ctrl.stall_mux_sel_M1,
@@ -257,8 +240,10 @@ class BlockingCacheDpathRTL (Component):
       type_    = s.cachereq_M1.out.type_,
       line_val = s.status.line_valid_M1,
     )
+
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_mux_M1[i].out
+
     s.hit_way_M1_bypass //= s.comparator_set.hit_way
 
     dirty_line_detector_M1 = []
@@ -397,6 +382,7 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     # msg = f"tidx={s.tag_array_idx_mux_M0.out},twdata={s.tag_array_wdata_mux_M0.out},trdata={s.tag_array_out_M1[0]},ttype={s.ctrl.tag_array_type_M0}"
     msg = ""
+    # msg = f"val0={s.ctrl.tag_array_val_M0[0]},val1={s.ctrl.tag_array_val_M0[1]},type={s.ctrl.tag_array_type_M0},idx={s.tag_array_idx_mux_M0.out},wdata={s.tag_array_wdata_mux_M0.out},wben={s.ctrl.tag_array_wben_M0}"
     # msg += s.dirty_line_detector_M1[0].line_trace()
     # msg += s.dirty_bit_writer.line_trace()
     return msg

@@ -50,9 +50,11 @@ class BlockingCacheCtrlRTL ( Component ):
   def construct( s, p ):
 
     # Constants (required for translation to work)
-    associativity  = p.associativity
-    BitsAssoclog2  = p.BitsAssoclog2
-    BitsClogNlines = p.BitsClogNlines
+    associativity      = p.associativity
+    clog_asso          = clog2( p.associativity )
+    BitsAssoclog2      = p.BitsAssoclog2
+    BitsClogNlines     = p.BitsClogNlines
+    bitwidth_num_lines = p.bitwidth_num_lines
 
     #--------------------------------------------------------------------
     # Interface
@@ -229,14 +231,14 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.ctrl_bit_val_wr_M0   = s.cs0[ CS_ctrl_bit_val_wr_M0   ]
       s.ctrl.tag_array_in_sel_M0  = s.cs0[ CS_tag_array_in_sel_M0  ]
       s.ctrl.tag_array_idx_sel_M0 = s.cs0[ CS_tag_array_idx_sel_M0 ]
-      # s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
 
       # Control signals output
       s.ctrl.is_write_refill_M0 = (s.state_M0 == CTRL_STATE_REPLAY_WRITE)
       s.ctrl.is_write_hit_clean_M0 = s.is_write_hit_clean_M0
       s.ctrl.reg_en_M0 = ~s.stall_M0
       s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
-      s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[0:p.bitwidth_index]
+      # use higher bits of the counter to select index
+      s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
 
     @s.update
     def tag_array_val_logic_M0():
@@ -244,6 +246,7 @@ class BlockingCacheCtrlRTL ( Component ):
       for i in range( associativity ):
         s.ctrl.tag_array_val_M0[i] = n
       if s.state_M0 == CTRL_STATE_CACHE_INIT:
+        # use lower bits of the counter to select ways
         for i in range( associativity ):
           if s.counter_M0.out % BitsClogNlines(associativity) == BitsClogNlines(i):
             s.ctrl.tag_array_val_M0[i] = y

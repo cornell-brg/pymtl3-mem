@@ -43,11 +43,12 @@ class Indexer ( Component ):
 class Comparator( Component ):
 
   def construct(s, p):
-    s.addr_tag  = InPort(p.BitsTag)
-    s.tag_array = [ InPort(p.StructTagCtrl) for _ in range(p.associativity) ]
-    s.type_     = InPort( p.BitsType )
-    s.hit       = OutPort(Bits1)
-    s.hit_way   = OutPort(p.BitsAssoclog2)
+
+    s.addr_tag  = InPort( p.BitsTag )
+    s.tag_array = [ InPort( p.StructTagArray ) for _ in range( p.associativity ) ]
+    s.type_     = InPort ( p.BitsType )
+    s.hit       = OutPort( Bits1 )
+    s.hit_way   = OutPort( p.BitsAssoclog2 )
     s.line_val  = OutPort( p.BitsAssoc )
 
     BitsAssoclog2 = p.BitsAssoclog2
