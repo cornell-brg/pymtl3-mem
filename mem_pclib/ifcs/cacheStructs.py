@@ -23,7 +23,7 @@ def mk_dpath_status_struct( p ):
     'memreq_addr_M2'      : p.StructAddr,
     'memreq_data_M2'      : p.BitsCacheline,
 
-    # M0 Dpath Signals 
+    # M0 Dpath Signals
     'cachereq_type_M0'    : p.BitsType,
     'memresp_type_M0'     : p.BitsType,
     'offset_M0'           : p.BitsOffset,
@@ -42,11 +42,11 @@ def mk_dpath_status_struct( p ):
     'MSHR_empty'          : Bits1,
     'MSHR_type'           : p.BitsType,
     'MSHR_ptr'            : p.BitsAssoclog2,
-    
+
     # Signals for multiway associativity
     'hit_way_M1'          : p.BitsAssoclog2,
     'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
-    
+
     # M2 Dpath Signals
     'cachereq_type_M2'    : p.BitsType,
     'offset_M2'           : p.BitsOffset,
@@ -59,8 +59,8 @@ def mk_ctrl_signals_struct( p ):
   cls_name    = f"StructCtrlSignals"
 
   req_cls = mk_bitstruct( cls_name, {
-    
-    # M0 Ctrl Signals 
+
+    # M0 Ctrl Signals
     'reg_en_M0'         : Bits1,
     'memresp_mux_sel_M0': Bits1,
     'addr_mux_sel_M0'   : Bits1,
@@ -73,6 +73,9 @@ def mk_ctrl_signals_struct( p ):
     'ctrl_bit_rep_wr_M0': Bits1,
     'is_write_refill_M0': Bits1,
     'is_write_hit_clean_M0': Bits1,
+    'tag_array_in_sel_M0' : Bits1,
+    'tag_array_idx_sel_M0': Bits1,
+    'tag_array_init_idx_M0' : p.BitsIdx,
 
     # M1 Ctrl Signals
     'reg_en_M1'         : Bits1,
@@ -95,7 +98,7 @@ def mk_ctrl_signals_struct( p ):
     'memreq_type'         : p.BitsType,
     'MSHR_alloc_en'       : Bits1,
     'MSHR_dealloc_en'     : Bits1,
-    
+
   })
   return req_cls
 
@@ -115,7 +118,7 @@ def mk_ctrl_pipeline_struct( ):
       Bits1( self.is_write_refill ),
     )
 
-  req_cls = mk_bitstruct( cls_name, 
+  req_cls = mk_bitstruct( cls_name,
     {
       'val'               : Bits1,
       'is_refill'         : Bits1,
@@ -187,7 +190,7 @@ def mk_MSHR_msg( p ):
 def mk_addr_struct( p ):
   def req_to_str( self ):
     return "{}{}{}".format(
-      self.tag, self.index, self.offset 
+      self.tag, self.index, self.offset
     )
   # declaration alignment MATTERS here
   struct = mk_bitstruct( "StructAddr", {

@@ -2,7 +2,7 @@
 =========================================================================
 arithmetic.py
 =========================================================================
-Combined arithmetic modules for the cache such as modified adders, 
+Combined arithmetic modules for the cache such as modified adders,
 multipliers and comparators
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
@@ -15,6 +15,7 @@ from pymtl3 import *
 class EComp ( Component ):
 
   def construct( s, Type ):
+
     s.in0 = InPort( Type )
     s.in1 = InPort( Type )
     s.out = OutPort( bool if Type is int else Bits1 )
@@ -26,13 +27,16 @@ class EComp ( Component ):
 class Indexer ( Component ):
 
   def construct ( s, p ):
+
     s.index  = InPort( p.BitsIdx )
     s.offset = InPort( p.BitsAssoclog2 )
     s.out    = OutPort( p.BitsClogNlines )
+
     BitsClogNlines  = p.BitsClogNlines
     nblocks_per_way = p.nblocks_per_way
+
     @s.update
-    def index_logic(): 
+    def index_logic():
       s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
         BitsClogNlines( nblocks_per_way )
 
@@ -47,8 +51,9 @@ class Comparator( Component ):
     s.line_val  = OutPort( p.BitsAssoc )
 
     BitsAssoclog2 = p.BitsAssoclog2
-    BitsAssoc = p.BitsAssoc
+    BitsAssoc     = p.BitsAssoc
     associativity = p.associativity
+
     @s.update
     def comparing_logic():
       s.hit      = n
@@ -63,4 +68,4 @@ class Comparator( Component ):
             s.line_val[i] = y
             if s.tag_array[i].tag == s.addr_tag:
               s.hit = y
-              s.hit_way = BitsAssoclog2(i) 
+              s.hit_way = BitsAssoclog2(i)

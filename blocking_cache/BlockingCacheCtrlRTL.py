@@ -7,12 +7,15 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from .ReplacementPolicy            import ReplacementPolicy
 from colorama                      import Fore, Back, Style
-from mem_pclib.constants.constants import *
+
 from pymtl3                        import *
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
+
+from mem_pclib.constants.constants import *
+from mem_pclib.rtl.counters        import CounterEnRst
+from .ReplacementPolicy            import ReplacementPolicy
 
 #=========================================================================
 # Constants
@@ -21,20 +24,22 @@ from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
 # M0 FSM states
 M0_FSM_STATE_NBITS = 2
 
-M0_FSM_STATE_READY  = b2(0) # ready to serve the request from proc or MSHR
-M0_FSM_STATE_REPLAY = b2(1) # replay the previous request from MSHR
+M0_FSM_STATE_INIT   = b2(0) # tag array initialization
+M0_FSM_STATE_READY  = b2(1) # ready to serve the request from proc or MSHR
+M0_FSM_STATE_REPLAY = b2(2) # replay the previous request from MSHR
 
 # Ctrl pipeline states
-CTRL_STATE_NBITS = 3
+CTRL_STATE_NBITS = 4
 
-CTRL_STATE_INVALID      = b3(0)
-CTRL_STATE_REFILL       = b3(1) # Refill only (for write-miss)
-CTRL_STATE_REPLAY_READ  = b3(2) # Replay the read miss along with refill
-CTRL_STATE_REPLAY_WRITE = b3(3) # Replay the write miss after refill
-CTRL_STATE_CLEAN_HIT    = b3(4) # M1 stage hit a clean word, update dirty bits
-CTRL_STATE_READ_REQ     = b3(5) # Read req from cachereq
-CTRL_STATE_WRITE_REQ    = b3(6) # Write req from cachereq
-CTRL_STATE_INIT_REQ     = b3(7) # Init req from cachereq
+CTRL_STATE_INVALID      = b4(0)
+CTRL_STATE_REFILL       = b4(1) # Refill only (for write-miss)
+CTRL_STATE_REPLAY_READ  = b4(2) # Replay the read miss along with refill
+CTRL_STATE_REPLAY_WRITE = b4(3) # Replay the write miss after refill
+CTRL_STATE_CLEAN_HIT    = b4(4) # M1 stage hit a clean word, update dirty bits
+CTRL_STATE_READ_REQ     = b4(5) # Read req from cachereq
+CTRL_STATE_WRITE_REQ    = b4(6) # Write req from cachereq
+CTRL_STATE_INIT_REQ     = b4(7) # Init-write req from cachereq
+CTRL_STATE_CACHE_INIT   = b4(8) # Init cache
 
 #=========================================================================
 # BlockingCacheCtrlRTL
@@ -45,7 +50,9 @@ class BlockingCacheCtrlRTL ( Component ):
   def construct( s, p ):
 
     # Constants (required for translation to work)
-    associativity = p.associativity
+    associativity  = p.associativity
+    BitsAssoclog2  = p.BitsAssoclog2
+    BitsClogNlines = p.BitsClogNlines
 
     #--------------------------------------------------------------------
     # Interface
@@ -70,9 +77,9 @@ class BlockingCacheCtrlRTL ( Component ):
     # Y Stage
     #--------------------------------------------------------------------
 
-    @s.update
-    def mem_resp_rdy():
-      s.memresp_rdy = y # Always yes
+    # In Y stage we always set the memresp_rdy to high since we assume
+    # there would be no memresp unless we have sent a memreq
+    s.memresp_rdy //= y
 
     #--------------------------------------------------------------------
     # M0 Stage
@@ -88,19 +95,36 @@ class BlockingCacheCtrlRTL ( Component ):
     s.memresp_val_M0 //= lambda: s.memresp_en_M0.out & ( s.status.memresp_type_M0 != WRITE )
 
     s.FSM_state_M0_next = Wire( mk_bits(M0_FSM_STATE_NBITS) )
-    s.FSM_state_M0 = RegEnRst( mk_bits(M0_FSM_STATE_NBITS), reset_value=M0_FSM_STATE_READY )(
+    s.FSM_state_M0 = RegEnRst( mk_bits(M0_FSM_STATE_NBITS), reset_value=M0_FSM_STATE_INIT )(
       in_ = s.FSM_state_M0_next,
       en  = s.ctrl.reg_en_M0
     )
 
+    s.counter_en_M0 = Wire( Bits1 )
+    s.counter_en_M0 //= lambda: s.FSM_state_M0.out == M0_FSM_STATE_INIT
+
+    # FSM counter
+    s.counter_M0 = CounterEnRst( p.BitsClogNlines,
+                                 reset_value=( p.total_num_cachelines - 1 ) )
+    s.counter_M0.count_down //= b1(1)
+    s.counter_M0.load       //= b1(0)
+    s.counter_M0.en         //= lambda: s.ctrl.reg_en_M0 & s.counter_en_M0
+
+
     @s.update
     def fsm_M0_next_state():
-      s.FSM_state_M0_next = M0_FSM_STATE_READY
-
-      if s.FSM_state_M0.out == M0_FSM_STATE_READY:
+      s.FSM_state_M0_next = M0_FSM_STATE_INIT
+      if   s.FSM_state_M0.out == M0_FSM_STATE_INIT:
+        if s.counter_M0.out == BitsClogNlines(0):
+          s.FSM_state_M0_next = M0_FSM_STATE_READY
+        else:
+          s.FSM_state_M0_next = M0_FSM_STATE_INIT
+      elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
         if s.memresp_val_M0 and s.status.MSHR_type == WRITE:
           # Have valid replays in the MSHR
           s.FSM_state_M0_next = M0_FSM_STATE_REPLAY
+        else:
+          s.FSM_state_M0_next = M0_FSM_STATE_READY
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         # MSHR will be dealloc this cycle
         s.FSM_state_M0_next = M0_FSM_STATE_READY
@@ -115,8 +139,9 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def state_logic_M0():
       s.state_M0 = CTRL_STATE_INVALID
-
-      if   s.is_write_hit_clean_M0:
+      if s.FSM_state_M0.out == M0_FSM_STATE_INIT:
+        s.state_M0 = CTRL_STATE_CACHE_INIT
+      elif s.is_write_hit_clean_M0:
         s.state_M0 = CTRL_STATE_CLEAN_HIT
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         if (~s.status.MSHR_empty) and s.status.MSHR_type == WRITE:
@@ -159,6 +184,8 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def cachereq_rdy_logic():
       s.cachereq_rdy = y
+      if s.FSM_state_M0.out == M0_FSM_STATE_INIT:
+        s.cachereq_rdy = n
       if s.is_write_hit_clean_M0:
         s.cachereq_rdy = n
       elif s.stall_M0: # stall in the cache due to evict, stalls in M1 and M2
@@ -168,35 +195,40 @@ class BlockingCacheCtrlRTL ( Component ):
         s.cachereq_rdy = n
 
     # M0 control signal table
-    s.cs0 = Wire( mk_bits( 5 + p.bitwidth_tag_wben ) )
+    s.cs0 = Wire( mk_bits( 7 + p.bitwidth_tag_wben ) )
 
-    CS_tag_array_wben_M0  = slice( 5, 5 + p.bitwidth_tag_wben )
-    CS_wdata_mux_sel_M0   = slice( 4, 5 )
-    CS_addr_mux_sel_M0    = slice( 3, 4 )
-    CS_memresp_mux_sel_M0 = slice( 2, 3 )
-    CS_tag_array_type_M0  = slice( 1, 2 )
-    CS_ctrl_bit_val_wr_M0 = slice( 0, 1 )
+    CS_tag_array_wben_M0    = slice( 7, 7 + p.bitwidth_tag_wben )
+    CS_wdata_mux_sel_M0     = slice( 6, 7 )
+    CS_addr_mux_sel_M0      = slice( 5, 6 )
+    CS_memresp_mux_sel_M0   = slice( 4, 5 )
+    CS_tag_array_type_M0    = slice( 3, 4 )
+    CS_ctrl_bit_val_wr_M0   = slice( 2, 3 )
+    CS_tag_array_in_sel_M0  = slice( 1, 2 )
+    CS_tag_array_idx_sel_M0 = slice( 0, 1 )
 
     tg_wbenf = p.tg_wbenf
 
     @s.update
     def cs_table_M0():
-      #                                                            tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|val
-      s.cs0 =                                             concat( tg_wbenf, b1(0),   b1(0),      x ,    rd,   x )
-      if   s.state_M0 == CTRL_STATE_REFILL:       s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y )
-      elif s.state_M0 == CTRL_STATE_REPLAY_READ:  s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y )
-      elif s.state_M0 == CTRL_STATE_REPLAY_WRITE: s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(1),    wr,   y )
-      elif s.state_M0 == CTRL_STATE_CLEAN_HIT:    s.cs0 = concat( tg_wbenf, b1(0),   b1(1),   b1(0),    wr,   y )
-      elif s.state_M0 == CTRL_STATE_INIT_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    wr,   y )
-      elif s.state_M0 == CTRL_STATE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n )
-      elif s.state_M0 == CTRL_STATE_WRITE_REQ:    s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n )
+      #                                                            tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|val|tin_sel|tidx_sel
+      s.cs0 =                                             concat( tg_wbenf, b1(0),   b1(0),       x,    rd,   x,  b1(0),  b1(0) )
+      if   s.state_M0 == CTRL_STATE_CACHE_INIT:   s.cs0 = concat( tg_wbenf, b1(0),   b1(0),       x,    wr,   n,  b1(1),  b1(1) )
+      elif s.state_M0 == CTRL_STATE_REFILL:       s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_REPLAY_READ:  s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_REPLAY_WRITE: s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_CLEAN_HIT:    s.cs0 = concat( tg_wbenf, b1(0),   b1(1),   b1(0),    wr,   y,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_INIT_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    wr,   y,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n,  b1(0),  b1(0) )
+      elif s.state_M0 == CTRL_STATE_WRITE_REQ:    s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n,  b1(0),  b1(0) )
 
-      s.ctrl.tag_array_wben_M0  = s.cs0[ CS_tag_array_wben_M0  ]
-      s.ctrl.wdata_mux_sel_M0   = s.cs0[ CS_wdata_mux_sel_M0   ]
-      s.ctrl.addr_mux_sel_M0    = s.cs0[ CS_addr_mux_sel_M0    ]
-      s.ctrl.memresp_mux_sel_M0 = s.cs0[ CS_memresp_mux_sel_M0 ]
-      s.ctrl.tag_array_type_M0  = s.cs0[ CS_tag_array_type_M0  ]
-      s.ctrl.ctrl_bit_val_wr_M0 = s.cs0[ CS_ctrl_bit_val_wr_M0 ]
+      s.ctrl.tag_array_wben_M0    = s.cs0[ CS_tag_array_wben_M0    ]
+      s.ctrl.wdata_mux_sel_M0     = s.cs0[ CS_wdata_mux_sel_M0     ]
+      s.ctrl.addr_mux_sel_M0      = s.cs0[ CS_addr_mux_sel_M0      ]
+      s.ctrl.memresp_mux_sel_M0   = s.cs0[ CS_memresp_mux_sel_M0   ]
+      s.ctrl.tag_array_type_M0    = s.cs0[ CS_tag_array_type_M0    ]
+      s.ctrl.ctrl_bit_val_wr_M0   = s.cs0[ CS_ctrl_bit_val_wr_M0   ]
+      s.ctrl.tag_array_in_sel_M0  = s.cs0[ CS_tag_array_in_sel_M0  ]
+      s.ctrl.tag_array_idx_sel_M0 = s.cs0[ CS_tag_array_idx_sel_M0 ]
       # s.ctrl.ctrl_bit_dty_wr_M0 = s.cs0[ CS_ctrl_bit_dty_wr_M0 ]
 
       # Control signals output
@@ -204,21 +236,27 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.is_write_hit_clean_M0 = s.is_write_hit_clean_M0
       s.ctrl.reg_en_M0 = ~s.stall_M0
       s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
+      s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[0:p.bitwidth_index]
 
     @s.update
     def tag_array_val_logic_M0():
       # Most of the logic is for associativity > 1; should simplify for dmapped
       for i in range( associativity ):
-        s.ctrl.tag_array_val_M0[i] = n # Enable all SRAMs since we are reading
-      if ( s.state_M0 == CTRL_STATE_REFILL or
-           s.state_M0 == CTRL_STATE_REPLAY_WRITE or
-           s.state_M0 == CTRL_STATE_REPLAY_READ ):
+        s.ctrl.tag_array_val_M0[i] = n
+      if s.state_M0 == CTRL_STATE_CACHE_INIT:
+        for i in range( associativity ):
+          if s.counter_M0.out % BitsClogNlines(associativity) == BitsClogNlines(i):
+            s.ctrl.tag_array_val_M0[i] = y
+      elif ( s.state_M0 == CTRL_STATE_REFILL or
+             s.state_M0 == CTRL_STATE_REPLAY_WRITE or
+             s.state_M0 == CTRL_STATE_REPLAY_READ ):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
       elif s.state_M0 == CTRL_STATE_INIT_REQ:
         s.ctrl.tag_array_val_M0[s.status.ctrl_bit_rep_rd_M1] = y
       elif s.state_M0 == CTRL_STATE_CLEAN_HIT:
         s.ctrl.tag_array_val_M0[s.status.hit_way_M1] = y
-      elif s.state_M0 == CTRL_STATE_READ_REQ or s.state_M0 == CTRL_STATE_WRITE_REQ:
+      elif ( s.state_M0 == CTRL_STATE_READ_REQ or
+             s.state_M0 == CTRL_STATE_WRITE_REQ ):
         for i in range( associativity ):
           s.ctrl.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
 
@@ -294,7 +332,8 @@ class BlockingCacheCtrlRTL ( Component ):
       s.hit_M1            = n
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
 
-      if s.state_M1.out != CTRL_STATE_INVALID:
+      if ( s.state_M1.out != CTRL_STATE_INVALID and
+           s.state_M1.out != CTRL_STATE_CACHE_INIT ):
         if ( s.state_M1.out != CTRL_STATE_REFILL and
              s.state_M1.out != CTRL_STATE_REPLAY_WRITE and
              s.state_M1.out != CTRL_STATE_REPLAY_READ ):
@@ -362,6 +401,7 @@ class BlockingCacheCtrlRTL ( Component ):
       #                                                                wben| ty|val|ostall|evict mux|alloc_en
       s.cs1                                                 = concat( wben0, x , n, n,     b1(0),    n       )
       if   s.state_M1.out == CTRL_STATE_INVALID:      s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
+      elif s.state_M1.out == CTRL_STATE_CACHE_INIT:   s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
       elif s.state_M1.out == CTRL_STATE_REFILL:       s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.state_M1.out == CTRL_STATE_REPLAY_READ:  s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.state_M1.out == CTRL_STATE_REPLAY_WRITE: s.cs1 = concat(  wben, wr, y, n,     b1(0),    n       )
@@ -432,6 +472,7 @@ class BlockingCacheCtrlRTL ( Component ):
       #                                                               dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
       s.cs2                                                 = concat( y,       b1(0),    n,     READ,       n,     n        )
       if   s.state_M2.out == CTRL_STATE_INVALID:      s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
+      elif s.state_M2.out == CTRL_STATE_CACHE_INIT:   s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
       elif s.state_M2.out == CTRL_STATE_CLEAN_HIT:    s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
       elif ~s.memreq_rdy or ~s.cacheresp_rdy:         s.cs2 = concat( n,       b1(0),    y,     READ,       n,     n        )
       elif s.is_evict_M2.out:                         s.cs2 = concat( n,       b1(0),    n,     WRITE,      y,     n        )
@@ -464,24 +505,38 @@ class BlockingCacheCtrlRTL ( Component ):
   #-----------------------------------------------------------------------
 
   def line_trace( s ):
-    msg_M0 = "   "
+
+    msg_M0 = ""
+    if s.FSM_state_M0.out == M0_FSM_STATE_INIT:
+      msg_M0 = "(init)"
+    elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
+      msg_M0 = "(rdy )"
+    elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
+      msg_M0 = "(rpy )"
+    else:
+      assert False
+    msg_M0 += ",cnt={} ".format(s.counter_M0.out)
 
     if s.state_M0 == CTRL_STATE_INVALID:
-      msg_M0 = "xxx"
+      msg_M0 += "xxx"
     elif s.state_M0 == CTRL_STATE_REFILL:
-      msg_M0 = " rf"
+      msg_M0 += " rf"
     elif s.state_M0 == CTRL_STATE_CLEAN_HIT:
-      msg_M0 = " wc"
+      msg_M0 += " wc"
     elif s.state_M0 == CTRL_STATE_REPLAY_WRITE:
-      msg_M0 = "rpw"
+      msg_M0 += "rpw"
     elif s.state_M0 == CTRL_STATE_REPLAY_READ:
-      msg_M0 = "rpr"
+      msg_M0 += "rpr"
     elif s.state_M0 == CTRL_STATE_READ_REQ:
-      msg_M0 = " rd"
+      msg_M0 += " rd"
     elif s.state_M0 == CTRL_STATE_WRITE_REQ:
-      msg_M0 = " wr"
+      msg_M0 += " wr"
     elif s.state_M0 == CTRL_STATE_INIT_REQ:
-      msg_M0 = " in"
+      msg_M0 += " in"
+    elif s.state_M0 == CTRL_STATE_CACHE_INIT:
+      msg_M0 += "ini"
+    else:
+      msg_M0 += "   "
 
     if not s.cachereq_rdy:
       msg_M0 = "#" + msg_M0
@@ -504,7 +559,9 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.state_M1.out == CTRL_STATE_WRITE_REQ:
       msg_M1 = color_m1 + " wr" + Style.RESET_ALL
     elif s.state_M1.out == CTRL_STATE_INIT_REQ:
-      msg_M0 = " in"
+      msg_M1 = " in"
+    elif s.state_M1.out == CTRL_STATE_CACHE_INIT:
+      msg_M1 = "ini"
 
     msg_M2 = "   "
     if   s.state_M2.out == CTRL_STATE_REFILL:       msg_M2 = " rf"
@@ -515,6 +572,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.state_M2.out == CTRL_STATE_READ_REQ:     msg_M2 = " rd"
     elif s.state_M2.out == CTRL_STATE_WRITE_REQ:    msg_M2 = " wr"
     elif s.state_M2.out == CTRL_STATE_INIT_REQ:     msg_M2 = " in"
+    elif s.state_M2.out == CTRL_STATE_CACHE_INIT:   msg_M2 = "ini"
 
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "

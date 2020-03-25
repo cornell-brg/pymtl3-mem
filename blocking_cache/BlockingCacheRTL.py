@@ -22,7 +22,7 @@ from mem_pclib.utils.CacheDerivedParams  import CacheDerivedParams
 class BlockingCacheRTL ( Component ):
 
   def construct( s, CacheReqType, CacheRespType, MemReqType, MemRespType,
-    num_bytes = 4096, associativity = 1 ):
+                 num_bytes=4096, associativity=1 ):
     """
       Parameters
       ----------
@@ -40,12 +40,12 @@ class BlockingCacheRTL ( Component ):
     """
 
     # Generate additional constants and bitstructs from the given parameters
-    s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType, 
+    s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType,
     MemRespType, num_bytes, associativity )
-    
-    # For translation 
+
+    # For translation
     s.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}' 
+      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}'
     )
 
     #---------------------------------------------------------------------
@@ -62,7 +62,7 @@ class BlockingCacheRTL ( Component ):
     #---------------------------------------------------------------------
 
     s.ctrl_bypass = Wire(p.StructCtrl) # pass the ctrl signals back to dpath
-    
+
     s.cacheDpath = BlockingCacheDpathRTL( p )(
       cachereq_Y = s.mem_minion_ifc.req.msg,
       memresp_Y  = s.mem_master_ifc.resp.msg,
@@ -95,7 +95,7 @@ class BlockingCacheRTL ( Component ):
                             # Bits32                       # StructAddr
     connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.status.memreq_addr_M2 )
     s.mem_master_ifc.req.msg.data    //= s.cacheDpath.status.memreq_data_M2
-    
+
     s.mem_master_ifc.req.msg.wr_mask //= s.cacheDpath.status.write_mask_M2
 
   # Line tracing
