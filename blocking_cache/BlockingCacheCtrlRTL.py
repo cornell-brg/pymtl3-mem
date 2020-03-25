@@ -13,7 +13,6 @@ from mem_pclib.constants.constants import *
 from pymtl3                        import *
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
-from mem_pclib.rtl.registers       import CtrlPipelineReg
 
 #=========================================================================
 # Constants
@@ -414,7 +413,6 @@ class BlockingCacheCtrlRTL ( Component ):
     s.stall_M2 //= s.ostall_M2
 
     # M2 control signal table
-
     s.cs2 = Wire( Bits9 )
 
     CS_data_size_mux_en_M2  = slice( 8,  9 )
