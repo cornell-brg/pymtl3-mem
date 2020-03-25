@@ -492,7 +492,10 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.data_size_mux_en_M2  = s.cs2[ CS_data_size_mux_en_M2  ]
       s.ctrl.read_data_mux_sel_M2 = s.cs2[ CS_read_data_mux_sel_M2 ]
       s.ostall_M2                 = s.cs2[ CS_ostall_M2            ]
-      s.ctrl.memreq_type          = s.cs2[ CS_memreq_type          ]
+      if s.cs2[ CS_memreq_type ] >= AMO:
+        s.ctrl.memreq_type        = s.status.cachereq_type_M2
+      else:
+        s.ctrl.memreq_type        = s.cs2[ CS_memreq_type          ]
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 

@@ -62,7 +62,10 @@ class Comparator( Component ):
       s.line_val = BitsAssoc(0)
       if s.type_ == INIT:
         s.hit = n
-      elif s.type_ > INIT:
+      elif s.type_ >= AMO_ADD:
+        for i in range( associativity ):
+          if ( s.tag_array[i].val ):
+            s.line_val[i] = y
         s.hit = n
       else:
         for i in range( associativity ):
