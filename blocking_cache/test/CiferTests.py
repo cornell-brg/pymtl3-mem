@@ -102,10 +102,10 @@ class CiferTests:
   def test_cifer_amo_dirty( s, dump_vcd, test_verilog, stall_prob=0, latency=1, \
     src_delay=0, sink_delay=0 ):
     msgs = [
-        #    type  opq   addr   len  data     type  opq test len  data
-        req( 'wr', 0x00, 0x00000008, 0, 0xff), resp( 'wr', 0x00, 0, 0, 0 ),          
-        req( 'ad', 0x01, 0x00000008, 0, 0x11),    resp( 'ad', 0x01, 0, 0, 0x11 ),  
-      ]
+        #    type  opq   addr       len data         type  opq test len  data
+        req( 'wr', 0x00, 0x00000008, 0, 0xff), resp( 'wr', 0x00, 0,  0,  0    ),          
+        req( 'ad', 0x01, 0x00000008, 0, 0x11), resp( 'ad', 0x01, 0,  0,  0x11 ),  
+    ]
     mem = s.cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
