@@ -9,11 +9,12 @@ Date   : 11 November 2019
 """
 
 import random
+
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+
 # cifer specific memory req/resp msg
-from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
-from mem_pclib.constants.constants import *
+from ifcs.MemMsg import mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -42,7 +43,7 @@ def resp( type_, opaque, test, len, data ):
   return CacheRespType( type_, opaque, test, len, data )
 
 class CiferTests:
-  
+
   def cifer_test_memory( s ):
     return [
       0x00000000, 1,
@@ -56,7 +57,7 @@ class CiferTests:
       0x0000005c, 6,
       0x00000060, 7,
     ]
-  
+
   def test_cifer_dmapped_write_hit_clean( s, dump_vcd, test_verilog, stall_prob=0,
    latency=1, src_delay=0, sink_delay=0 ):
     msgs = [
@@ -70,7 +71,7 @@ class CiferTests:
       ]
     mem = s.cifer_test_memory()
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+    32, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd,
     test_verilog=test_verilog )
 
   def test_cifer_hypo1( s, dump_vcd, test_verilog, stall_prob=0, latency=1, \
@@ -84,7 +85,7 @@ class CiferTests:
     mem = s.cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    16, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+    16, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd,
     test_verilog=test_verilog )
   
   def test_cifer_amo( s, dump_vcd, test_verilog, stall_prob=0, latency=1, \
@@ -104,9 +105,9 @@ class CiferTests:
     msgs = [
         #    type  opq   addr       len data         type  opq test len  data
         req( 'wr', 0x00, 0x00000008, 0, 0xff), resp( 'wr', 0x00, 0,  0,  0    ),          
-        req( 'ad', 0x01, 0x00000008, 0, 0x11), resp( 'ad', 0x01, 0,  0,  0x11 ),  
+        req( 'ad', 0x01, 0x00000008, 0, 0x11), resp( 'ad', 0x01, 0,  0,  0xff ),  
     ]
-    mem = s.cifer_test_memory()
+    mem = s.cifer_test_memory() 
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
     16, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 

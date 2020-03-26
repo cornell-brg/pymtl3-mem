@@ -24,28 +24,12 @@ READ  = b4(MemMsgType.READ)
 WRITE = b4(MemMsgType.WRITE)
 INIT  = b4(MemMsgType.WRITE_INIT)
 AMO   = b4(3)
-AMO_ADD    = b4(MemMsgType.AMO_ADD)
-AMO_AND    = 4
-AMO_OR     = 5
-AMO_SWAP   = 6
-AMO_MIN    = 7
-AMO_MINU   = 8
-AMO_MAX    = 9
-AMO_MAXU   = 10
-AMO_XOR    = 11 
-
-
-#=========================================================================
-#  Ctrl states
-#=========================================================================
-
-IDLE   = b1(0)
-REPLAY = b1(1)
-
-
-# INVALID         = 0
-# VALID           = 1
-# REFILL          = 2 # valid and refilling
-# WRITE_REFILL    = 3
-# WRITE_HIT_CLEAN = 4
-# AMO             = 5
+AMO_ADD  = b4(MemMsgType.AMO_ADD)
+AMO_AND  = b4(MemMsgType.AMO_AND)
+AMO_OR   = b4(MemMsgType.AMO_OR)
+AMO_SWAP = b4(MemMsgType.AMO_SWAP)
+AMO_MIN  = b4(MemMsgType.AMO_MIN)
+AMO_MINU = b4(MemMsgType.AMO_MINU)
+AMO_MAX  = b4(MemMsgType.AMO_MAX)
+AMO_MAXU = b4(MemMsgType.AMO_MAXU)
+AMO_XOR  = b4(MemMsgType.AMO_XOR) 

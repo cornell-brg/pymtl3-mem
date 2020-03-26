@@ -9,16 +9,18 @@ Author : Xiaoyu Yan, Eric Tang (et396)
 Date   : 25 December 2019  Merry Christmas!! UWU
 """
 
-from pymtl3 import *
 import random
 import hypothesis
 from hypothesis import strategies as st
-from blocking_cache.BlockingCacheFL import ModelCache
+
+from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-# cifer specific memory req/resp msg
-from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
 
+from blocking_cache.BlockingCacheFL import ModelCache
+
+# cifer specific memory req/resp msg
+from ifcs.MemMsg     import mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -59,7 +61,7 @@ def gen_reqs( draw ):
 
 class HypothesisTests:
 
-  def hypothesis_test_harness(s, associativity, clw, num_blocks, transactions, 
+  def hypothesis_test_harness(s, associativity, clw, num_blocks, transactions,
   req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
     cacheSize = (clw * associativity * num_blocks) // 8
     mem = rand_mem(addr_min, addr_max)
@@ -89,7 +91,7 @@ class HypothesisTests:
   @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
-    block_order  = st.integers( 1, 7 ), 
+    block_order  = st.integers( 1, 7 ),
     transactions = st.integers( 1, 100 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
@@ -107,7 +109,7 @@ class HypothesisTests:
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
-    transactions = st.integers( 1, 100 ), 
+    transactions = st.integers( 1, 100 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
     latency      = st.integers( 1, 5 ),
@@ -133,7 +135,7 @@ class HypothesisTests:
     sink_delay    = st.integers( 0, 5 )
   )
   def test_hypothesis_cache_gen(s, clw, block_order, transactions,
-    req, associativity, stall_prob, latency, src_delay, sink_delay, dump_vcd, 
+    req, associativity, stall_prob, latency, src_delay, sink_delay, dump_vcd,
     test_verilog):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(associativity, clw, num_blocks, transactions, req,

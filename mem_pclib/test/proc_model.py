@@ -9,9 +9,10 @@ Date   : 9 March 2020
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.mem_ifcs          import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.rtl.registers import RegRst
+
 from mem_pclib.constants.constants import *
-from pymtl3.stdlib.rtl.registers   import RegRst
 
 class ProcModel( Component ):
 
@@ -21,11 +22,11 @@ class ProcModel( Component ):
     s.proc  = MemMinionIfcRTL( CacheReqType, CacheRespType )
     s.cache = MemMasterIfcRTL( CacheReqType, CacheRespType )
 
-    s.cache.req.msg  //= s.proc.req.msg 
+    s.cache.req.msg  //= s.proc.req.msg
     s.cache.req.en   //= s.proc.req.en
     s.proc.req.rdy   //= s.cache.req.rdy
 
-    s.proc.resp.msg  //= s.cache.resp.msg 
+    s.proc.resp.msg  //= s.cache.resp.msg
     s.proc.resp.en   //= s.cache.resp.en
     # s.cache.resp.rdy //= s.proc.resp.rdy
 
@@ -36,9 +37,9 @@ class ProcModel( Component ):
       # If the cache request is not ready, then the processor's response rdy is
       # low.
       if s.trans_in_flight.out == b2(0):
-        s.cache.resp.rdy = s.proc.resp.rdy & s.cache.req.rdy 
+        s.cache.resp.rdy = s.proc.resp.rdy & s.cache.req.rdy
       else:
-        s.cache.resp.rdy = s.proc.resp.rdy 
+        s.cache.resp.rdy = s.proc.resp.rdy
 
       # s.proc.req.rdy  = s.cache.req.rdy & s.proc.resp.rdy
 

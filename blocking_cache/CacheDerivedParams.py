@@ -9,7 +9,8 @@ Date:   10 February 2020
 """
 
 from pymtl3 import *
-from mem_pclib.ifcs.cacheStructs   import *
+
+from .cacheStructs import *
 
 class CacheDerivedParams:
 

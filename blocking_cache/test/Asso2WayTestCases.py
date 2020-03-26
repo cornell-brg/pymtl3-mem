@@ -9,10 +9,12 @@ Date   : 16 November 2019
 """
 
 import random
+
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+
 # cifer specific memory req/resp msg
-from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
+from ifcs.MemMsg     import mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -85,7 +87,7 @@ class AssoTestCases:
     mem = None
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
      2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
-     
+
   def test_2way_1way_only_write_miss( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq  addr       len data           type  opq  test len data         ),
@@ -109,7 +111,7 @@ class AssoTestCases:
       req( 'rd', 0x3, 0x00002000, 0, 0          ), resp( 'rd', 0x3, 1,   0,  212 ),
     ]
     mem = s.set_assoc_mem0()
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
     2, 512, dump_vcd=dump_vcd, test_verilog=test_verilog)
 
   #-------------------------------------------------------------------------
@@ -275,7 +277,7 @@ class AssoTestCases:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2, 32,
      0,1,0,1,dump_vcd=dump_vcd, test_verilog=test_verilog)
-     
+
   def test_2way_hyp2_lat2( s, dump_vcd, test_verilog):
     msgs = [
       req( 'rd', 0x00, 0, 0, 0),    resp( 'rd', 0x00, 0, 0, 1  ),
@@ -286,7 +288,7 @@ class AssoTestCases:
     ]
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
     2, 32, 0,1,0,0)
 
   def test_2way_hyp3( s, dump_vcd, test_verilog):
@@ -299,5 +301,5 @@ class AssoTestCases:
     ]
     mem = s.hypothesis_mem()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
-    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
+    s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
     2, 32, 0,1,0,0, dump_vcd=dump_vcd, test_verilog=test_verilog)
