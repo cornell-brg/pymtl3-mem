@@ -14,9 +14,9 @@ from pymtl3.stdlib.connects         import connect_pairs
 from pymtl3.stdlib.ifcs.mem_ifcs    import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
-from .BlockingCacheCtrlRTL          import BlockingCacheCtrlRTL
-from .BlockingCacheDpathRTL         import BlockingCacheDpathRTL
-from mem_pclib.utils.CacheDerivedParams  import CacheDerivedParams
+from .BlockingCacheCtrlRTL   import BlockingCacheCtrlRTL
+from .BlockingCacheDpathRTL  import BlockingCacheDpathRTL
+from .CacheDerivedParams     import CacheDerivedParams
 
 
 class BlockingCacheRTL ( Component ):

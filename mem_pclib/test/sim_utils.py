@@ -14,10 +14,9 @@ from pymtl3 import *
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
-from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL,\
-   RecvRTL2SendCL, SendIfcRTL
-from pymtl3.passes.backends.verilog import TranslationImportPass, \
-VerilatorImportConfigs
+from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
+from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
+
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
 

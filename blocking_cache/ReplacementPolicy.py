@@ -16,7 +16,7 @@ from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
 class ReplacementPolicy (Component):
   """
   Given an input of histories for past accesses (LRU bits),
-  output the way number that should have its cache line 
+  output the way number that should have its cache line
   replaced.
 
   Latency sensitive - do not expect to be problems?
@@ -28,7 +28,7 @@ class ReplacementPolicy (Component):
                 associativity = 1,
                 policy        = 0, # what policy to use? LRU for now
   ):
-    # policy 0 = LRU policy 
+    # policy 0 = LRU policy
     # More area efficient policies include FIFO
     s.repreq_en      = InPort(Bits1)
     s.repreq_rdy     = OutPort(Bits1)
@@ -44,7 +44,7 @@ class ReplacementPolicy (Component):
     if associativity == 2:
       # if policy == 0: # LRU - flip bit when hit or miss
       # LRU for 2 way is extra simple since we don't need
-      # to keep track   
+      # to keep track
       @s.update
       def pointer_logic():
         if s.reset:
@@ -59,8 +59,6 @@ class ReplacementPolicy (Component):
     else:
       # Real difficult to implement LRU here
       s.represp_ptr //= b1(0)
-
-      
 
   def line_trace( s ):
     msg = ""

@@ -9,10 +9,12 @@ Date   : 11 November 2019
 """
 
 import random
+
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+
 # cifer specific memory req/resp msg
-from mem_pclib.ifcs.MemMsg     import mk_mem_msg 
+from ifcs.MemMsg import mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -46,7 +48,7 @@ class DmappedTestCases:
       req( 'rd', 0x1, 0x000ab000, 0, 0          ), resp( 'rd', 0x1, 1,   0, 0xdeadbeef ),
     ]
     mem = None
-    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 
+    s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
     dump_vcd=dump_vcd, test_verilog=test_verilog)
 
   #----------------------------------------------------------------------
@@ -109,7 +111,7 @@ class DmappedTestCases:
   #----------------------------------------------------------------------
   # Test Case: Write Hit: CLEAN
   #----------------------------------------------------------------------
-  def test_dmapped_write_hit_clean( s, dump_vcd, test_verilog, stall_prob=0, 
+  def test_dmapped_write_hit_clean( s, dump_vcd, test_verilog, stall_prob=0,
   latency=1, src_delay=0, sink_delay=0 ):
     msgs = [
       #    type  opq  addr      len data                type  opq  test len data
@@ -246,7 +248,7 @@ class DmappedTestCases:
   # Test cases: Write Dirty:
   #-------------------------------------------------------------------------
 
-  def test_dmapped_read_miss_dirty( s, dump_vcd, test_verilog, stall_prob=0, 
+  def test_dmapped_read_miss_dirty( s, dump_vcd, test_verilog, stall_prob=0,
   latency=1, src_delay=0, sink_delay=0 ):
     msgs = [
       #    type  opq   addr                 len data               type  opq   test len data
@@ -256,7 +258,7 @@ class DmappedTestCases:
     ]
     mem = [0x00010000, 0x00c0ffee]
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-     1, 512, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+     1, 512, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd,
      test_verilog=test_verilog )
 
   def evict_mem( s ):
@@ -270,7 +272,7 @@ class DmappedTestCases:
   #-------------------------------------------------------------------------
   # Test Case: Direct Mapped Read Evict
   #-------------------------------------------------------------------------
-  def test_dmapped_read_evict_1word( s, dump_vcd, test_verilog, stall_prob=0, 
+  def test_dmapped_read_evict_1word( s, dump_vcd, test_verilog, stall_prob=0,
   latency=1, src_delay=0, sink_delay=0 ):
     msgs = [
         #    type  opq   addr      len  data               type  opq test len  data
@@ -307,7 +309,7 @@ class DmappedTestCases:
     ]
     mem = s.evict_mem()
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-     512, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+     512, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd,
      test_verilog=test_verilog )
 
   #-------------------------------------------------------------------------
@@ -323,7 +325,7 @@ class DmappedTestCases:
       0x00002070, 0x70facade,
       0x00002074, 0x75ca1ded,
     ]
-  def test_dmapped_long0_msg( s, dump_vcd, test_verilog, stall_prob=0, latency=1, 
+  def test_dmapped_long0_msg( s, dump_vcd, test_verilog, stall_prob=0, latency=1,
   src_delay=0, sink_delay=0 ):
     msgs = [
       #    type  opq   addr      len  data               type  opq test len  data
@@ -555,7 +557,7 @@ class DmappedTestCases:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                1, 4096, 0, 1, 0, 0, dump_vcd=dump_vcd, test_verilog=test_verilog)
-  
+
   def test_dmapped_hypo3( s, dump_vcd, test_verilog ):
     msgs = [
       #    type  opq   addr    len  data     type  opq test len  data

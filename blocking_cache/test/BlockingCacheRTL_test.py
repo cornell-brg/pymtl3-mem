@@ -17,11 +17,10 @@ from .DmappedTestCases import DmappedTestCases
 from .Asso2WayTestCases import AssoTestCases
 from .HypothesisTest import HypothesisTests
 from .CiferTests import CiferTests
+
 # commented since it will also run FL tests...
 # from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests
 from mem_pclib.test.sim_utils import run_sim, TestHarness
-# from mem_pclib.test.sim_utils import TestHarness
-# from pymtl3.stdlib.test.test_utils import run_sim
 
 max_cycles = 500
 
