@@ -15,11 +15,13 @@ import random
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
-from blocking_cache.test.DmappedTestCases import DmappedTestCases
-from blocking_cache.test.Asso2WayTestCases import AssoTestCases
+from .DmappedTestCases import DmappedTestCases
+from .Asso2WayTestCases import AssoTestCases
+from .HypothesisTest import HypothesisTests
+from .CiferTests import CiferTests
 from blocking_cache.BlockingCacheFL import ModelCache
 
-class CacheFL_Tests(DmappedTestCases, AssoTestCases):
+class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, 
                 MemRespType, associativity=1, cacheSize=512, stall_prob=0, 
@@ -36,13 +38,13 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases):
         cache.write(trans.addr, trans.data, trans.opaque, trans.len)
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque, trans.len)
+      elif trans.type_ >= MemMsgType.AMO_ADD:
+        cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
     resps = cache.get_transactions()[1::2]
     print("")
     for i in range(len(sink)):
-      print ("{:3d}: {} > {} == {}".format(i,src[i],
-      resps[i],sink[i]))
+      print ("{:3d}: ({}) > {} ".format(i, src[i], resps[i]))
       if i < len(sink):
         assert sink[i] == resps[i], "\n  actual:{}\nexpected:{}".format(
           sink[i], resps[i]
         )
-

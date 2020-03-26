@@ -242,7 +242,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M0 == TRANS_TYPE_REFILL:       s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
       elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
       elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    rd,   x,  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   n,  b1(0),  b1(0) )
       elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    s.cs0 = concat( tg_wbenf, b1(0),   b1(1),   b1(0),    wr,   y,  b1(0),  b1(0) )
       elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    wr,   y,  b1(0),  b1(0) )
       elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n,  b1(0),  b1(0) )
@@ -278,7 +278,8 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.tag_array_val_M0[i] = y
       elif ( s.trans_M0 == TRANS_TYPE_REFILL or
              s.trans_M0 == TRANS_TYPE_REPLAY_WRITE or
-             s.trans_M0 == TRANS_TYPE_REPLAY_READ ):
+             s.trans_M0 == TRANS_TYPE_REPLAY_READ or 
+             s.trans_M0 == TRANS_TYPE_REPLAY_AMO):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
       elif s.trans_M0 == TRANS_TYPE_INIT_REQ:
         s.ctrl.tag_array_val_M0[s.status.ctrl_bit_rep_rd_M1] = y
@@ -527,7 +528,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: s.cs2 = concat( n,       b1(0),    n,     WRITE,      n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   s.cs2 = concat( y,       b1(1),    n,     READ,       n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     s.cs2 = concat( n,       b1(0),    n,     READ,       n,     y        )
-      elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      s.cs2 = concat( n,       b1(0),    n,     AMO,        y,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      s.cs2 = concat( n,       b1(1),    n,     AMO,        y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_READ_REQ:
         if    s.ctrl.hit_M2[0]:                       s.cs2 = concat( y,       b1(0),    n,     READ,       n,     y        )
         elif ~s.ctrl.hit_M2[0]:                       s.cs2 = concat( n,       b1(0),    n,     READ,       y,     n        )
@@ -572,8 +573,8 @@ class BlockingCacheCtrlRTL ( Component ):
     if s.trans_M0 == TRANS_TYPE_INVALID:        msg_M0 += "xxx"
     elif s.trans_M0 == TRANS_TYPE_REFILL:       msg_M0 += " rf"
     elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    msg_M0 += " wc"
-    elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: msg_M0 += "rpw"
     elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  msg_M0 += "rpr"
+    elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: msg_M0 += "rpw"
     elif s.trans_M0 == TRANS_TYPE_READ_REQ:     msg_M0 += " rd"
     elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    msg_M0 += " wr"
     elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     msg_M0 += " in"
@@ -602,8 +603,8 @@ class BlockingCacheCtrlRTL ( Component ):
     msg_M2 = "   "
     if   s.trans_M2.out == TRANS_TYPE_REFILL:       msg_M2 = " rf"
     elif s.trans_M2.out == TRANS_TYPE_CLEAN_HIT:    msg_M2 = " wc"
+    elif s.trans_M2.out == TRANS_TYPE_REPLAY_READ:  msg_M2 = "rpr"
     elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: msg_M2 = "rpw"
-    elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: msg_M2 = "rpr"
     elif s.is_evict_M2.out:                         msg_M2 = " ev"
     elif s.trans_M2.out == TRANS_TYPE_READ_REQ:     msg_M2 = " rd"
     elif s.trans_M2.out == TRANS_TYPE_WRITE_REQ:    msg_M2 = " wr"
