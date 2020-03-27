@@ -18,8 +18,7 @@ from mem_pclib.constants.constants  import *
 from mem_pclib.rtl.cifer            import *
 from mem_pclib.rtl.MSHR_v1          import MSHR
 from mem_pclib.rtl.muxes            import *
-from mem_pclib.rtl.Replicator       import CacheDataReplicator
-from mem_pclib.rtl.arithmetics      import Indexer, Comparator
+from mem_pclib.rtl.arithmetics      import Indexer, Comparator, CacheDataReplicator
 from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 from sram.SramPRTL                  import SramPRTL
 
@@ -83,7 +82,9 @@ class BlockingCacheDpathRTL (Component):
 
     s.replicator_M0 = CacheDataReplicator( p )(
       msg_len = s.MSHR_mux_M0.out.len,
-      data    = s.MSHR_mux_M0.out.data
+      data    = s.MSHR_mux_M0.out.data,
+      type_   = s.MSHR_mux_M0.out.type_,
+      offset  = s.cachereq_M0.addr.offset
     )
 
     s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )(

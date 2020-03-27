@@ -3,7 +3,7 @@
 arithmetic.py
 =========================================================================
 Combined arithmetic modules for the cache such as modified adders,
-multipliers and comparators
+multipliers and comparators. Also include replicators
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
@@ -23,6 +23,49 @@ class EComp ( Component ):
     @s.update
     def up_ecomp():
       s.out = Bits1(s.in0 == s.in1)
+
+class CacheDataReplicator( Component ):
+
+  def construct( s , p ):
+
+    s.msg_len = InPort ( p.BitsLen )
+    s.data    = InPort ( p.BitsData )
+    s.type_   = InPort ( p.BitsType )
+    s.offset  = InPort ( p.BitsOffset )
+    s.out     = OutPort( p.BitsCacheline )
+
+    BitsLen            = p.BitsLen
+    bitwidth_cacheline = p.bitwidth_cacheline
+    bitwidth_data      = p.bitwidth_data
+    BitsCacheline      = p.BitsCacheline
+    BitsData           = p.BitsData
+    bitwidth_offset    = p.bitwidth_offset
+    s.mask = Wire(BitsCacheline)
+    @s.update
+    def replicator(): 
+      if s.msg_len == BitsLen(1): 
+        for i in range( 0, bitwidth_cacheline, 8 ): # byte
+          s.out[i:i+8] = s.data[0:8]
+      elif s.msg_len == BitsLen(2):
+        for i in range( 0, bitwidth_cacheline, 16 ): # half word
+          s.out[i:i+16] = s.data[0:16]
+      else:
+        for i in range( 0, bitwidth_cacheline, bitwidth_data ):
+          s.out[i:i+bitwidth_data] = s.data
+      
+      s.mask = BitsCacheline(0)
+      if s.type_ >= AMO:
+        ff = BitsData(-1)
+        # AMO operations are word only. All arithmetic operations are based 2 
+        # so "multipliers" and "dividers" should be optimized to shifters 
+        s.mask = BitsCacheline(ff) << (b32(s.offset[2:bitwidth_offset]) * bitwidth_data)
+        s.out  = s.mask & s.out
+
+  def line_trace( s ):
+    msg = ''
+    msg += f'type:{s.type_} out:{s.out} '
+    msg += f'mask:{s.mask} d:{(b32(s.offset) * 32 // 4)}'
+    return msg
 
 class Indexer ( Component ):
 

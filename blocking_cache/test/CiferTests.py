@@ -120,11 +120,13 @@ class CiferTests:
         req( 'wr', 0x00, 0x00000000, 0, 0x0f), resp( 'wr', 0x00, 0,  0,  0    ),          
         req( 'ad', 0x01, 0x00000000, 0, 0x10), resp( 'ad', 0x01, 0,  0,  0x0f ),  
         req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x1f ),  
+        req( 'ad', 0x03, 0x00000004, 0, 0x3),  resp( 'ad', 0x03, 0,  0,  0x2 ),  
+        req( 'rd', 0x04, 0x00000004, 0, 0),    resp( 'rd', 0x04, 0,  0,  0x5 ),  
     ]
     mem = s.cifer_test_memory() 
-    MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    16, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
+    32, stall_prob, latency, src_delay, sink_delay, dump_vcd=dump_vcd, 
     test_verilog=test_verilog )
 
   def test_cifer_amo_subword( s, dump_vcd, test_verilog, stall_prob=0, latency=1, \
@@ -132,7 +134,7 @@ class CiferTests:
     msgs = [
         #    type  opq   addr       len data         type  opq test len  data
         req( 'wr', 0x00, 0x00000000, 1, 0x01), resp( 'wr', 0x00, 0,  1,  0    ),          
-        req( 'ad', 0x01, 0x00000000, 1, 0x02), resp( 'ad', 0x01, 0,  1,  0x01 ),  
+        req( 'ad', 0x01, 0x00000000, 0, 0x02), resp( 'ad', 0x01, 0,  0,  0x01 ),  
         req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x3 ),  
     ]
     mem = s.cifer_test_memory() 

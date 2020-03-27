@@ -8,13 +8,10 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 23 March 2020
 """
 
-import pytest
-
 from pymtl3      import *
-
 from mem_pclib.rtl.cifer import *
 from pymtl3.stdlib.test.test_utils import run_test_vector_sim
-from mem_pclib.utils.CacheDerivedParams  import CacheDerivedParams
+from blocking_cache.CacheDerivedParams  import CacheDerivedParams
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
@@ -89,7 +86,7 @@ def test_DirtyBitWriter_2wayAssoc( dump_vcd, test_verilog ):
     [    8  , 0b0011     ,      0b0000,      0,       1       ,               0  , 0b0100 ], 
     [    12 , 0b0000     ,      0b0000,      0,       1       ,               0  , 0b1000 ], 
   ]
-  associativity = 1
+  associativity = 2
   cache_params = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType, 
     MemRespType, num_bytes, associativity )
   run_test_vector_sim( DirtyBitWriter(cache_params), test_vectors, dump_vcd, test_verilog )
