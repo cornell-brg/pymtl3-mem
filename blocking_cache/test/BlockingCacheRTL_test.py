@@ -4,7 +4,7 @@ BlockingCacheRTL_test.py
 =========================================================================
 Tests for Pipelined Blocking Cache RTL model
 
-Author : Xiaoyu Yan, Eric Tang
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 23 December 2019
 """
 
@@ -22,15 +22,14 @@ from .CiferTests import CiferTests
 # from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests
 from mem_pclib.test.sim_utils import run_sim, TestHarness
 
-max_cycles = 500
-
 # class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases):
 class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
 CiferTests ):
+
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
-                MemRespType, associativity=1, cacheSize=64,
-                stall_prob=0, latency=1, src_delay=0, sink_delay=0,
-                dump_vcd=False, test_verilog='zeros', trace=2 ):
+                MemRespType, associativity=1, cacheSize=64, stall_prob=0, 
+                latency=1, src_delay=0, sink_delay=0, dump_vcd=False, 
+                test_verilog='zeros', max_cycles = 500, trace=2 ):
 
     harness = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
                            src_delay, sink_delay, BlockingCacheRTL,

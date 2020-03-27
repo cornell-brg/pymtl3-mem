@@ -16,6 +16,10 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+# cifer specific memory req/resp msg
+from ifcs.MemMsg import mk_mem_msg
 
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
@@ -92,3 +96,30 @@ class TestHarness( Component ):
   def line_trace( s, trace ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
         + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
+
+
+#-------------------------------------------------------------------------
+# make messages
+#-------------------------------------------------------------------------
+
+obw  = 8   # Short name for opaque bitwidth
+abw  = 32  # Short name for addr bitwidth
+dbw  = 32  # Short name for data bitwidth
+clw  = 128 # cacheline bitwidth
+
+CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
+
+def req( type_, opaque, addr, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  return CacheReqType( type_, opaque, addr, len, data )
+
+def resp( type_, opaque, test, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  return CacheRespType( type_, opaque, test, len, data )

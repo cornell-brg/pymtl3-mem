@@ -8,6 +8,9 @@ def pytest_addoption(parser):
                     help="dump vcd for each test" )
   parser.addoption( "--trace-verbosity", action="store", default=1, choices=[0,1,2], type=int,
                     help="verbosity of line trace" )
+  parser.addoption( "--max-cycles", action="store",
+                    type=int, default=500,
+                    help="max number of cycles to be simulated" )
 
 @pytest.fixture
 def test_verilog(request):
@@ -27,6 +30,11 @@ def dump_vcd(request):
 @pytest.fixture
 def trace_verbosity(request):
   return request.config.option.trace_verbosity
+
+@pytest.fixture
+def max_cycles(request):
+  """Max number of simulation cycles."""
+  return request.config.option.max_cycles
 
 def pytest_configure(config):
   import sys

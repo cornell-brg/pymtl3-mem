@@ -26,7 +26,7 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, 
                 MemRespType, associativity=1, cacheSize=512, stall_prob=0, 
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False, 
-                test_verilog=False ):
+                test_verilog='zeros', max_cycles = 500, trace=2 ):
 
     cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, MemReqType, MemRespType, mem)
     src = msgs[::2]
@@ -46,5 +46,5 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
       print ("{:3d}: ({}) > {} ".format(i, src[i], resps[i]))
       if i < len(sink):
         assert sink[i] == resps[i], "\n  actual:{}\nexpected:{}".format(
-          sink[i], resps[i]
+          resps[i], sink[i]
         )
