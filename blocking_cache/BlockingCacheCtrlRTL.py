@@ -191,7 +191,8 @@ class BlockingCacheCtrlRTL ( Component ):
         s.ctrl.MSHR_dealloc_en = n
       else:
         if s.FSM_state_M0.out == M0_FSM_STATE_READY:
-          if s.memresp_val_M0 and (s.status.MSHR_type == READ):
+          if s.memresp_val_M0 and (s.status.MSHR_type == READ or 
+          s.status.MSHR_type >= AMO):
             s.ctrl.MSHR_dealloc_en = y
         elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
           s.ctrl.MSHR_dealloc_en = y
@@ -265,6 +266,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
       # use higher bits of the counter to select index
       s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
+      
 
     @s.update
     def tag_array_val_logic_M0():
@@ -278,8 +280,9 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.tag_array_val_M0[i] = y
       elif ( s.trans_M0 == TRANS_TYPE_REFILL or
              s.trans_M0 == TRANS_TYPE_REPLAY_WRITE or
-             s.trans_M0 == TRANS_TYPE_REPLAY_READ or 
-             s.trans_M0 == TRANS_TYPE_REPLAY_AMO):
+             s.trans_M0 == TRANS_TYPE_REPLAY_READ ):
+        s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO and s.status.amo_hit_M0:
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
       elif s.trans_M0 == TRANS_TYPE_INIT_REQ:
         s.ctrl.tag_array_val_M0[s.status.ctrl_bit_rep_rd_M1] = y
@@ -372,7 +375,9 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out != TRANS_TYPE_CACHE_INIT ):
         if ( s.trans_M1.out != TRANS_TYPE_REFILL and
              s.trans_M1.out != TRANS_TYPE_REPLAY_WRITE and
-             s.trans_M1.out != TRANS_TYPE_REPLAY_READ ):
+             s.trans_M1.out != TRANS_TYPE_REPLAY_READ and 
+             s.trans_M1.out != TRANS_TYPE_REPLAY_AMO and 
+             s.trans_M1.out != TRANS_TYPE_AMO_REQ):
           s.hit_M1 = s.status.hit_M1
           # if hit, dty bit will come from the way where the hit occured
           if s.hit_M1:
@@ -393,6 +398,9 @@ class BlockingCacheCtrlRTL ( Component ):
             s.repreq_en_M1      = y
             s.repreq_hit_ptr_M1 = s.status.hit_way_M1
             s.repreq_is_hit_M1  = s.hit_M1
+        elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
+          s.is_evict_M1 = s.status.hit_M1
+          
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M1
 
@@ -444,6 +452,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M1.out == TRANS_TYPE_REFILL:       s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: s.cs1 = concat(  wben, wr, y, n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_CLEAN_HIT:    s.cs1 = concat( wbenf, x , n, n,     b1(0),    n       )
       elif s.is_evict_M1:                             s.cs1 = concat( wben0, rd, y, y,     b1(1),    y       )
       elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     s.cs1 = concat(  wben, wr, y, n,     b1(0),    n       )
@@ -485,6 +494,7 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.is_evict_M1,
       en  = s.ctrl.reg_en_M2,
     )
+    s.ctrl.MSHR_amo_hit //= s.is_evict_M2.out
 
     s.hit_reg_M2 = RegEnRst( Bits1 )(
       in_ = s.hit_M1,

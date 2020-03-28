@@ -28,7 +28,8 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False, 
                 test_verilog='zeros', max_cycles = 500, trace=2 ):
 
-    cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, MemReqType, MemRespType, mem)
+    cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
+     MemReqType, MemRespType, mem)
     src = msgs[::2]
     sink = msgs[1::2]
     for trans in src:

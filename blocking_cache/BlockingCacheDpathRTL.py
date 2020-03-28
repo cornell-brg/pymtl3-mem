@@ -54,6 +54,7 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_dealloc_mux_in_M0.len    //= s.MSHR_dealloc_out.len
     s.MSHR_dealloc_mux_in_M0.data   //= s.MSHR_dealloc_out.data
     s.MSHR_dealloc_mux_in_M0.addr   //= s.MSHR_dealloc_out.addr
+    s.status.amo_hit_M0             //= s.MSHR_dealloc_out.amo_hit
 
     # Chooses the cache request from proc or MSHR
     s.MSHR_mux_M0 = Mux( p.CacheReqType, 2 )(
@@ -221,6 +222,7 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.data   //= s.cachereq_M1.out.data[0:p.bitwidth_data]
     s.MSHR_alloc_in.len    //= s.cachereq_M1.out.len
     s.MSHR_alloc_in.repl   //= s.status.ctrl_bit_rep_rd_M1
+    s.MSHR_alloc_in.amo_hit//= s.ctrl.MSHR_amo_hit
     s.MSHR_alloc_id = Wire(p.BitsOpaque)
 
     s.mshr = MSHR( p, 1 )(
