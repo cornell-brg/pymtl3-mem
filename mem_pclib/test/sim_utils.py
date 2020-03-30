@@ -18,11 +18,13 @@ from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+
 # cifer specific memory req/resp msg
 from ifcs.MemMsg import mk_mem_msg
 
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
+
 from blocking_cache.BlockingCacheFL import ModelCache
 
 #----------------------------------------------------------------------
@@ -57,8 +59,9 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
 #---------------------------------------------------------------------
 def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
  associativity, cacheSize):
+
   cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, 
-  MemReqType, MemRespType, mem)
+                     MemReqType, MemRespType, mem)
   for request in reqs:
     if trans.type_ == MemMsgType.READ:
       cache.read(trans.addr, trans.opaque, trans.len)

@@ -19,24 +19,26 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 # Assumes 32 bit address and 32 bit data
 
 #-------------------------------------------------------------------------
-# make messages
+# Make messages
 #-------------------------------------------------------------------------
 
 def req( CacheReqType, type_, opaque, addr, len, data ):
-  if type(type_) != str: type_ = type_
-  elif type_ == 'rd': type_ = MemMsgType.READ
+  if type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
-  if type(type_) != str: type_ = type_
-  elif type_ == 'rd': type_ = MemMsgType.READ
+  if type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheRespType( type_, opaque, test, len, data )
+
+#-------------------------------------------------------------------------
+# Define AMO functions
+#-------------------------------------------------------------------------
 
 AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_AND  : lambda m,a : m&a,
@@ -48,6 +50,7 @@ AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_MAXU : max,
              MemMsgType.AMO_XOR  : lambda m,a : m^a,
            }
+
 #----------------------------------------------------------------------
 # Enhanced random tests
 #----------------------------------------------------------------------
@@ -79,18 +82,16 @@ class HitMissTracker:
     self.tag_start = self.idx_end
     self.tag_end = 32
 
-    # print(self.offset_start,self.bank_start,self.idx_start,self.tag_start)
     # Initialize the tag and valid array
     # Both arrays are of the form line[idx][way]
-    # Note that line[idx] is a one-element array for
-    # a direct-mapped cache
+    # Note that line[idx] is a one-element array for a direct-mapped cache
     self.line = []
     self.valid = []
     for n in range(self.nlines):
       self.line.insert(n, [Bits(32, 0) for x in range(nways)])
       self.valid.insert(n, [False for x in range(nways)])
 
-    # Initialize the lru array
+    # Initialize the LRU array
     # Implemented as an array for each set index
     # lru[idx][0] is the most recently used
     # lru[idx][-1] is the least recently used
@@ -213,9 +214,8 @@ class ModelCache:
     else:
       value = Bits(32, 0)
 
-    # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheReqType,'rd', opaque, addr, len_, 0))
-    self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit, len_, value))
+    self.transactions.append(req (self.CacheReqType, 'rd', opaque, addr, len_, 0))
+    self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit,  len_, value))
     self.opaque += 1
 
   def write(self, addr, value, opaque, len_):
@@ -234,9 +234,8 @@ class ModelCache:
     else:
       self.mem[new_addr.int()] = value
 
-    # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheReqType,'wr', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit, len_, 0))
+    self.transactions.append(req (self.CacheReqType, 'wr', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit,  len_, 0))
     self.opaque += 1
 
   def init(self, addr, value, opaque, len_):
@@ -268,8 +267,8 @@ class ModelCache:
     ret = self.mem[new_addr.int()]
     self.mem[new_addr.int()] = AMO_FUNS[ int(func) ]( ret, value )
 
-    self.transactions.append(req(self.CacheReqType,func, opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheRespType,func, opaque, 0, 0, ret))
+    self.transactions.append(req (self.CacheReqType, func, opaque, addr, 0, value))
+    self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    0, ret))
     self.opaque += 1
 
   def get_transactions(self):

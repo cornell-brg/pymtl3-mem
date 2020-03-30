@@ -13,18 +13,16 @@ import pytest
 from pymtl3      import *
 
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from .DmappedTestCases import DmappedTestCases
-from .Asso2WayTestCases import AssoTestCases
-from .HypothesisTest import HypothesisTests
-from .CiferTests import CiferTests
+from .DmappedTestCases               import DmappedTestCases
+from .Asso2WayTestCases              import AssoTestCases
+from .HypothesisTest                 import HypothesisTests
+from .CiferTests                     import CiferTests
 
-# commented since it will also run FL tests...
-# from BlockingCache.test.BlockingCacheFL_test import DirMapCacheFL_Tests
 from mem_pclib.test.sim_utils import run_sim, TestHarness
 
-# class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases):
+
 class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
-CiferTests ):
+                              CiferTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64, stall_prob=0, 
@@ -38,5 +36,4 @@ CiferTests ):
     harness.elaborate()
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
-    # run_sim( harness, dump_vcd, test_verilog, trace, max_cycles )
     run_sim( harness, max_cycles, dump_vcd, test_verilog, trace )
