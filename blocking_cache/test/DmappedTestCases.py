@@ -81,18 +81,26 @@ def rd_hit_cline():
 #----------------------------------------------------------------------
 # Test Case: Write Hit: CLEAN
 #----------------------------------------------------------------------
+
 def wr_hit_clean():
   return [
     #    type  opq  addr      len data                type  opq  test len data
-    req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),
-    req( 'wr', 0x1, 0x1184,    0, 55         ), resp( 'wr', 0x1, 1,   0,  0  ),
-    req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  55 ),
+    req( 'in', 0x0, 0x1180,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),
+    req( 'wr', 0x1, 0x1180,    0, 50         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x1184,    0, 51         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x1188,    0, 52         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x118c,    0, 53         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'rd', 0x2, 0x1180,    0, 0          ), resp( 'rd', 0x2, 1,   0,  50 ),
+    req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  51 ),
+    req( 'rd', 0x2, 0x1188,    0, 0          ), resp( 'rd', 0x2, 1,   0,  52 ),
+    req( 'rd', 0x2, 0x118c,    0, 0          ), resp( 'rd', 0x2, 1,   0,  53 ),
   ]
 
 #----------------------------------------------------------------------
 # Test Case: Write Hit: DIRTY
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
+
 def wr_hit_dirty():
   return [
     #    type  opq  addr      len data                type  opq  test len data
@@ -108,6 +116,7 @@ def wr_hit_dirty():
 # Test Case: Write Hit: read/write hit
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
+
 def wr_hit_rd_hit():
   return [
     #    type  opq  addr                 len data                type  opq  test len data

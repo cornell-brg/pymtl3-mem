@@ -9,8 +9,10 @@ Date   : 16 November 2019
 """
 
 import pytest
-from mem_pclib.test.sim_utils import req, resp, CacheReqType, CacheRespType, \
-  MemReqType, MemRespType
+
+from mem_pclib.test.sim_utils import (
+  req, resp, CacheReqType, CacheRespType, MemReqType, MemRespType
+)
 
 # Main test memory for asso tests
 def asso_mem():
@@ -42,6 +44,7 @@ def asso_mem():
     0x00002070, 0x70facade,
     0x00002074, 0x75ca1ded,
   ]
+
 def rd_hit_1s():
   return [
     #    type  opq  addr       len data                type  opq  test len data
@@ -56,6 +59,7 @@ def wr_hit_1s():
     req( 'wr', 0x1, 0x00002070, 0, 78787 ), resp( 'wr', 0x1, 1,   0,  0          ),
     req( 'rd', 0x2, 0x00002070, 0, 0 ),     resp( 'rd', 0x2, 1,   0,  78787   ),
   ]
+
 #-------------------------------------------------------------------------
 # Test Case: Read Miss 2 way set associative but with 1 way
 #-------------------------------------------------------------------------
@@ -114,7 +118,7 @@ def wr_miss_2s():
     req( 'rd', 0x4, 0x00000000, 0, 0          ), resp( 'rd', 0x4, 1,   0,  0x8713450  ),
     req( 'rd', 0x5, 0x00001000, 0, 0          ), resp( 'rd', 0x5, 1,   0,  0xabcde    ),
   ]
-  
+
 #-------------------------------------------------------------------------
 # Test Case: Eviction Tests
 #-------------------------------------------------------------------------
@@ -187,7 +191,7 @@ def long_msg():
 
 class AssoTestCases:
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Hit",  rd_hit_1s,     0.0,       1,      0,        0   ),
     ("Hit",  wr_hit_1s,     0.0,       1,      0,        0   ),
@@ -208,17 +212,17 @@ class AssoTestCases:
   ])
   def test_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = asso_mem() 
+    mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+    64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Gen",  long_msg,      0.0,       1,      0,        0   ),
     ("Gen",  long_msg,      0.5,       2,      2,        2   ),
   ])
   def test_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = asso_mem() 
+    mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )

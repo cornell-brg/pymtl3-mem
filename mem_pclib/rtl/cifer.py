@@ -25,7 +25,7 @@ class DirtyLineDetector( Component ):
     s.is_dirty   = OutPort( Bits1 )
 
     bitwidth_offset = p.bitwidth_offset
-    bitwidth_dirty = p.bitwidth_dirty
+    bitwidth_dirty  = p.bitwidth_dirty
 
     @s.update
     def is_dirty_logic():
@@ -52,7 +52,7 @@ class DirtyBitWriter( Component ):
 
   def construct( s, p ):
     s.offset             = InPort ( p.BitsOffset )
-    s.dirty_bit          = [InPort ( p.BitsDirty ) for _ in range(p.associativity)]
+    s.dirty_bit          = [ InPort ( p.BitsDirty ) for _ in range( p.associativity ) ]
     s.hit_way            = InPort ( p.BitsAssoclog2 )
     s.is_write_refill    = InPort ( Bits1 )
     s.is_write_hit_clean = InPort ( Bits1 )
