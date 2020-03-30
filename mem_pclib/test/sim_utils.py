@@ -128,16 +128,27 @@ clw  = 128 # cacheline bitwidth
 CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
-def req( type_, opaque, addr, len, data ):
+def decode_type( type_ ):
+  # type_ as string
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
+  
+  return type_ # as appropriate int
+
+def req( type_, opaque, addr, len, data ):
+  type_ = decode_type( type_ )
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
-  if   type_ == 'rd': type_ = MemMsgType.READ
-  elif type_ == 'wr': type_ = MemMsgType.WRITE
-  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  type_ = decode_type( type_ )
   return CacheRespType( type_, opaque, test, len, data )

@@ -68,13 +68,6 @@ def amo_subword():
     req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x3 ),  
   ]
 
-def amo_single_req():
-  return [
-    #    type  opq   addr   len  data     type  opq test len  data
-    req( 'ad', 0x00, 0x00000, 0, 1), resp( 'ad', 0x00, 0, 0, 1 ),   
-    req( 'rd', 0x00, 0x00000, 0, 0), resp( 'rd', 0x00, 0, 0, 2 ),   
-  ]
-
 def amo_cache_line():
   return [
     #    type  opq   addr       len data         type  opq test len  data
@@ -108,18 +101,35 @@ def amo_2way_line():
     req( 'rd', 2, 0x00020000, 0, 0x0 ), resp( 'rd', 2, 0,  0,  6 ),# 
   ]
 
+def amo_ad():
+  return [
+    #    type  opq   addr   len  data     type  opq test len  data
+    req( 'ad', 0x00, 0x00004, 0, 1), resp( 'ad', 0x00, 0, 0, 2 ),   
+    req( 'rd', 0x01, 0x00000, 0, 0), resp( 'rd', 0x01, 0, 0, 1 ),   
+    req( 'rd', 0x02, 0x00004, 0, 0), resp( 'rd', 0x02, 1, 0, 3 ),   
+  ]
+
+def amo_an():
+  return [
+    #    type opq   addr     len data      type opq test len data
+    req( 'an', 0, 0x00000004, 0, 1), resp( 'an', 0, 0,  0,  2 ),
+    req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 1, 0,  0,  1 ),
+    req( 'rd', 2, 0x00000004, 0, 0), resp( 'rd', 2, 1,  0,  0 ),
+  ]
+
 class CiferTests:
   
   @pytest.mark.parametrize( 
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("Hypo", cifer_hypo1,    0,         1,      0,        0   ),
     ("AMO",  amo_subword,    0,         1,      0,        0   ),
-    ("AMO",  amo_single_req, 0,         1,      0,        0   ),
+    ("AMO",  amo_ad,         0,         1,      0,        0   ),
+    ("AMO",  amo_an,         0,         1,      0,        0   ),
     ("AMO",  amo_diff_tag,   0,         1,      0,        0   ),
     ("AMO",  amo_diff_tag,   0.5,       2,      2,        2   ),
     ("Hypo", cifer_hypo1,    0.5,       2,      2,        2   ),
     ("AMO",  amo_subword,    0.5,       2,      2,        2   ),
-    ("AMO",  amo_single_req, 0.5,       2,      2,        2   ),
+    ("AMO",  amo_ad,         0.5,       2,      2,        2   ),
   ])
   def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
