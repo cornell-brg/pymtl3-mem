@@ -23,14 +23,16 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 #-------------------------------------------------------------------------
 
 def req( CacheReqType, type_, opaque, addr, len, data ):
-  if   type_ == 'rd': type_ = MemMsgType.READ
+  if type(type_) != str: type_ = type_
+  elif type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
-  if   type_ == 'rd': type_ = MemMsgType.READ
+  if type(type_) != str: type_ = type_
+  elif type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
@@ -139,8 +141,15 @@ class HitMissTracker:
     hit = self.tag_check(tag, idx)
     if not hit:
       self.refill(tag, idx)
-
     return hit
+
+  def amo_req(self, addr):
+    (tag, idx, offset) = self.split_address(addr)
+    for way in range(self.nways):
+      if self.valid[idx][way] and self.line[idx][way] == tag:
+        self.valid[idx][way] = False
+        break
+    
 
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
@@ -250,24 +259,17 @@ class ModelCache:
     self.transactions.append(resp(self.CacheRespType,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
-  def amo(self, addr, value, opaque, len_, func):
+  def amo(self, addr, value, opaque, func):
+    # AMO operations are on the word level only 
     value = Bits(32, value)
-
-    offset = addr[self.offset_start:self.offset_end]
     new_addr = addr & Bits32(0xfffffffc)
-    hit = self.check_hit(new_addr)
+    self.tracker.amo_req(new_addr)
 
-    if len_ == 1: # byte access
-      offset = offset[0:2].uint()
-      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
-    elif len_ == 2: # half word access
-      offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
-    else:
-      self.mem[new_addr.int()] = value
+    ret = self.mem[new_addr.int()]
+    self.mem[new_addr.int()] = AMO_FUNS[ int(func) ]( ret, value )
 
-    self.transactions.append(req(self.CacheReqType,'ad', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheRespType,'ad', opaque, 0, len_, 0))
+    self.transactions.append(req(self.CacheReqType,func, opaque, addr, 0, value))
+    self.transactions.append(resp(self.CacheRespType,func, opaque, 0, 0, ret))
     self.opaque += 1
 
   def get_transactions(self):

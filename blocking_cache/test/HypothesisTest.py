@@ -45,7 +45,19 @@ def rand_mem(addr_min=0, addr_max=0xfff):
 def gen_reqs( draw ):
   len_ = draw( st.integers(0, 2), label="len" )
   addr = draw( st.integers(addr_min, addr_max), label="addr" )
-  type_ = draw( st.integers(0, 1), label="type" )
+  type_ = draw( st.sampled_from([
+    MemMsgType.READ,
+    MemMsgType.WRITE,
+    MemMsgType.AMO_ADD,
+    MemMsgType.AMO_AND,
+    MemMsgType.AMO_OR,  
+    MemMsgType.AMO_SWAP,
+    MemMsgType.AMO_MIN, 
+    MemMsgType.AMO_MINU,
+    MemMsgType.AMO_MAX, 
+    MemMsgType.AMO_MAXU,
+    MemMsgType.AMO_XOR,   
+  ]), label="type" )
   data = draw( st.integers(0, 0xffffffff), label="data" )
   if len_ == 0:
     addr = addr & Bits32(0xfffffffc)
@@ -78,9 +90,12 @@ class HypothesisTests:
       addr, type_, data, len_ = reqs_lst[i]
       if type_ == MemMsgType.WRITE:
         model.write(addr, data, i, len_)
-      else:
+      elif type_ == MemMsgType.READ:
         # Read something
         model.read(addr, i, len_)
+      else:
+        # if not read or write, then must be amo trans
+        model.amo(addr, data, i, type_)
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,

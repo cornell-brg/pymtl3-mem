@@ -9,8 +9,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
 
-from mem_pclib.constants.constants   import *
 from pymtl3 import *
+from mem_pclib.constants.constants   import *
 
 class EComp ( Component ):
 
@@ -82,6 +82,11 @@ class Indexer ( Component ):
     def index_logic():
       s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
         BitsClogNlines( nblocks_per_way )
+  
+  def line_trace( s ):
+    msg = ""
+    msg = f"idx:{s.index} off:{s.offset} "
+    return msg
 
 class Comparator( Component ):
 
@@ -105,11 +110,6 @@ class Comparator( Component ):
       s.line_val = BitsAssoc(0)
       if s.type_ == INIT:
         s.hit = n
-      # elif s.type_ >= AMO_ADD:
-      #   for i in range( associativity ):
-      #     if ( s.tag_array[i].val ):
-      #       s.line_val[i] = y
-      #   s.hit = n
       else:
         for i in range( associativity ):
           if ( s.tag_array[i].val ):
@@ -117,3 +117,25 @@ class Comparator( Component ):
             if s.tag_array[i].tag == s.addr_tag:
               s.hit = y
               s.hit_way = BitsAssoclog2(i)
+
+class OffsetLenSelector( Component ):
+
+  def construct(s, p):
+    s.offset_i = InPort( p.BitsOffset )
+    s.type_    = InPort( p.BitsType )
+    s.offset_o = OutPort( p.BitsOffset )
+    s.len      = OutPort( p.BitsMemLen )
+
+    BitsOffset = p.BitsOffset 
+    BitsMemLen = p.BitsMemLen
+    bitwidth_data = p.bitwidth_data
+    @s.update
+    def offset_selection_logic():
+      if s.type_ >= AMO:
+        # s.offset_o = s.offset_i
+        # s.len = BitsMemLen( bitwidth_data // 8 )
+        s.offset_o = BitsOffset(0)
+        s.len = BitsMemLen(0)
+      else:
+        s.offset_o = BitsOffset(0)
+        s.len = BitsMemLen(0)

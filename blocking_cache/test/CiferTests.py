@@ -25,6 +25,14 @@ def cifer_test_memory():
     0x00020004, 6,
     0x00020008, 7,
     0x0002000c, 8,
+    0x00020010, 9,
+    0x00020014, 0xa,
+    0x00020018, 0xb,
+    0x0002001c, 0xc,
+    0x00030000, 0xd,
+    0x00030004, 0xe,
+    0x00030008, 0xf,
+    0x0003000c, 0x10,
     0x0000005c, 9,
     0x00000060, 0xa,
   ]
@@ -59,12 +67,6 @@ def amo_subword():
     req( 'ad', 0x01, 0x00000000, 0, 0x02), resp( 'ad', 0x01, 0,  0,  0x01 ),  
     req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x3 ),  
   ]
-def amo_dirty():
-  return [
-    #    type  opq   addr       len data         type  opq test len  data
-    req( 'wr', 0x00, 0x00000008, 0, 0xff), resp( 'wr', 0x00, 0,  0,  0    ),          
-    req( 'ad', 0x01, 0x00000008, 0, 0x11), resp( 'ad', 0x01, 0,  0,  0xff ),  
-  ]
 
 def amo_single_req():
   return [
@@ -95,18 +97,28 @@ def amo_diff_tag():
     req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 1,  0,  0xff ),  
   ]
 
+def amo_2way_line():
+  return [
+    #    type opq   addr     len data         type opq test len data
+    req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),# first set
+    req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),# no change lru  
+    req( 'wr', 2, 0x00030000, 0, 0x1f), resp( 'wr', 2, 0,  0,  0 ),# second set  
+    req( 'rd', 2, 0x00000000, 0, 0x0 ), resp( 'rd', 2, 1,  0,  0xff ),# read first set
+    req( 'rd', 2, 0x00030000, 0, 0x0 ), resp( 'rd', 2, 1,  0,  0x1f ),# 
+    req( 'rd', 2, 0x00020000, 0, 0x0 ), resp( 'rd', 2, 0,  0,  6 ),# 
+  ]
+
 class CiferTests:
   
   @pytest.mark.parametrize( 
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("Hypo", cifer_hypo1,    0,         1,      0,        0   ),
     ("AMO",  amo_subword,    0,         1,      0,        0   ),
-    ("AMO",  amo_dirty,      0,         1,      0,        0   ),
     ("AMO",  amo_single_req, 0,         1,      0,        0   ),
     ("AMO",  amo_diff_tag,   0,         1,      0,        0   ),
+    ("AMO",  amo_diff_tag,   0.5,       2,      2,        2   ),
     ("Hypo", cifer_hypo1,    0.5,       2,      2,        2   ),
     ("AMO",  amo_subword,    0.5,       2,      2,        2   ),
-    ("AMO",  amo_dirty,      0.5,       2,      2,        2   ),
     ("AMO",  amo_single_req, 0.5,       2,      2,        2   ),
   ])
   def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
@@ -128,3 +140,20 @@ class CiferTests:
     mem = cifer_test_memory() 
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
     32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+
+  @pytest.mark.parametrize( 
+    " name,  test,           stall_prob,latency,src_delay,sink_delay", [
+    ("DBPW", wr_hit_clean,   0,         1,      0,        0   ),
+    ("AMO",  amo_cache_line, 0,         1,      0,        0   ),
+    ("AMO",  amo_2way_line,  0,         1,      0,        0   ),
+    ("AMO",  amo_diff_tag,   0,         1,      0,        0   ),
+    ("AMO",  amo_diff_tag,   0.5,       2,      2,        2   ),
+    ("AMO",  amo_2way_line,  0.5,       2,      4,        4   ),
+    ("DBPW", wr_hit_clean,   0.5,       2,      4,        4   ),
+    ("AMO",  amo_cache_line, 0.5,       2,      4,        4   ),
+  ])
+  def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
+    stall_prob, latency, src_delay, sink_delay ):
+    mem = cifer_test_memory() 
+    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
+    64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 

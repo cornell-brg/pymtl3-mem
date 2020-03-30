@@ -4,7 +4,7 @@ sim_util.py
 =========================================================================
 Utilty functions for running a testing simulation
 
-Author : Xiaoyu Yan, Eric Tang
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 21 Decemeber 2019
 """
 

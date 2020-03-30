@@ -57,6 +57,7 @@ class CacheDerivedParams:
       self.bitwidth_clog_asso      = 1
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity )
+    self.bitwidth_mem_len          = clog2( self.bitwidth_cacheline // 8 )
 
     # Cifer chip variables
     # number of 32 bit words for cifer chip tapeout. Normally, we would only
@@ -100,6 +101,7 @@ class CacheDerivedParams:
     self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
     self.BitsClogNlines    = mk_bits( clog2(self.total_num_cachelines) )
     self.BitsNlinesPerWay  = mk_bits( self.nblocks_per_way )
+    self.BitsMemLen        = mk_bits( self.bitwidth_mem_len )
 
     # Cifer Bits objects
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )

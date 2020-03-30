@@ -64,9 +64,11 @@ class BlockingCacheRTL ( Component ):
     s.ctrl_bypass = Wire(p.StructCtrl) # pass the ctrl signals back to dpath
 
     s.cacheDpath = BlockingCacheDpathRTL( p )(
-      cachereq_Y = s.mem_minion_ifc.req.msg,
-      memresp_Y  = s.mem_master_ifc.resp.msg,
-      ctrl       = s.ctrl_bypass
+      cachereq_Y   = s.mem_minion_ifc.req.msg,
+      cacheresp_M2 = s.mem_minion_ifc.resp.msg,
+      memresp_Y    = s.mem_master_ifc.resp.msg,
+      memreq_M2    = s.mem_master_ifc.req.msg,
+      ctrl         = s.ctrl_bypass
     )
 
     s.cacheCtrl = BlockingCacheCtrlRTL( p )(
@@ -81,22 +83,6 @@ class BlockingCacheRTL ( Component ):
       status        = s.cacheDpath.status,
       ctrl          = s.ctrl_bypass
     )
-
-    # Cache Response Message
-    s.mem_minion_ifc.resp.msg.opaque //= s.cacheDpath.status.cacheresp_opaque_M2
-    s.mem_minion_ifc.resp.msg.type_  //= s.cacheDpath.status.cacheresp_type_M2
-    s.mem_minion_ifc.resp.msg.data   //= s.cacheDpath.status.cacheresp_data_M2
-    s.mem_minion_ifc.resp.msg.len    //= s.cacheDpath.status.cacheresp_len_M2
-    s.mem_minion_ifc.resp.msg.test   //= s.cacheCtrl.ctrl.hit_M2
-
-    # Memory Request Message
-    s.mem_master_ifc.req.msg.opaque  //= s.cacheDpath.status.memreq_opaque_M2
-    s.mem_master_ifc.req.msg.type_   //= s.cacheCtrl.ctrl.memreq_type
-                            # Bits32                       # StructAddr
-    connect_bits2bitstruct( s.mem_master_ifc.req.msg.addr, s.cacheDpath.status.memreq_addr_M2 )
-    s.mem_master_ifc.req.msg.data    //= s.cacheDpath.status.memreq_data_M2
-
-    s.mem_master_ifc.req.msg.wr_mask //= s.cacheDpath.status.write_mask_M2
 
   # Line tracing
   def line_trace( s, verbosity=2 ):

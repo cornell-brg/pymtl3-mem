@@ -267,7 +267,6 @@ class BlockingCacheCtrlRTL ( Component ):
       # use higher bits of the counter to select index
       s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
       
-
     @s.update
     def tag_array_val_logic_M0():
       # Most of the logic is for associativity > 1; should simplify for dmapped
@@ -343,9 +342,8 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out == TRANS_TYPE_REFILL ):
         s.ctrl.way_offset_M1 = s.way_ptr_M1.out
       elif s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == \
-        TRANS_TYPE_WRITE_REQ or s.trans_M1.out == TRANS_TYPE_AMO_REQ:
-        if s.is_evict_M1:
-          s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
+        TRANS_TYPE_WRITE_REQ:
+        s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
 
     # Change M0 state in case of writing to a clean bits
     @s.update
@@ -398,9 +396,11 @@ class BlockingCacheCtrlRTL ( Component ):
             s.repreq_en_M1      = y
             s.repreq_hit_ptr_M1 = s.status.hit_way_M1
             s.repreq_is_hit_M1  = s.hit_M1
+        
         elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
-          s.is_evict_M1 = s.status.hit_M1
-          
+          s.hit_M1 = s.status.hit_M1
+          s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
+          s.is_evict_M1 = s.is_dty_M1 & s.hit_M1 
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M1
 
@@ -423,6 +423,10 @@ class BlockingCacheCtrlRTL ( Component ):
     s.WbenGen = LeftLogicalShifter( BitsDataWben, clog2(p.bitwidth_data_wben) )(
       in_ = s.wben_in,
       shamt = s.status.offset_M1,
+    )
+
+    s.was_stalled = RegRst( Bits1 )(
+      in_ = s.ostall_M2,
     )
 
     #---------------------------------------------------------------------
@@ -469,17 +473,10 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.evict_mux_sel_M1   = s.cs1[ CS_evict_mux_sel_M1   ]
       s.ctrl.MSHR_alloc_en      = s.cs1[ CS_MSHR_alloc_en      ] & ~s.stall_M1
       s.ctrl.reg_en_M1 = ~s.stall_M1 & ~s.is_evict_M1
-
-    s.was_stalled = RegRst( Bits1 )(
-      in_ = s.ostall_M2,
-    )
-
-    @s.update
-    def stall_logic_M1():
       # Logic for the SRAM tag array as a result of a stall in cache since the
       # values from the SRAM are valid for one cycle
-      s.ctrl.stall_mux_sel_M1 = s.was_stalled.out
       s.ctrl.stall_reg_en_M1  = ~s.was_stalled.out
+      s.ctrl.hit_stall_eng_en_M1 = ~s.was_stalled.out & s.is_evict_M1
 
     #=====================================================================
     # M2 Stage
@@ -494,7 +491,6 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.is_evict_M1,
       en  = s.ctrl.reg_en_M2,
     )
-    s.ctrl.MSHR_amo_hit //= s.is_evict_M2.out
 
     s.hit_reg_M2 = RegEnRst( Bits1 )(
       in_ = s.hit_M1,
@@ -557,10 +553,6 @@ class BlockingCacheCtrlRTL ( Component ):
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 
       s.ctrl.reg_en_M2 = ~s.stall_M2
-
-    @s.update
-    def stall_logic_M2():
-      s.ctrl.stall_mux_sel_M2 = s.was_stalled.out
       s.ctrl.stall_reg_en_M2 = ~s.was_stalled.out
 
   #=======================================================================
@@ -630,5 +622,6 @@ class BlockingCacheCtrlRTL ( Component ):
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}|{}".format(msg_M2, msg_memreq)
     pipeline = stage1 + stage2 + stage3
-    add_msgs = ""
+    add_msgs = ''
+    # add_msgs = f'ht:{s.status.amo_hit_M0}'
     return pipeline + add_msgs
