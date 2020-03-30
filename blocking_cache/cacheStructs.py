@@ -28,6 +28,7 @@ def mk_dpath_status_struct( p ):
     'memresp_type_M0'     : p.BitsType,
     'offset_M0'           : p.BitsOffset,
     'new_dirty_bits_M0'   : p.BitsDirty,
+    'amo_hit_M0'          : Bits1,
 
     # M1 Dpath Signals
     'cachereq_type_M1'    : p.BitsType,
@@ -98,6 +99,7 @@ def mk_ctrl_signals_struct( p ):
     'memreq_type'         : p.BitsType,
     'MSHR_alloc_en'       : Bits1,
     'MSHR_dealloc_en'     : Bits1,
+    'MSHR_amo_hit'        : Bits1,
 
   })
   return req_cls
@@ -124,10 +126,9 @@ def mk_ctrl_pipeline_struct( ):
       'is_refill'         : Bits1,
       'is_write_hit_clean': Bits1,
       'is_write_refill'   : Bits1,
+      'is_amo'            : Bits1,
     },
-    namespace = {'__str__' : req_to_str}
   )
-
   return req_cls
 
 # =========================================================================
@@ -180,7 +181,8 @@ def mk_MSHR_msg( p ):
     'addr':   p.BitsAddr,
     'len':    p.BitsLen,
     'data':   p.BitsData,
-    'repl':   p.BitsAssoclog2
+    'repl':   p.BitsAssoclog2,
+    'amo_hit':Bits1,
   },
   namespace = {
     '__str__' : req_to_str

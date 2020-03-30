@@ -16,9 +16,14 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+# cifer specific memory req/resp msg
+from ifcs.MemMsg import mk_mem_msg
 
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
+from blocking_cache.BlockingCacheFL import ModelCache
 
 #----------------------------------------------------------------------
 # Run the simulation
@@ -47,6 +52,24 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
   th.tick()
   th.tick()
 
+#----------------------------------------------------------------------
+# Generate req/response pair from the requests using ref model
+#---------------------------------------------------------------------
+def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+ associativity, cacheSize):
+  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, 
+  MemReqType, MemRespType, mem)
+  for request in reqs:
+    if trans.type_ == MemMsgType.READ:
+      cache.read(trans.addr, trans.opaque, trans.len)
+    elif trans.type_ == MemMsgType.WRITE:
+      cache.write(trans.addr, trans.data, trans.opaque, trans.len)
+    elif trans.type_ == MemMsgType.WRITE_INIT:
+      cache.init(trans.addr, trans.data, trans.opaque, trans.len)
+    elif trans.type_ >= MemMsgType.AMO_ADD:
+      cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
+  return cache.get_transactions()
+
 #-------------------------------------------------------------------------
 # TestHarness
 #-------------------------------------------------------------------------
@@ -57,14 +80,14 @@ class TestHarness( Component ):
                  sink_delay, CacheModel, CacheReqType, CacheRespType,
                  MemReqType, MemRespType, cacheSize=128, associativity=1 ):
     # Instantiate models
-    s.src   = TestSrcRTL(CacheReqType, src_msgs, 0, src_delay)
+    s.src   = TestSrcRTL(CacheReqType, src_msgs, src_delay, src_delay)
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
     s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemReqType)
     s.mem2cache = RecvCL2SendRTL(MemRespType)
-    s.sink  = TestSinkRTL(CacheRespType, sink_msgs, 0, sink_delay)
+    s.sink  = TestSinkRTL(CacheRespType, sink_msgs, src_delay, sink_delay)
 
     # Set the test signals to better model the processor
 
@@ -92,3 +115,29 @@ class TestHarness( Component ):
   def line_trace( s, trace ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
         + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
+
+#-------------------------------------------------------------------------
+# make messages
+#-------------------------------------------------------------------------
+
+obw  = 8   # Short name for opaque bitwidth
+abw  = 32  # Short name for addr bitwidth
+dbw  = 32  # Short name for data bitwidth
+clw  = 128 # cacheline bitwidth
+
+CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
+
+def req( type_, opaque, addr, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  return CacheReqType( type_, opaque, addr, len, data )
+
+def resp( type_, opaque, test, len, data ):
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  return CacheRespType( type_, opaque, test, len, data )

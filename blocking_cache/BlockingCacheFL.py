@@ -26,14 +26,26 @@ def req( CacheReqType, type_, opaque, addr, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
   return CacheRespType( type_, opaque, test, len, data )
 
+AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
+             MemMsgType.AMO_AND  : lambda m,a : m&a,
+             MemMsgType.AMO_OR   : lambda m,a : m|a,
+             MemMsgType.AMO_SWAP : lambda m,a : a,
+             MemMsgType.AMO_MIN  : lambda m,a : m if m.int() < a.int() else a,
+             MemMsgType.AMO_MINU : min,
+             MemMsgType.AMO_MAX  : lambda m,a : m if m.int() > a.int() else a,
+             MemMsgType.AMO_MAXU : max,
+             MemMsgType.AMO_XOR  : lambda m,a : m^a,
+           }
 #----------------------------------------------------------------------
 # Enhanced random tests
 #----------------------------------------------------------------------
@@ -205,7 +217,6 @@ class ModelCache:
     hit = self.check_hit(new_addr)
 
     if len_ == 1: # byte access
-
       offset = offset[0:2].uint()
       self.mem[new_addr.int()][(offset*8):((offset+1)*8)] = Bits8(value)
     elif len_ == 2: # half word access
@@ -237,6 +248,26 @@ class ModelCache:
 
     self.transactions.append(req(self.CacheReqType,'in', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,'in', opaque, 0, len_, 0))
+    self.opaque += 1
+
+  def amo(self, addr, value, opaque, len_, func):
+    value = Bits(32, value)
+
+    offset = addr[self.offset_start:self.offset_end]
+    new_addr = addr & Bits32(0xfffffffc)
+    hit = self.check_hit(new_addr)
+
+    if len_ == 1: # byte access
+      offset = offset[0:2].uint()
+      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
+    elif len_ == 2: # half word access
+      offset = offset[1:2].uint()
+      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
+    else:
+      self.mem[new_addr.int()] = value
+
+    self.transactions.append(req(self.CacheReqType,'ad', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,'ad', opaque, 0, len_, 0))
     self.opaque += 1
 
   def get_transactions(self):

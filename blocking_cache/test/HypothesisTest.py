@@ -5,7 +5,7 @@ HypothesisTest.py
 Hypothesis test with cache
 Now with Latencies!!
 
-Author : Xiaoyu Yan, Eric Tang (et396)
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 25 December 2019  Merry Christmas!! UWU
 """
 
@@ -25,7 +25,6 @@ from ifcs.MemMsg     import mk_mem_msg
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
-max_cycles = 500
 addr_min = 0
 addr_max = 200 # 4-byte words
 
@@ -62,7 +61,7 @@ def gen_reqs( draw ):
 class HypothesisTests:
 
   def hypothesis_test_harness(s, associativity, clw, num_blocks, transactions,
-  req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
+  req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     cacheSize = (clw * associativity * num_blocks) // 8
     mem = rand_mem(addr_min, addr_max)
     CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
@@ -86,57 +85,38 @@ class HypothesisTests:
     # Prepare RTL test harness
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
      associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
-     dump_vcd, test_verilog, 1)
+     dump_vcd, test_verilog, max_cycles, 1)
 
   @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ),
-    transactions = st.integers( 1, 100 ),
+    transactions = st.integers( 1, 200 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
     latency      = st.integers( 1, 5 ),
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way(s, clw, block_order, transactions, req,
-    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
+  def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob, 
+  latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(2, clw, num_blocks, transactions, req, stall_prob,
-    latency, src_delay, sink_delay, dump_vcd, test_verilog)
+    latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
 
   @hypothesis.settings( deadline = None, max_examples=100 )
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
-    transactions = st.integers( 1, 100 ),
+    transactions = st.integers( 1, 200 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
     latency      = st.integers( 1, 5 ),
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped(s, clw, block_order, transactions, req,
-    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog):
+  def test_hypothesis_dmapped(s, clw, block_order, transactions, req, stall_prob,
+   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(1, clw, num_blocks, transactions, req, stall_prob,
-    latency, src_delay, sink_delay, dump_vcd, test_verilog)
-
-  @hypothesis.settings( deadline = None, max_examples=100 )
-  @hypothesis.given(
-    clw           = st.sampled_from([64,128,256]),
-    block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
-    transactions  = st.integers( 1, 200 ),
-    req           = st.data(),
-    associativity = st.sampled_from([1, 2]),
-    stall_prob    = st.integers( 0, 1 ),
-    latency       = st.integers( 1, 5 ),
-    src_delay     = st.integers( 0, 5 ),
-    sink_delay    = st.integers( 0, 5 )
-  )
-  def test_hypothesis_cache_gen(s, clw, block_order, transactions,
-    req, associativity, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-    test_verilog):
-    num_blocks = 2**block_order
-    s.hypothesis_test_harness(associativity, clw, num_blocks, transactions, req,
-    stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog)
+    latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
