@@ -341,8 +341,8 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE or
            s.trans_M1.out == TRANS_TYPE_REFILL ):
         s.ctrl.way_offset_M1 = s.way_ptr_M1.out
-      elif s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == \
-        TRANS_TYPE_WRITE_REQ:
+      elif (s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == \
+        TRANS_TYPE_WRITE_REQ) and ~s.hit_M1:
         s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
 
     # Change M0 state in case of writing to a clean bits

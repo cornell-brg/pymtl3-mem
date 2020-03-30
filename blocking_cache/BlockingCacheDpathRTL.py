@@ -388,5 +388,5 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     msg += s.index_offset_M1.line_trace()
-    msg += f'idx:{s.index_offset_M1.out} '
+    msg += f'rep:{s.status.ctrl_bit_rep_rd_M1} '
     return msg
