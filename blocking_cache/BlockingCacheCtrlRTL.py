@@ -33,16 +33,16 @@ M0_FSM_STATE_REPLAY = b2(2) # replay the previous request from MSHR
 TRANS_TYPE_NBITS = 4
 
 TRANS_TYPE_INVALID      = b4(0)
-TRANS_TYPE_REFILL       = b4(1) # Refill only (for write-miss)
-TRANS_TYPE_REPLAY_READ  = b4(2) # Replay the read miss along with refill
-TRANS_TYPE_REPLAY_WRITE = b4(3) # Replay the write miss after refill
-TRANS_TYPE_CLEAN_HIT    = b4(4) # M1 stage hit a clean word, update dirty bits
-TRANS_TYPE_READ_REQ     = b4(5) # Read req from cachereq
-TRANS_TYPE_WRITE_REQ    = b4(6) # Write req from cachereq
-TRANS_TYPE_INIT_REQ     = b4(7) # Init-write req from cachereq
-TRANS_TYPE_CACHE_INIT   = b4(8) # Init cache
-TRANS_TYPE_AMO_REQ      = b4(9) # AMO req from cachereq
-TRANS_TYPE_REPLAY_AMO   = b4(10) # AMO req from cachereq
+TRANS_TYPE_REFILL       = b4(1)  # Refill only (for write-miss)
+TRANS_TYPE_REPLAY_READ  = b4(2)  # Replay the read miss along with refill
+TRANS_TYPE_REPLAY_WRITE = b4(3)  # Replay the write miss after refill
+TRANS_TYPE_CLEAN_HIT    = b4(4)  # M1 stage hit a clean word, update dirty bits
+TRANS_TYPE_READ_REQ     = b4(5)  # Read req from cachereq
+TRANS_TYPE_WRITE_REQ    = b4(6)  # Write req from cachereq
+TRANS_TYPE_INIT_REQ     = b4(7)  # Init-write req from cachereq
+TRANS_TYPE_CACHE_INIT   = b4(8)  # Init cache
+TRANS_TYPE_AMO_REQ      = b4(9)  # AMO req from cachereq
+TRANS_TYPE_REPLAY_AMO   = b4(10) # Replay the AMO req after receiving memresp
 
 #=========================================================================
 # BlockingCacheCtrlRTL
@@ -191,8 +191,8 @@ class BlockingCacheCtrlRTL ( Component ):
         s.ctrl.MSHR_dealloc_en = n
       else:
         if s.FSM_state_M0.out == M0_FSM_STATE_READY:
-          if s.memresp_val_M0 and (s.status.MSHR_type == READ or 
-          s.status.MSHR_type >= AMO):
+          if ( s.memresp_val_M0 and
+               ( s.status.MSHR_type == READ or s.status.MSHR_type >= AMO ) ):
             s.ctrl.MSHR_dealloc_en = y
         elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
           s.ctrl.MSHR_dealloc_en = y
@@ -266,7 +266,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.ctrl_bit_dty_wr_M0 = s.status.new_dirty_bits_M0
       # use higher bits of the counter to select index
       s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
-      
+
 
     @s.update
     def tag_array_val_logic_M0():
@@ -289,7 +289,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:
         s.ctrl.tag_array_val_M0[s.status.hit_way_M1] = y
       elif ( s.trans_M0 == TRANS_TYPE_READ_REQ or
-             s.trans_M0 == TRANS_TYPE_WRITE_REQ or              
+             s.trans_M0 == TRANS_TYPE_WRITE_REQ or
              s.trans_M0 == TRANS_TYPE_AMO_REQ ):
         for i in range( associativity ):
           s.ctrl.tag_array_val_M0[i] = y # Enable all SRAMs since we are reading
@@ -342,8 +342,9 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE or
            s.trans_M1.out == TRANS_TYPE_REFILL ):
         s.ctrl.way_offset_M1 = s.way_ptr_M1.out
-      elif s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == \
-        TRANS_TYPE_WRITE_REQ or s.trans_M1.out == TRANS_TYPE_AMO_REQ:
+      elif ( s.trans_M1.out == TRANS_TYPE_READ_REQ or
+             s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
+             s.trans_M1.out == TRANS_TYPE_AMO_REQ ):
         if s.is_evict_M1:
           s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
 
@@ -375,8 +376,8 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out != TRANS_TYPE_CACHE_INIT ):
         if ( s.trans_M1.out != TRANS_TYPE_REFILL and
              s.trans_M1.out != TRANS_TYPE_REPLAY_WRITE and
-             s.trans_M1.out != TRANS_TYPE_REPLAY_READ and 
-             s.trans_M1.out != TRANS_TYPE_REPLAY_AMO and 
+             s.trans_M1.out != TRANS_TYPE_REPLAY_READ and
+             s.trans_M1.out != TRANS_TYPE_REPLAY_AMO and
              s.trans_M1.out != TRANS_TYPE_AMO_REQ):
           s.hit_M1 = s.status.hit_M1
           # if hit, dty bit will come from the way where the hit occured
@@ -400,7 +401,7 @@ class BlockingCacheCtrlRTL ( Component ):
             s.repreq_is_hit_M1  = s.hit_M1
         elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
           s.is_evict_M1 = s.status.hit_M1
-          
+
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M1
 

@@ -215,14 +215,14 @@ class BlockingCacheDpathRTL (Component):
 
     # An one-entry MSHR for holding the cache request during a miss
     s.MSHR_alloc_in = Wire( p.MSHRMsg )
-    s.MSHR_alloc_in.type_  //= s.cachereq_M1.out.type_
+    s.MSHR_alloc_in.type_   //= s.cachereq_M1.out.type_
     connect_bits2bitstruct( s.MSHR_alloc_in.addr, s.cachereq_M1.out.addr )
-    s.MSHR_alloc_in.opaque //= s.cachereq_M1.out.opaque
+    s.MSHR_alloc_in.opaque  //= s.cachereq_M1.out.opaque
     # select only one word of data to store since the rest is replicated
-    s.MSHR_alloc_in.data   //= s.cachereq_M1.out.data[0:p.bitwidth_data]
-    s.MSHR_alloc_in.len    //= s.cachereq_M1.out.len
-    s.MSHR_alloc_in.repl   //= s.status.ctrl_bit_rep_rd_M1
-    s.MSHR_alloc_in.amo_hit//= s.ctrl.MSHR_amo_hit
+    s.MSHR_alloc_in.data    //= s.cachereq_M1.out.data[0:p.bitwidth_data]
+    s.MSHR_alloc_in.len     //= s.cachereq_M1.out.len
+    s.MSHR_alloc_in.repl    //= s.status.ctrl_bit_rep_rd_M1
+    s.MSHR_alloc_in.amo_hit //= s.ctrl.MSHR_amo_hit
     s.MSHR_alloc_id = Wire(p.BitsOpaque)
 
     s.mshr = MSHR( p, 1 )(
@@ -280,7 +280,7 @@ class BlockingCacheDpathRTL (Component):
 
     s.cachereq_M1_2 = Wire(p.PipelineMsg)
 
-    s.evict_mux_M1 = Mux(p.StructAddr, 2)(
+    s.evict_mux_M1 = Mux( p.StructAddr, 2 )(
       in_ = {
         0: s.cachereq_M1.out.addr,
         1: s.evict_addr_M1
@@ -290,7 +290,7 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Data array inputs
-    s.data_array_wdata_M1 = Wire(p.BitsCacheline)
+    s.data_array_wdata_M1 = Wire( p.BitsCacheline )
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data
 
     s.index_offset_M1 = Indexer( p )(
