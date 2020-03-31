@@ -113,7 +113,7 @@ class MemoryCL( Component ):
 
           else: # AMOS
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0,
-               s.mem.amo( req.type_, req.addr, len_, req.data ) )
+               s.mem.amo( req.type_, req.addr, len_, req.data[0:32] ) )
 
           s.resp_qs[i].enq( resp )
 

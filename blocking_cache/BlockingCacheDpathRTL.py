@@ -88,7 +88,7 @@ class BlockingCacheDpathRTL (Component):
     s.replicator_M0 = CacheDataReplicator( p )(
       msg_len = s.MSHR_mux_M0.out.len,
       data    = s.MSHR_mux_M0.out.data,
-      type_   = s.MSHR_mux_M0.out.type_,
+      is_amo  = s.ctrl.is_amo_M0,
       offset  = s.cachereq_M0.addr.offset
     )
 
@@ -206,15 +206,15 @@ class BlockingCacheDpathRTL (Component):
 
     # An one-entry MSHR for holding the cache request during a miss
     s.MSHR_alloc_in = Wire( p.MSHRMsg )
-    s.MSHR_alloc_in.type_  //= s.cachereq_M1.out.type_
+    s.MSHR_alloc_in.type_   //= s.cachereq_M1.out.type_
     connect_bits2bitstruct( s.MSHR_alloc_in.addr, s.cachereq_M1.out.addr )
-    s.MSHR_alloc_in.opaque //= s.cachereq_M1.out.opaque
+    s.MSHR_alloc_in.opaque  //= s.cachereq_M1.out.opaque
     # select only one word of data to store since the rest is replicated
-    s.MSHR_alloc_in.data   //= s.cachereq_M1.out.data[0:p.bitwidth_data]
-    s.MSHR_alloc_in.len    //= s.cachereq_M1.out.len
-    s.MSHR_alloc_in.repl   //= s.ctrl.way_offset_M1
-    s.MSHR_alloc_in_amo_hit_bypass = Wire( Bits1 )
-    s.MSHR_alloc_in.amo_hit//= s.MSHR_alloc_in_amo_hit_bypass
+    s.MSHR_alloc_in.data    //= s.cachereq_M1.out.data[0:p.bitwidth_data]
+    s.MSHR_alloc_in.len     //= s.cachereq_M1.out.len
+    s.MSHR_alloc_in.repl    //= s.ctrl.way_offset_M1
+    s.MSHR_alloc_in_amo_hit_bypass = Wire( p.StructHit )
+    s.MSHR_alloc_in.amo_hit //= s.MSHR_alloc_in_amo_hit_bypass.hit
     s.MSHR_alloc_id = Wire(p.BitsOpaque)
 
     s.mshr = MSHR( p, 1 )(
@@ -230,18 +230,17 @@ class BlockingCacheDpathRTL (Component):
 
     s.comparator_set = Comparator( p )(
       addr_tag = s.cachereq_M1.out.addr.tag,
+      is_init  = s.ctrl.is_init_M1,
       hit      = s.status.hit_M1,
       hit_way  = s.status.hit_way_M1,
-      type_    = s.cachereq_M1.out.type_,
       line_val = s.status.line_valid_M1,
     )
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
-    s.hit_stall_engine = StallEngine( Bits1 )(
-      in_ = s.comparator_set.hit,
-      en  = s.ctrl.hit_stall_eng_en_M1,
-      out = s.MSHR_alloc_in_amo_hit_bypass
-    )
+    s.hit_stall_engine = StallEngine( p.StructHit )
+    s.hit_stall_engine.in_ //= lambda: p.StructHit( s.comparator_set.hit,  s.comparator_set.hit_way )
+    s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
+    s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
 
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
@@ -252,7 +251,7 @@ class BlockingCacheDpathRTL (Component):
     for i in range( p.associativity ):
       dirty_line_detector_M1.append(
         DirtyLineDetector( p )(
-          is_hit     = s.comparator_set.hit,
+          wd_en      = s.ctrl.wd_en_M1,
           offset     = s.cachereq_M1.out.addr.offset,
           dirty_bits = s.tag_array_rdata_M1[i].out.dty
         )
@@ -309,6 +308,7 @@ class BlockingCacheDpathRTL (Component):
     s.status.offset_M1          //= s.cachereq_M1.out.addr.offset
     s.status.MSHR_ptr           //= s.MSHR_dealloc_out.repl
     s.status.MSHR_type          //= s.MSHR_dealloc_out.type_
+    s.status.amo_hit_way_M1     //= s.MSHR_alloc_in_amo_hit_bypass.hit_way
 
     #--------------------------------------------------------------------
     # M2 Stage
@@ -352,12 +352,13 @@ class BlockingCacheDpathRTL (Component):
       en     = s.ctrl.data_size_mux_en_M2,
       len_   = s.cachereq_M2.out.len,
       offset = s.cachereq_M2.out.addr.offset,
+      is_amo = s.ctrl.is_amo_M2,
     )
     
     # selects the appropriate offset and len for memreq based on the type
     s.mem_req_off_len_M2 = OffsetLenSelector( p )(
       offset_i = s.cachereq_M2.out.addr.offset,
-      type_    = s.ctrl.memreq_type,
+      is_amo   = s.ctrl.is_amo_M2,
     )
 
     # Send the M2 status signals to control
@@ -384,9 +385,10 @@ class BlockingCacheDpathRTL (Component):
     s.cacheresp_M2.opaque //= s.cachereq_M2.out.opaque
     s.cacheresp_M2.test   //= s.ctrl.hit_M2
 
-
   def line_trace( s ):
     msg = ""
-    msg += s.index_offset_M1.line_trace()
-    msg += f'rep:{s.status.ctrl_bit_rep_rd_M1} '
+    # msg += s.comparator_set.line_trace()
+    # msg += f'repA:{s.MSHR_alloc_in.repl} repD:{s.MSHR_dealloc_out.repl} way:{s.ctrl_bit_rep_M1} '
+    # msg += f'en:{s.ctrl.MSHR_alloc_en} hiway:{s.status.hit_way_M1}'
+    # msg += f'hist:{s.hit_stall_engine.line_trace()}'
     return msg

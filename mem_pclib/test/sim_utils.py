@@ -63,14 +63,14 @@ def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespTyp
   cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, 
                      MemReqType, MemRespType, mem)
   for request in reqs:
-    if trans.type_ == MemMsgType.READ:
-      cache.read(trans.addr, trans.opaque, trans.len)
-    elif trans.type_ == MemMsgType.WRITE:
-      cache.write(trans.addr, trans.data, trans.opaque, trans.len)
-    elif trans.type_ == MemMsgType.WRITE_INIT:
-      cache.init(trans.addr, trans.data, trans.opaque, trans.len)
-    elif trans.type_ >= MemMsgType.AMO_ADD:
-      cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
+    if request.type_ == MemMsgType.READ:
+      cache.read(request.addr, request.opaque, request.len)
+    elif request.type_ == MemMsgType.WRITE:
+      cache.write(request.addr, request.data, request.opaque, request.len)
+    elif request.type_ == MemMsgType.WRITE_INIT:
+      cache.init(request.addr, request.data, request.opaque, request.len)
+    elif request.type_ >= MemMsgType.AMO_ADD:
+      cache.amo(request.addr, request.data, request.opaque, request.type_)
   return cache.get_transactions()
 
 #-------------------------------------------------------------------------

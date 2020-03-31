@@ -123,6 +123,7 @@ class CacheDerivedParams:
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     self.StructTagArray = mk_tag_array_struct( self )
+    self.StructHit      = mk_hit_stall_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

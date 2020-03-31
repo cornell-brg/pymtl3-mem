@@ -34,3 +34,8 @@ class StallEngine( Component ):
       out = s.out
     )
     s.stall_mux_M2.sel //= lambda: ~s.en
+  
+  def line_trace( s ):
+    msg = ''
+    msg += f'in:{s.in_} out:{s.out} en:{s.en} '
+    return msg

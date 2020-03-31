@@ -19,11 +19,12 @@ class DataSizeMux( Component ):
 
   def construct( s, p ):
 
-    s.data   = InPort(p.BitsCacheline)
-    s.en     = InPort(Bits1)
-    s.len_   = InPort(p.BitsLen)
-    s.offset = InPort(p.BitsOffset)
-    s.out    = OutPort(p.BitsData)
+    s.data   = InPort( p.BitsCacheline )
+    s.en     = InPort( Bits1 )
+    s.len_   = InPort( p.BitsLen )
+    s.offset = InPort( p.BitsOffset )
+    s.out    = OutPort( p.BitsData )
+    s.is_amo = InPort( Bits1 )
 
     s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel) 
     s.read_2byte_mux_sel     = Wire(p.BitsRd2ByteMuxSel)
@@ -70,8 +71,6 @@ class DataSizeMux( Component ):
       sel = s.subword_access_mux_sel,
     )
 
-    s.out //= s.subword_access_mux.out
-
     ## Ctrl logic
     BitsRdWordMuxSel = p.BitsRdWordMuxSel
     btmx0   = p.BitsRdByteMuxSel(0)
@@ -80,6 +79,7 @@ class DataSizeMux( Component ):
     wdmx0   = p.BitsRdWordMuxSel(0)
     offset  = p.bitwidth_offset
     BitsLen = p.BitsLen
+    bitwidth_data = p.bitwidth_data
     @s.update
     def subword_access_mux_sel_logic():
       s.read_byte_mux_sel      = btmx0
@@ -94,6 +94,12 @@ class DataSizeMux( Component ):
         elif s.len_ == BitsLen(2):
           s.read_2byte_mux_sel     = s.offset[1:2]
           s.subword_access_mux_sel = Bits2(2)
+      
+      if s.is_amo:
+        s.out = s.data[0:bitwidth_data]
+      else:
+        s.out = s.subword_access_mux.out
+
 
 class PMux( Component ):
   '''

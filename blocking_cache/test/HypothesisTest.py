@@ -17,6 +17,7 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
+from mem_pclib.constants.constants import *
 from blocking_cache.BlockingCacheFL import ModelCache
 
 # cifer specific memory req/resp msg
@@ -59,19 +60,25 @@ def gen_reqs( draw ):
     MemMsgType.AMO_XOR,   
   ]), label="type" )
   data = draw( st.integers(0, 0xffffffff), label="data" )
-  if len_ == 0:
+  if type_ >= AMO:
     addr = addr & Bits32(0xfffffffc)
-  elif len_ == 1:
-    addr = addr & Bits32(0xffffffff)
-  elif len_ == 2:
-    addr = addr & Bits32(0xfffffffe)
+    len_ = 0
   else:
-    addr = addr & Bits32(0xfffffffc)
+    if len_ == 0:
+      addr = addr & Bits32(0xfffffffc)
+    elif len_ == 1:
+      addr = addr & Bits32(0xffffffff)
+    elif len_ == 2:
+      addr = addr & Bits32(0xfffffffe)
+    else:
+      addr = addr & Bits32(0xfffffffc)
 
   return (addr, type_, data, len_)
 
-class HypothesisTests:
+max_examples = 200
+hypothesis_max_cycles = 10000
 
+class HypothesisTests:
   def hypothesis_test_harness(s, associativity, clw, num_blocks, transactions,
   req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     cacheSize = (clw * associativity * num_blocks) // 8
@@ -100,9 +107,9 @@ class HypothesisTests:
     # Prepare RTL test harness
     s.run_test(msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
      associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
-     dump_vcd, test_verilog, max_cycles, 1)
+     dump_vcd, test_verilog, hypothesis_max_cycles, 1)
 
-  @hypothesis.settings( deadline = None, max_examples=100 )
+  @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ),
@@ -119,7 +126,7 @@ class HypothesisTests:
     s.hypothesis_test_harness(2, clw, num_blocks, transactions, req, stall_prob,
     latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
 
-  @hypothesis.settings( deadline = None, max_examples=100 )
+  @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
