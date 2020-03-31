@@ -17,6 +17,7 @@ from mem_pclib.constants.constants import *
 from mem_pclib.rtl.counters        import CounterEnRst
 
 from .ReplacementPolicy            import ReplacementPolicy
+from .constants                    import *
 
 #=========================================================================
 # Constants

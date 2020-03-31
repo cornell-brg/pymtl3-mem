@@ -22,6 +22,8 @@ from mem_pclib.rtl.arithmetics      import Indexer, Comparator, CacheDataReplica
 from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 from sram.SramPRTL                  import SramPRTL
 
+from .constants                     import *
+
 class BlockingCacheDpathRTL (Component):
 
   def construct( s, p ):
