@@ -69,7 +69,7 @@ def mk_ctrl_signals_struct( p ):
     'tag_array_val_M0'  : p.BitsAssoc,
     'tag_array_type_M0' : Bits1,
     'tag_array_wben_M0' : p.BitsTagwben,
-    'ctrl_bit_val_wr_M0': Bits1,
+    'ctrl_bit_val_wr_M0': p.BitsVal,
     'ctrl_bit_dty_wr_M0': p.BitsDirty,
     'ctrl_bit_rep_wr_M0': Bits1,
     'is_write_refill_M0': Bits1,
@@ -208,13 +208,13 @@ def mk_addr_struct( p ):
 def mk_tag_array_struct( p ):
   if p.full_sram:
     struct = mk_bitstruct( "StructTagArray", {
-      'val': Bits1,
+      'val': p.BitsVal,
       'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
       'tag': p.BitsTag,
     } )
   else:
     struct = mk_bitstruct( "StructTagArray", {
-      'val': Bits1,
+      'val': p.BitsVal,
       'dty': p.BitsDirty,
       'tag': p.BitsTag,
       'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?

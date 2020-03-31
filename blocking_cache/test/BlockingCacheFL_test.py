@@ -15,17 +15,18 @@ import random
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
 
+from ..BlockingCacheFL import ModelCache
+
 from .DmappedTestCases import DmappedTestCases
 from .Asso2WayTestCases import AssoTestCases
 from .HypothesisTest import HypothesisTests
 from .CiferTests import CiferTests
-from blocking_cache.BlockingCacheFL import ModelCache
 
 class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
 
-  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, 
-                MemRespType, associativity=1, cacheSize=512, stall_prob=0, 
-                latency=1, src_delay=0, sink_delay=0, dump_vcd=False, 
+  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
+                MemRespType, associativity=1, cacheSize=512, stall_prob=0,
+                latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
                 test_verilog='zeros', max_cycles = 500, trace=2 ):
 
     cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,

@@ -12,8 +12,9 @@ import pytest
 
 from pymtl3      import *
 
-from mem_pclib.test.sim_utils import run_sim, TestHarness
-from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
+from test.sim_utils import run_sim, TestHarness
+
+from ..BlockingCacheRTL import BlockingCacheRTL
 
 from .DmappedTestCases import DmappedTestCases
 from .Asso2WayTestCases import AssoTestCases

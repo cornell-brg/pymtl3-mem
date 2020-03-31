@@ -12,7 +12,7 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.rtl.registers import RegRst
 
-from mem_pclib.constants.constants import *
+from constants.constants import *
 
 class ProcModel( Component ):
 

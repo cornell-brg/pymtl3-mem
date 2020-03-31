@@ -9,8 +9,9 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
 
-from mem_pclib.constants.constants   import *
 from pymtl3 import *
+
+from constants.constants import *
 
 class EComp ( Component ):
 
@@ -42,8 +43,8 @@ class CacheDataReplicator( Component ):
     bitwidth_offset    = p.bitwidth_offset
     s.mask = Wire(BitsCacheline)
     @s.update
-    def replicator(): 
-      if s.msg_len == BitsLen(1): 
+    def replicator():
+      if s.msg_len == BitsLen(1):
         for i in range( 0, bitwidth_cacheline, 8 ): # byte
           s.out[i:i+8] = s.data[0:8]
       elif s.msg_len == BitsLen(2):
@@ -52,12 +53,12 @@ class CacheDataReplicator( Component ):
       else:
         for i in range( 0, bitwidth_cacheline, bitwidth_data ):
           s.out[i:i+bitwidth_data] = s.data
-      
+
       s.mask = BitsCacheline(0)
       if s.type_ >= AMO:
         ff = BitsData(-1)
-        # AMO operations are word only. All arithmetic operations are based 2 
-        # so "multipliers" and "dividers" should be optimized to shifters 
+        # AMO operations are word only. All arithmetic operations are based 2
+        # so "multipliers" and "dividers" should be optimized to shifters
         s.mask = BitsCacheline(ff) << (b32(s.offset[2:bitwidth_offset]) * bitwidth_data)
         s.out  = s.mask & s.out
 

@@ -13,11 +13,11 @@ from pymtl3                        import *
 from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
 
-from mem_pclib.constants.constants import *
-from mem_pclib.rtl.counters        import CounterEnRst
+from constants.constants import *
 
 from .ReplacementPolicy            import ReplacementPolicy
 from .constants                    import *
+from .units.counters               import CounterEnRst
 
 #=========================================================================
 # Constants
@@ -223,14 +223,14 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 control signal table
     #---------------------------------------------------------------------
 
-    s.cs0 = Wire( mk_bits( 7 + p.bitwidth_tag_wben ) )
+    s.cs0 = Wire( mk_bits( 8 + p.bitwidth_tag_wben ) )
 
-    CS_tag_array_wben_M0    = slice( 7, 7 + p.bitwidth_tag_wben )
-    CS_wdata_mux_sel_M0     = slice( 6, 7 )
-    CS_addr_mux_sel_M0      = slice( 5, 6 )
-    CS_memresp_mux_sel_M0   = slice( 4, 5 )
-    CS_tag_array_type_M0    = slice( 3, 4 )
-    CS_ctrl_bit_val_wr_M0   = slice( 2, 3 )
+    CS_tag_array_wben_M0    = slice( 8, 8 + p.bitwidth_tag_wben )
+    CS_wdata_mux_sel_M0     = slice( 7, 8 )
+    CS_addr_mux_sel_M0      = slice( 6, 7 )
+    CS_memresp_mux_sel_M0   = slice( 5, 6 )
+    CS_tag_array_type_M0    = slice( 4, 5 )
+    CS_ctrl_bit_val_wr_M0   = slice( 2, 4 )
     CS_tag_array_in_sel_M0  = slice( 1, 2 )
     CS_tag_array_idx_sel_M0 = slice( 0, 1 )
 
@@ -238,18 +238,18 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def cs_table_M0():
-      #                                                            tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|val|tin_sel|tidx_sel
-      s.cs0 =                                             concat( tg_wbenf, b1(0),   b1(0),       x,    rd,   x,  b1(0),  b1(0) )
-      if   s.trans_M0 == TRANS_TYPE_CACHE_INIT:   s.cs0 = concat( tg_wbenf, b1(0),   b1(0),       x,    wr,   n,  b1(1),  b1(1) )
-      elif s.trans_M0 == TRANS_TYPE_REFILL:       s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(1),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   n,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    s.cs0 = concat( tg_wbenf, b1(0),   b1(1),   b1(0),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    wr,   y,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   n,  b1(0),  b1(0) )
-      elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   x,  b1(0),  b1(0) )
+      #                                                            tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|val    |tin_sel|tidx_sel
+      s.cs0 =                                             concat( tg_wbenf, b1(0),   b1(0),       x,    rd,   b2(0),  b1(0),  b1(0) )
+      if   s.trans_M0 == TRANS_TYPE_CACHE_INIT:   s.cs0 = concat( tg_wbenf, b1(0),   b1(0),       x,    wr,   b2(0),  b1(1),  b1(1) )
+      elif s.trans_M0 == TRANS_TYPE_REFILL:       s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   b2(3),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   b2(3),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(1),    wr,   b2(3),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( tg_wbenf, b1(1),   b1(0),   b1(1),    wr,   b2(0),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    s.cs0 = concat( tg_wbenf, b1(0),   b1(1),   b1(0),    wr,   b2(3),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    wr,   b2(3),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   b2(0),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   b2(0),  b1(0),  b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   b2(0),  b1(0),  b1(0) )
 
       s.ctrl.tag_array_wben_M0    = s.cs0[ CS_tag_array_wben_M0    ]
       s.ctrl.wdata_mux_sel_M0     = s.cs0[ CS_wdata_mux_sel_M0     ]

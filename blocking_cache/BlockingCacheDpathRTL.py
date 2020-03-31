@@ -14,15 +14,15 @@ from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
-from mem_pclib.constants.constants  import *
-from mem_pclib.rtl.cifer            import *
-from mem_pclib.rtl.MSHR_v1          import MSHR
-from mem_pclib.rtl.muxes            import *
-from mem_pclib.rtl.arithmetics      import Indexer, Comparator, CacheDataReplicator
-from mem_pclib.rtl.registers        import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
-from sram.SramPRTL                  import SramPRTL
+from constants.constants  import *
+from sram.SramPRTL        import SramPRTL
 
-from .constants                     import *
+from .constants           import *
+from .units.cifer         import *
+from .units.MSHR_v1       import MSHR
+from .units.muxes         import *
+from .units.arithmetics   import Indexer, Comparator, CacheDataReplicator
+from .units.registers     import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 
 class BlockingCacheDpathRTL (Component):
 

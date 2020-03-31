@@ -17,7 +17,7 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
-from blocking_cache.BlockingCacheFL import ModelCache
+from ..BlockingCacheFL import ModelCache
 
 # cifer specific memory req/resp msg
 from ifcs.MemMsg     import mk_mem_msg
@@ -98,7 +98,7 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob, 
+  def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob,
   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(2, clw, num_blocks, transactions, req, stall_prob,
