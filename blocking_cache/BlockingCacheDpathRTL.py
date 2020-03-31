@@ -237,8 +237,9 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
-    s.hit_stall_engine = StallEngine( p.StructHit )
-    s.hit_stall_engine.in_ //= lambda: p.StructHit( s.comparator_set.hit,  s.comparator_set.hit_way )
+    StructHit = p.StructHit
+    s.hit_stall_engine = StallEngine( StructHit )
+    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit,  s.comparator_set.hit_way )
     s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
     s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
 
