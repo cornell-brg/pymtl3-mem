@@ -278,7 +278,7 @@ class BlockingCacheDpathRTL (Component):
 
     s.cachereq_M1_2 = Wire(p.PipelineMsg)
 
-    s.evict_mux_M1 = Mux(p.StructAddr, 2)(
+    s.evict_mux_M1 = Mux( p.StructAddr, 2 )(
       in_ = {
         0: s.cachereq_M1.out.addr,
         1: s.evict_addr_M1
@@ -288,7 +288,7 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Data array inputs
-    s.data_array_wdata_M1 = Wire(p.BitsCacheline)
+    s.data_array_wdata_M1 = Wire( p.BitsCacheline )
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data
 
     s.index_offset_M1 = Indexer( p )(

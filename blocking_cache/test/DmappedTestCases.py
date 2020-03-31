@@ -8,8 +8,9 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 11 November 2019
 """
 import pytest
-from mem_pclib.test.sim_utils import req, resp, CacheReqType, CacheRespType, \
-  MemReqType, MemRespType
+from mem_pclib.test.sim_utils import (
+  req, resp, CacheReqType, CacheRespType, MemReqType, MemRespType
+)
 
 # Main test memory for dmapped tests
 def dmapped_mem():
@@ -80,18 +81,26 @@ def rd_hit_cline():
 #----------------------------------------------------------------------
 # Test Case: Write Hit: CLEAN
 #----------------------------------------------------------------------
+
 def wr_hit_clean():
   return [
     #    type  opq  addr      len data                type  opq  test len data
-    req( 'in', 0x0, 0x118c,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),
-    req( 'wr', 0x1, 0x1184,    0, 55         ), resp( 'wr', 0x1, 1,   0,  0  ),
-    req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  55 ),
+    req( 'in', 0x0, 0x1180,    0, 0xdeadbeef ), resp( 'in', 0x0, 0,   0,  0  ),
+    req( 'wr', 0x1, 0x1180,    0, 50         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x1184,    0, 51         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x1188,    0, 52         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'wr', 0x1, 0x118c,    0, 53         ), resp( 'wr', 0x1, 1,   0,  0  ),
+    req( 'rd', 0x2, 0x1180,    0, 0          ), resp( 'rd', 0x2, 1,   0,  50 ),
+    req( 'rd', 0x2, 0x1184,    0, 0          ), resp( 'rd', 0x2, 1,   0,  51 ),
+    req( 'rd', 0x2, 0x1188,    0, 0          ), resp( 'rd', 0x2, 1,   0,  52 ),
+    req( 'rd', 0x2, 0x118c,    0, 0          ), resp( 'rd', 0x2, 1,   0,  53 ),
   ]
 
 #----------------------------------------------------------------------
 # Test Case: Write Hit: DIRTY
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
+
 def wr_hit_dirty():
   return [
     #    type  opq  addr      len data                type  opq  test len data
@@ -107,6 +116,7 @@ def wr_hit_dirty():
 # Test Case: Write Hit: read/write hit
 #----------------------------------------------------------------------
 # The test field in the response message: 0 == MISS, 1 == HIT
+
 def wr_hit_rd_hit():
   return [
     #    type  opq  addr                 len data                type  opq  test len data
@@ -274,11 +284,11 @@ def wr_miss_2b():
     req( 'wr', 0x02, 0x00002002, 2, 0x33), resp( 'wr', 0x02, 0, 2, 0 ),
     req( 'rd', 0x00, 0x00001000, 0, 0), resp( 'rd', 0x00, 0, 0, 0x01020011 ),
     req( 'rd', 0x02, 0x00002000, 0, 0), resp( 'rd', 0x02, 0, 0, 0x0033cade ),
-  ]  
+  ]
 
 class DmappedTestCases:
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Hit",  rd_hit_1wd,    0.0,       1,      0,        0   ),
     ("Hit",  rd_hit_many,   0.0,       1,      0,        0   ),
@@ -319,17 +329,17 @@ class DmappedTestCases:
   ])
   def test_Dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = dmapped_mem() 
+    mem = dmapped_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Gen",  long_msg,      0.0,       1,      0,        0   ),
     ("Gen",  long_msg,      0.5,       2,      2,        2   ),
   ])
   def test_Dmapped_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = dmapped_mem() 
+    mem = dmapped_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
