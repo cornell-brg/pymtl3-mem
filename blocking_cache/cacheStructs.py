@@ -27,7 +27,6 @@ def mk_dpath_status_struct( p ):
     'cachereq_type_M0'    : p.BitsType,
     'memresp_type_M0'     : p.BitsType,
     'offset_M0'           : p.BitsOffset,
-    'new_dirty_bits_M0'   : p.BitsDirty,
     'amo_hit_M0'          : Bits1,
 
     # M1 Dpath Signals
@@ -70,10 +69,8 @@ def mk_ctrl_signals_struct( p ):
     'tag_array_type_M0' : Bits1,
     'tag_array_wben_M0' : p.BitsTagwben,
     'ctrl_bit_val_wr_M0': p.BitsVal,
-    'ctrl_bit_dty_wr_M0': p.BitsDirty,
     'ctrl_bit_rep_wr_M0': Bits1,
-    'is_write_refill_M0': Bits1,
-    'is_write_hit_clean_M0': Bits1,
+    'update_tag_cmd_M0' : Bits3,
     'tag_array_in_sel_M0' : Bits1,
     'tag_array_idx_sel_M0': Bits1,
     'tag_array_init_idx_M0' : p.BitsIdx,

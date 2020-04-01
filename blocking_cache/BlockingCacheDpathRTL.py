@@ -17,12 +17,13 @@ from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 from constants.constants  import *
 from sram.SramPRTL        import SramPRTL
 
-from .constants           import *
-from .units.cifer         import *
-from .units.MSHR_v1       import MSHR
-from .units.muxes         import *
-from .units.arithmetics   import Indexer, Comparator, CacheDataReplicator
-from .units.registers     import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
+from .constants                import *
+from .units.cifer              import *
+from .units.MSHR_v1            import MSHR
+from .units.muxes              import *
+from .units.arithmetics        import Indexer, Comparator, CacheDataReplicator
+from .units.registers          import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
+from .units.UpdateTagArrayUnit import UpdateTagArrayUnit
 
 class BlockingCacheDpathRTL (Component):
 
@@ -99,26 +100,26 @@ class BlockingCacheDpathRTL (Component):
       out = s.cachereq_M0.data,
     )
 
-    # Update per-word dirty bits
+    s.tag_entries_M1_bypass = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
-    s.dirty_mask_M1_bypass = [ Wire( p.BitsDirty ) for _ in range( p.associativity ) ]
-    s.dirty_bit_writer = DirtyBitWriter( p )(
-      offset             = s.cachereq_M0.addr.offset,
-      hit_way            = s.hit_way_M1_bypass,
-      is_write_refill    = s.ctrl.is_write_refill_M0,
-      is_write_hit_clean = s.ctrl.is_write_hit_clean_M0
-    )
 
+    # Update tag-array entry
+    s.update_tag_unit = UpdateTagArrayUnit( p )(
+      way    = s.hit_way_M1_bypass,
+      offset = s.cachereq_M0.addr.offset,
+      cmd    = s.ctrl.update_tag_cmd_M0
+    )
     for i in range( p.associativity ):
-      s.dirty_bit_writer.dirty_bit[i] //= s.dirty_mask_M1_bypass[i]
+      s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
     # Tag array inputs
     s.tag_array_idx_M0    = Wire( p.BitsIdx )
     s.tag_array_struct_M0 = Wire( p.StructTagArray )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
-    s.tag_array_struct_M0.dty //= s.ctrl.ctrl_bit_dty_wr_M0
     s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
     s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
+    s.tag_array_struct_M0.dty //= s.update_tag_unit.out.dty
+
     if not p.full_sram:
       s.tag_array_struct_M0.tmp //= p.BitsTagArrayTmp( 0 )
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
@@ -143,7 +144,6 @@ class BlockingCacheDpathRTL (Component):
 
     # Send the M0 status signals to control
     s.status.memresp_type_M0   //= s.pipeline_reg_M0.out.type_
-    s.status.new_dirty_bits_M0 //= s.dirty_bit_writer.out
     s.status.cachereq_type_M0  //= s.MSHR_mux_M0.out.type_
 
     #--------------------------------------------------------------------
@@ -212,8 +212,10 @@ class BlockingCacheDpathRTL (Component):
         )
       )
     s.tag_array_rdata_mux_M1 = stall_muxes_M1
+
+    # Bypass the current tag-array entries to M0
     for i in range( p.associativity ):
-      s.dirty_mask_M1_bypass[i] //= s.tag_array_rdata_mux_M1[i].out.dty
+      s.tag_entries_M1_bypass[i] //= s.tag_array_rdata_mux_M1[i].out
 
     # An one-entry MSHR for holding the cache request during a miss
     s.MSHR_alloc_in = Wire( p.MSHRMsg )
