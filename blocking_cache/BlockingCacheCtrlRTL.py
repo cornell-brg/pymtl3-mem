@@ -444,8 +444,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.hit_M1            = n
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
 
-      if ( #s.trans_M1.out == TRANS_TYPE_CLEAN_HIT or
-           s.trans_M1.out == TRANS_TYPE_READ_REQ or
+      if ( s.trans_M1.out == TRANS_TYPE_READ_REQ or
            s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
            s.trans_M1.out == TRANS_TYPE_INIT_REQ ):
         s.hit_M1 = s.status.hit_M1
@@ -458,7 +457,7 @@ class BlockingCacheCtrlRTL ( Component ):
           s.repreq_is_hit_M1  = n
         if not s.hit_M1 and s.is_dty_M1 and s.is_line_valid_M1:
           s.is_evict_M1 = y
-        if not s.is_evict_M1 and s.trans_M1.out != TRANS_TYPE_CLEAN_HIT:
+        if not s.is_evict_M1:
           # Better to update replacement bit right away because we need it
           # for nonblocking capability. For blocking, we can also update
           # during a refill for misses
