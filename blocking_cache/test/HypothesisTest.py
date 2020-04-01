@@ -131,7 +131,7 @@ class HypothesisTests:
     s.hypothesis_test_harness(1, clw, num_blocks, transactions, req, stall_prob,
     latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
 
-  @hypothesis.settings( deadline = None, max_examples=600 )
+  @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
     transactions = st.integers( 30, 200 ),
     req          = st.data(),
