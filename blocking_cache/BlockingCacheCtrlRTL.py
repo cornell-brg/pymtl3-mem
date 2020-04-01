@@ -29,6 +29,7 @@ M0_FSM_STATE_NBITS = 2
 M0_FSM_STATE_INIT   = b2(0) # tag array initialization
 M0_FSM_STATE_READY  = b2(1) # ready to serve the request from proc or MSHR
 M0_FSM_STATE_REPLAY = b2(2) # replay the previous request from MSHR
+M0_FSM_STATE_INV    = b2(3) # INV
 
 # Ctrl transactions
 TRANS_TYPE_NBITS = 4
@@ -44,6 +45,9 @@ TRANS_TYPE_INIT_REQ     = b4(7)  # Init-write req from cachereq
 TRANS_TYPE_CACHE_INIT   = b4(8)  # Init cache
 TRANS_TYPE_AMO_REQ      = b4(9)  # AMO req from cachereq
 TRANS_TYPE_REPLAY_AMO   = b4(10) # Replay the AMO req after receiving memresp
+TRANS_TYPE_INV_REQ      = b4(11) # Start the inv req
+TRANS_TYPE_INV          = b4(12) # Start the inv req
+TRANS_TYPE_REPLAY_INV   = b4(13) # Replay the INV req after is done
 
 #=========================================================================
 # BlockingCacheCtrlRTL
@@ -102,7 +106,8 @@ class BlockingCacheCtrlRTL ( Component ):
     s.memresp_val_M0 //= lambda: s.memresp_en_M0.out & ( s.status.memresp_type_M0 != WRITE )
 
     s.counter_en_M0 = Wire( Bits1 )
-    s.counter_en_M0 //= lambda: s.FSM_state_M0.out == M0_FSM_STATE_INIT
+    s.counter_en_M0 //= lambda: ( ( s.FSM_state_M0.out == M0_FSM_STATE_INIT ) or
+                                   ( s.FSM_state_M0.out == M0_FSM_STATE_INV ) )
 
     # A counter used by FSM
     s.counter_M0 = CounterEnRst( p.BitsClogNlines,
@@ -134,8 +139,16 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.memresp_val_M0 and s.status.MSHR_type == WRITE:
           # Have valid replays in the MSHR
           s.FSM_state_M0_next = M0_FSM_STATE_REPLAY
+        elif ( s.status.MSHR_empty and s.cachereq_en and
+               s.status.cachereq_type_M0 == INV):
+          s.FSM_state_M0_next = M0_FSM_STATE_INV
         else:
           s.FSM_state_M0_next = M0_FSM_STATE_READY
+      elif s.FSM_state_M0.out == M0_FSM_STATE_INV:
+        if s.counter_M0.out == BitsClogNlines(0):
+          s.FSM_state_M0_next = M0_FSM_STATE_REPLAY
+        else:
+          s.FSM_state_M0_next = M0_FSM_STATE_INV
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         # MSHR will be dealloc this cycle
         s.FSM_state_M0_next = M0_FSM_STATE_READY
@@ -161,14 +174,20 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         if (~s.status.MSHR_empty) and s.status.MSHR_type == WRITE:
           s.trans_M0 = TRANS_TYPE_REPLAY_WRITE
+        elif (~s.status.MSHR_empty) and s.status.MSHR_type == INV:
+          s.trans_M0 = TRANS_TYPE_REPLAY_INV
+      elif s.FSM_state_M0.out == M0_FSM_STATE_INV:
+          s.trans_M0 = TRANS_TYPE_INV
       elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
         if s.memresp_val_M0 and (~s.status.MSHR_empty):
           if s.status.MSHR_type == WRITE:
             s.trans_M0 = TRANS_TYPE_REFILL
           elif s.status.MSHR_type == READ:
             s.trans_M0 = TRANS_TYPE_REPLAY_READ
-          elif s.status.MSHR_type >= AMO_ADD:
+          elif ( s.status.MSHR_type >= AMO_ADD and
+                 s.status.MSHR_type <  INV ):
             s.trans_M0 = TRANS_TYPE_REPLAY_AMO
+
         elif s.status.MSHR_empty and s.cachereq_en:
           # Request from s.cachereq, not MSHR
           if s.status.cachereq_type_M0 == INIT:
@@ -177,8 +196,11 @@ class BlockingCacheCtrlRTL ( Component ):
             s.trans_M0 = TRANS_TYPE_READ_REQ
           elif s.status.cachereq_type_M0 == WRITE:
             s.trans_M0 = TRANS_TYPE_WRITE_REQ
-          elif s.status.cachereq_type_M0 >= AMO_ADD:
+          elif ( s.status.cachereq_type_M0 >= AMO_ADD and
+                 s.status.cachereq_type_M0 < INV ):
             s.trans_M0 = TRANS_TYPE_AMO_REQ
+          elif s.status.cachereq_type_M0 == INV:
+            s.trans_M0 = TRANS_TYPE_INV_REQ
 
     #---------------------------------------------------------------------
     # M0 control signals
@@ -257,6 +279,8 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0) )
       elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0) )
       elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      s.cs0 = concat( tg_wbenf, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0) )
+      elif s.trans_M0 == TRANS_TYPE_INV:          s.cs0 = concat( tg_wbenf, b1(0),   b1(0),       x,    wr,   inv,       b1(1) )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_INV:   s.cs0 = concat( tg_wbenf, b1(0),   b1(0),       x,    rd,   none,      b1(0) )
 
       s.ctrl.tag_array_wben_M0    = s.cs0[ CS_tag_array_wben_M0    ]
       s.ctrl.wdata_mux_sel_M0     = s.cs0[ CS_wdata_mux_sel_M0     ]
@@ -276,7 +300,8 @@ class BlockingCacheCtrlRTL ( Component ):
       # Most of the logic is for associativity > 1; should simplify for dmapped
       for i in range( associativity ):
         s.ctrl.tag_array_val_M0[i] = n
-      if s.trans_M0 == TRANS_TYPE_CACHE_INIT:
+      if ( s.trans_M0 == TRANS_TYPE_CACHE_INIT or
+           s.trans_M0 == TRANS_TYPE_INV ):
         # use lower bits of the counter to select ways
         for i in range( associativity ):
           if s.counter_M0.out % BitsClogNlines(associativity) == BitsClogNlines(i):
@@ -376,7 +401,9 @@ class BlockingCacheCtrlRTL ( Component ):
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
 
       if ( s.trans_M1.out != TRANS_TYPE_INVALID and
-           s.trans_M1.out != TRANS_TYPE_CACHE_INIT ):
+           s.trans_M1.out != TRANS_TYPE_CACHE_INIT and
+           s.trans_M1.out != TRANS_TYPE_INV and
+           s.trans_M1.out != TRANS_TYPE_REPLAY_INV ):
         if ( s.trans_M1.out != TRANS_TYPE_REFILL and
              s.trans_M1.out != TRANS_TYPE_REPLAY_WRITE and
              s.trans_M1.out != TRANS_TYPE_REPLAY_READ and
@@ -453,14 +480,17 @@ class BlockingCacheCtrlRTL ( Component ):
       s.cs1                                                 = concat( wben0, x , n, n,     b1(0),    n       )
       if   s.trans_M1.out == TRANS_TYPE_INVALID:      s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_INV:          s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REFILL:       s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  s.cs1 = concat( wbenf, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: s.cs1 = concat(  wben, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_INV:   s.cs1 = concat( wben0, x , n, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_CLEAN_HIT:    s.cs1 = concat( wbenf, x , n, n,     b1(0),    n       )
       elif s.is_evict_M1:                             s.cs1 = concat( wben0, rd, y, y,     b1(1),    y       )
       elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     s.cs1 = concat(  wben, wr, y, n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      s.cs1 = concat( wben0, x , n, n,     b1(0),    y       )
+      elif s.trans_M1.out == TRANS_TYPE_INV_REQ:      s.cs1 = concat( wben0, x , n, n,     b1(0),    y       )
       elif ~s.hit_M1:                                 s.cs1 = concat( wben0, x , n, n,     b1(0),    y       )
       elif s.hit_M1:
         if   s.trans_M1.out == TRANS_TYPE_READ_REQ:   s.cs1 = concat( wben0, rd, y, n,     b1(0),    n       )
@@ -535,12 +565,14 @@ class BlockingCacheCtrlRTL ( Component ):
       s.cs2                                                 = concat( y,       b1(0),    n,     READ,       n,     n        )
       if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_INV:          s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_CLEAN_HIT:    s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
       elif ~s.memreq_rdy or ~s.cacheresp_rdy:         s.cs2 = concat( n,       b1(0),    y,     READ,       n,     n        )
       elif s.is_evict_M2.out:                         s.cs2 = concat( n,       b1(0),    n,     WRITE,      y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_READ:  s.cs2 = concat( y,       b1(1),    n,     READ,       n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: s.cs2 = concat( n,       b1(0),    n,     WRITE,      n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   s.cs2 = concat( y,       b1(1),    n,     READ,       n,     y        )
+      elif s.trans_M2.out == TRANS_TYPE_REPLAY_INV:   s.cs2 = concat( n,       b1(0),    n,     READ,       n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     s.cs2 = concat( n,       b1(0),    n,     READ,       n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      s.cs2 = concat( n,       b1(1),    n,     AMO,        y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_READ_REQ:
@@ -580,9 +612,11 @@ class BlockingCacheCtrlRTL ( Component ):
       msg_M0 = "(rdy )"
     elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
       msg_M0 = "(rpy )"
+    elif s.FSM_state_M0.out == M0_FSM_STATE_INV:
+      msg_M0 = "(inv )"
     else:
       assert False
-    # msg_M0 += ",cnt={} ".format(s.counter_M0.out)
+    msg_M0 += ",cnt={} ".format(s.counter_M0.out)
 
     if s.trans_M0 == TRANS_TYPE_INVALID:        msg_M0 += "xxx"
     elif s.trans_M0 == TRANS_TYPE_REFILL:       msg_M0 += " rf"
@@ -595,6 +629,9 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M0 == TRANS_TYPE_CACHE_INIT:   msg_M0 += "ini"
     elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      msg_M0 += " ad"
     elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   msg_M0 += "rpa"
+    elif s.trans_M0 == TRANS_TYPE_INV:          msg_M0 += "inv"
+    elif s.trans_M0 == TRANS_TYPE_INV_REQ:      msg_M0 += "iv0"
+    elif s.trans_M0 == TRANS_TYPE_REPLAY_INV:   msg_M0 += "ivp"
     else:                                       msg_M0 += "   "
 
     if not s.cachereq_rdy: msg_M0 = "#" + msg_M0
@@ -613,6 +650,9 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   msg_M1 = "ini"
     elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = " ad"
     elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   msg_M1 = "rpa"
+    elif s.trans_M1.out == TRANS_TYPE_INV:          msg_M1 = "inv"
+    elif s.trans_M1.out == TRANS_TYPE_INV_REQ:      msg_M1 = "iv0"
+    elif s.trans_M1.out == TRANS_TYPE_REPLAY_INV:   msg_M1 = "ivp"
 
     msg_M2 = "   "
     if   s.trans_M2.out == TRANS_TYPE_REFILL:       msg_M2 = " rf"
@@ -626,6 +666,9 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   msg_M2 = "ini"
     elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      msg_M2 = " ad"
     elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   msg_M2 = "rpa"
+    elif s.trans_M2.out == TRANS_TYPE_INV:          msg_M2 = "inv"
+    elif s.trans_M2.out == TRANS_TYPE_INV_REQ:      msg_M2 = "iv0"
+    elif s.trans_M2.out == TRANS_TYPE_REPLAY_INV:   msg_M2 = "ivp"
 
     msg_memresp = ">" if s.memresp_en else " "
     msg_memreq = ">" if s.memreq_en else " "

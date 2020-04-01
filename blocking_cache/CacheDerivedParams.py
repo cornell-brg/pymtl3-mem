@@ -56,7 +56,7 @@ class CacheDerivedParams:
       self.bitwidth_clog_asso      = clog2( self.associativity )
 
     self.bitwidth_dirty            = self.bitwidth_cacheline // 32  # 1 dirty bit per 32-bit word
-    self.bitwidth_val              = 2                              # Two bit valid
+    self.bitwidth_val              = 1                              # Valid bit
 
     # sum of the tag bitwidth, valid, and dirty bit per word and rounded
     # up to multiple of 8

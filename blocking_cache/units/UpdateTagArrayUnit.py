@@ -36,7 +36,7 @@ class UpdateTagArrayUnit( Component ):
         s.out.dty = BitsDirty(0)
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
       elif s.cmd == UpdateTagArrayUnit_CMD_RD_REFILL:
-        # Refill for a read, simply mark valid bits and clear the dirty
+        # Refill for a read, simply mark valid bit and clear the dirty
         # bits
         s.out.val = CACHE_LINE_STATE_VALID
         s.out.dty = BitsDirty(0)
@@ -47,6 +47,10 @@ class UpdateTagArrayUnit( Component ):
         # Clear the entire entry
         s.out.val = CACHE_LINE_STATE_INVALID
         s.out.dty = BitsDirty(0)
+      elif s.cmd == UpdateTagArrayUnit_CMD_INV:
+        # For cache invalidation, leave the dirty bits as is, clear the
+        # valid bit
+        s.out.val = CACHE_LINE_STATE_INVALID
 
   def line_trace( s ):
     msg = ""

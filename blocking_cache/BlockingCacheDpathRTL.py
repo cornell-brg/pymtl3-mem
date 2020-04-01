@@ -275,7 +275,7 @@ class BlockingCacheDpathRTL (Component):
     s.evict_addr_M1.index  //= s.cachereq_M1.out.addr.index
     s.evict_addr_M1.offset //= p.BitsOffset(0) # Memreq offset doesn't matter
 
-    s.cachereq_M1_2 = Wire(p.PipelineMsg)
+    s.cachereq_M1_2 = Wire( p.PipelineMsg )
 
     s.evict_mux_M1 = Mux( p.StructAddr, 2 )(
       in_ = {
@@ -381,4 +381,6 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
+    for i in range( len( s.tag_arrays_M1 ) ):
+      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},idx={s.tag_arrays_M1[i].port0_idx},type={s.tag_arrays_M1[i].port0_type},wdata={s.tag_arrays_M1[i].port0_wdata},rdata={s.tag_arrays_M1[i].port0_rdata};"
     return msg

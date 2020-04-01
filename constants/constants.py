@@ -9,7 +9,8 @@ Date   : 10 February 2020
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
+from ifcs.MemMsg import MemMsgType
 
 # General
 
@@ -31,3 +32,5 @@ AMO_MINU = b4(MemMsgType.AMO_MINU)
 AMO_MAX  = b4(MemMsgType.AMO_MAX)
 AMO_MAXU = b4(MemMsgType.AMO_MAXU)
 AMO_XOR  = b4(MemMsgType.AMO_XOR)
+INV      = b4(MemMsgType.INV)
+FLUSH    = b4(MemMsgType.FLUSH)

@@ -16,11 +16,10 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-# cifer specific memory req/resp msg
-from ifcs.MemMsg import mk_mem_msg
 
+# cifer specific memory req/resp msg
+from ifcs.MemMsg import mk_mem_msg, MemMsgType
+from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
 from blocking_cache.BlockingCacheFL import ModelCache
@@ -28,6 +27,7 @@ from blocking_cache.BlockingCacheFL import ModelCache
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
+
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
   # print (" -----------starting simulation----------- ")
   if translation:
@@ -57,7 +57,7 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
 #---------------------------------------------------------------------
 def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
  associativity, cacheSize):
-  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, 
+  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
   MemReqType, MemRespType, mem)
   for request in reqs:
     if trans.type_ == MemMsgType.READ:
@@ -129,15 +129,17 @@ CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 def req( type_, opaque, addr, len, data ):
-  if   type_ == 'rd': type_ = MemMsgType.READ
-  elif type_ == 'wr': type_ = MemMsgType.WRITE
-  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
-  return CacheReqType( type_, opaque, addr, len, data )
+  if   type_ == 'rd':  type_ = MemMsgType.READ
+  elif type_ == 'wr':  type_ = MemMsgType.WRITE
+  elif type_ == 'in':  type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad':  type_ = MemMsgType.AMO_ADD
+  elif type_ == 'inv': type_ = MemMsgType.INV
+  return CacheReqType( type_, opaque, addr, len, 0, data )
 
 def resp( type_, opaque, test, len, data ):
-  if   type_ == 'rd': type_ = MemMsgType.READ
-  elif type_ == 'wr': type_ = MemMsgType.WRITE
-  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
-  return CacheRespType( type_, opaque, test, len, data )
+  if   type_ == 'rd':  type_ = MemMsgType.READ
+  elif type_ == 'wr':  type_ = MemMsgType.WRITE
+  elif type_ == 'in':  type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad':  type_ = MemMsgType.AMO_ADD
+  elif type_ == 'inv': type_ = MemMsgType.INV
+  return CacheRespType( type_, opaque, test, len, 0, data )

@@ -38,12 +38,12 @@ def cifer_test_memory():
 def wr_hit_clean():
   return [
     #    type  opq   addr      len  data       type  opq test len  data
-    req( 'rd', 0x00, 0x00000000, 0, 0),   resp( 'rd', 0x00, 0, 0, 1          ), #refill-write
-    req( 'wr', 0x01, 0x00000000, 0, 0xf), resp( 'wr', 0x01, 1, 0, 0 ),          #evict
-    req( 'wr', 0x02, 0x00000004, 0, 0xe), resp( 'wr', 0x02, 1, 0, 0 ),     #read new written data
-    req( 'wr', 0x03, 0x00000008, 0, 0xc), resp( 'wr', 0x03, 1, 0, 0 ), #read-evicted data
-    req( 'wr', 0x04, 0x0000000c, 0, 0xb), resp( 'wr', 0x04, 1, 0, 0 ), #read-evicted data
-    req( 'wr', 0x05, 0x00000000, 0, 0xa), resp( 'wr', 0x05, 1, 0, 0 ), #read-evicted data
+    req( 'rd', 0x00, 0x00000000, 0, 0),   resp( 'rd', 0x00, 0, 0, 1          ), # refill-write
+    req( 'wr', 0x01, 0x00000000, 0, 0xf), resp( 'wr', 0x01, 1, 0, 0 ),          # evict
+    req( 'wr', 0x02, 0x00000004, 0, 0xe), resp( 'wr', 0x02, 1, 0, 0 ),          # read new written data
+    req( 'wr', 0x03, 0x00000008, 0, 0xc), resp( 'wr', 0x03, 1, 0, 0 ),          # read-evicted data
+    req( 'wr', 0x04, 0x0000000c, 0, 0xb), resp( 'wr', 0x04, 1, 0, 0 ),          # read-evicted data
+    req( 'wr', 0x05, 0x00000000, 0, 0xa), resp( 'wr', 0x05, 1, 0, 0 ),          # read-evicted data
     ]
 
 def cifer_hypo1():
@@ -97,6 +97,20 @@ def amo_diff_tag():
     req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 1,  0,  0xff ),
   ]
 
+def cache_invalidation_short():
+  return [
+    #    type   opq addr        len data         type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0x01), resp( 'wr',  1,  0,   0,  0 ),
+    req( 'wr',  2,  0x00001004, 0,  0xf1), resp( 'wr',  2,  0,   0,  0 ),
+    req( 'rd',  3,  0x00000000, 0,  0   ), resp( 'rd',  3,  1,   0,  0x01 ),
+    req( 'rd',  4,  0x00001004, 0,  0   ), resp( 'rd',  4,  1,   0,  0xf1 ),
+    req( 'inv', 5,  0x00000000, 0,  0   ), resp( 'inv', 5,  0,   0,  0 ),
+  ]
+
+#-------------------------------------------------------------------------
+# CiferTests
+#-------------------------------------------------------------------------
+
 class CiferTests:
 
   @pytest.mark.parametrize(
@@ -111,12 +125,13 @@ class CiferTests:
     ("AMO",  amo_dirty,      0.5,       2,      2,        2   ),
     ("AMO",  amo_single_req, 0.5,       2,      2,        2   ),
   ])
-  def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                       stall_prob, latency, src_delay, sink_delay ):
     mem = cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
+                max_cycles )
 
   @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
@@ -125,8 +140,20 @@ class CiferTests:
     ("DBPW", wr_hit_clean,   0.5,       2,      4,        4   ),
     ("AMO",  amo_cache_line, 0.5,       2,      4,        4   ),
   ])
-  def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                        stall_prob, latency, src_delay, sink_delay ):
     mem = cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
+
+  @pytest.mark.parametrize(
+    " name,  test,                       stall_prob,latency,src_delay,sink_delay", [
+    ("INVS", cache_invalidation_short,   0,         1,      0,        0   ),
+  ])
+  def test_Cifer_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                        stall_prob, latency, src_delay, sink_delay ):
+    mem = cifer_test_memory()
+    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
+                4096, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )

@@ -14,9 +14,8 @@ from pymtl3 import *
 # Cacheline states
 #-------------------------------------------------------------------------
 
-CACHE_LINE_STATE_INVALID = b2(0b00)
-CACHE_LINE_STATE_PARTIAL = b2(0b01)
-CACHE_LINE_STATE_VALID   = b2(0b11)
+CACHE_LINE_STATE_INVALID = b1(0)
+CACHE_LINE_STATE_VALID   = b1(1)
 
 #-------------------------------------------------------------------------
 # Write masks
