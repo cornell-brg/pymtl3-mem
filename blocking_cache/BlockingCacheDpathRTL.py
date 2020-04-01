@@ -117,7 +117,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_struct_M0 = Wire( p.StructTagArray )
     s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
     s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
-    s.tag_array_struct_M0.val //= s.ctrl.ctrl_bit_val_wr_M0
+    s.tag_array_struct_M0.val //= s.update_tag_unit.out.val
     s.tag_array_struct_M0.dty //= s.update_tag_unit.out.dty
 
     if not p.full_sram:
@@ -126,13 +126,6 @@ class BlockingCacheDpathRTL (Component):
     connect_bits2bitstruct( s.tag_array_wdata_M0, s.tag_array_struct_M0 )
 
     # Mux for tag arrays
-    s.tag_array_wdata_mux_M0 = Mux( mk_bits( p.bitwidth_tag_array ), 2 )(
-      in_ = {
-        0: s.tag_array_wdata_M0,
-        1: mk_bits( p.bitwidth_tag_array )( 0 )
-      },
-      sel = s.ctrl.tag_array_in_sel_M0,
-    )
 
     s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
       in_ = {
@@ -178,7 +171,7 @@ class BlockingCacheDpathRTL (Component):
           port0_val   = s.ctrl.tag_array_val_M0[i],
           port0_type  = s.ctrl.tag_array_type_M0,
           port0_idx   = s.tag_array_idx_mux_M0.out,
-          port0_wdata = s.tag_array_wdata_mux_M0.out,
+          port0_wdata = s.tag_array_wdata_M0,
           port0_wben  = s.ctrl.tag_array_wben_M0,
         )
       )

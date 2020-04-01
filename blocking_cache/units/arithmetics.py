@@ -12,6 +12,7 @@ Date   : 1 March 2020
 from pymtl3 import *
 
 from constants.constants import *
+from ..constants import *
 
 class EComp ( Component ):
 
@@ -113,7 +114,7 @@ class Comparator( Component ):
       #   s.hit = n
       else:
         for i in range( associativity ):
-          if ( s.tag_array[i].val ):
+          if ( s.tag_array[i].val == CACHE_LINE_STATE_VALID ):
             s.line_val[i] = y
             if s.tag_array[i].tag == s.addr_tag:
               s.hit = y

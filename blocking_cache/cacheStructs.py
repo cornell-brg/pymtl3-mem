@@ -61,18 +61,16 @@ def mk_ctrl_signals_struct( p ):
   req_cls = mk_bitstruct( cls_name, {
 
     # M0 Ctrl Signals
-    'reg_en_M0'         : Bits1,
-    'memresp_mux_sel_M0': Bits1,
-    'addr_mux_sel_M0'   : Bits1,
-    'wdata_mux_sel_M0'  : Bits1,
-    'tag_array_val_M0'  : p.BitsAssoc,
-    'tag_array_type_M0' : Bits1,
-    'tag_array_wben_M0' : p.BitsTagwben,
-    'ctrl_bit_val_wr_M0': p.BitsVal,
-    'ctrl_bit_rep_wr_M0': Bits1,
-    'update_tag_cmd_M0' : Bits3,
-    'tag_array_in_sel_M0' : Bits1,
-    'tag_array_idx_sel_M0': Bits1,
+    'reg_en_M0'             : Bits1,
+    'memresp_mux_sel_M0'    : Bits1,
+    'addr_mux_sel_M0'       : Bits1,
+    'wdata_mux_sel_M0'      : Bits1,
+    'tag_array_val_M0'      : p.BitsAssoc,
+    'tag_array_type_M0'     : Bits1,
+    'tag_array_wben_M0'     : p.BitsTagwben,
+    'ctrl_bit_rep_wr_M0'    : Bits1,
+    'update_tag_cmd_M0'     : Bits3,
+    'tag_array_idx_sel_M0'  : Bits1,
     'tag_array_init_idx_M0' : p.BitsIdx,
 
     # M1 Ctrl Signals

@@ -15,7 +15,7 @@ from ..constants import *
 class UpdateTagArrayUnit( Component ):
 
   def construct( s, p ):
-    s.way         = InPort ( p.BitsAssoclog2 ) # the way to update
+    s.way         = InPort ( p.BitsAssoclog2 ) # Select the way to update
     s.offset      = InPort ( p.BitsOffset )
     s.old_entries = [ InPort ( p.StructTagArray ) for _ in range( p.associativity ) ]
     s.cmd         = InPort ( Bits3 )
@@ -32,11 +32,21 @@ class UpdateTagArrayUnit( Component ):
       if s.cmd == UpdateTagArrayUnit_CMD_WR_REFILL:
         # Refill on a write, mark the word being written as dirty, the
         # rest is clean
+        s.out.val = CACHE_LINE_STATE_VALID
         s.out.dty = BitsDirty(0)
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
+      elif s.cmd == UpdateTagArrayUnit_CMD_RD_REFILL:
+        # Refill for a read, simply mark valid bits and clear the dirty
+        # bits
+        s.out.val = CACHE_LINE_STATE_VALID
+        s.out.dty = BitsDirty(0)
       elif s.cmd == UpdateTagArrayUnit_CMD_WR_HIT:
         # Hit a clean word, mark the word as dirty
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
+      elif s.cmd == UpdateTagArrayUnit_CMD_CLEAR:
+        # Clear the entire entry
+        s.out.val = CACHE_LINE_STATE_INVALID
+        s.out.dty = BitsDirty(0)
 
   def line_trace( s ):
     msg = ""
