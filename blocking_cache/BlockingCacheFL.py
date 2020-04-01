@@ -11,7 +11,6 @@ Date:   23 December 2019
 """
 
 import math
-import random
 
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
@@ -23,17 +22,34 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 #-------------------------------------------------------------------------
 
 def req( CacheReqType, type_, opaque, addr, len, data ):
-  if type_ == 'rd': type_ = MemMsgType.READ
+  # type_ as string
+  if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
-  if type_ == 'rd': type_ = MemMsgType.READ
+  if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
   return CacheRespType( type_, opaque, test, len, data )
 
 #-------------------------------------------------------------------------
@@ -144,13 +160,17 @@ class HitMissTracker:
       self.refill(tag, idx)
     return hit
 
+  def lru_set(self, idx, way):
+    self.lru[idx].remove(way)
+    self.lru[idx].append(way)
+
   def amo_req(self, addr):
     (tag, idx, offset) = self.split_address(addr)
     for way in range(self.nways):
       if self.valid[idx][way] and self.line[idx][way] == tag:
         self.valid[idx][way] = False
+        self.lru_set( idx, way )
         break
-    
 
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
@@ -263,7 +283,7 @@ class ModelCache:
     value = Bits(32, value)
     new_addr = addr & Bits32(0xfffffffc)
     self.tracker.amo_req(new_addr)
-
+    # hit = self.check_hit(new_addr)
     ret = self.mem[new_addr.int()]
     self.mem[new_addr.int()] = AMO_FUNS[ int(func) ]( ret, value )
 

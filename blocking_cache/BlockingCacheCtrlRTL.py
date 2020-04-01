@@ -409,8 +409,9 @@ class BlockingCacheCtrlRTL ( Component ):
           s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
           s.is_evict_M1 = s.is_dty_M1 & s.hit_M1
           if s.hit_M1:
-            s.repreq_en_M1 = y
-            s.repreq_is_hit_M1  = n 
+            s.repreq_en_M1      = y
+            s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
+            s.repreq_is_hit_M1  = y 
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
 

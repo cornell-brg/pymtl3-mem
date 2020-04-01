@@ -163,3 +163,8 @@ class ReplacementBitsReg( Component ):
           s.replacement_register.in_[i] = s.replacement_register.out[i]
 
       s.rdata = s.replacement_register.out[s.raddr]
+
+  def line_trace( s ):
+    msg = ""
+    msg += f'bits[{s.replacement_register.out}]'
+    return msg

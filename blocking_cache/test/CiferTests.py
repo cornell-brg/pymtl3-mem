@@ -11,8 +11,11 @@ Date   : 20 March 2020
 import random
 import pytest
 from mem_pclib.test.sim_utils import req, resp, CacheReqType, CacheRespType, \
-  MemReqType, MemRespType, obw, abw, gen_req_resp
+  MemReqType, MemRespType, obw, abw, gen_req_resp, rand_mem
+from mem_pclib.constants.constants  import *
 from ifcs.MemMsg import mk_mem_msg
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3 import *
 
 # Main memory used in cifer test cases
 def cifer_test_memory():
@@ -21,6 +24,18 @@ def cifer_test_memory():
     0x00000004, 2,
     0x00000008, 3,
     0x0000000c, 4,
+    0x00000010, 0x11,
+    0x00000014, 0x12,
+    0x00000018, 0x13,
+    0x0000001c, 0x14,
+    0x00000020, 0x21,
+    0x00000024, 0x22,
+    0x00000028, 0x23,
+    0x0000002c, 0x24,
+    0x00000030, 0x31,
+    0x00000034, 0x32,
+    0x00000038, 0x33,
+    0x0000003c, 0x34,
     0x00020000, 5,
     0x00020004, 6,
     0x00020008, 7,
@@ -218,6 +233,95 @@ def amo_hypo4():
     req( 'rd', 3, 0x00000000, 0, 0), resp( 'rd', 3, 1,  0,  1 ),
   ]
 
+def amo_hypo5():
+  return [
+    #    type opq   addr     len data      type opq test len data
+    req( 'rd', 0, 0x00000010, 0, 0), resp( 'rd', 0, 0,  0,  0x11 ),
+    req( 'rd', 1, 0x00000030, 0, 0), resp( 'rd', 1, 0,  0,  0x31 ),
+    req( 'ad', 2, 0x00000010, 0, 0), resp( 'ad', 2, 0,  0,  0x11 ),
+    req( 'rd', 3, 0x00000010, 0, 0), resp( 'rd', 3, 0,  0,  0x11 ),
+    req( 'rd', 4, 0x00000030, 0, 0), resp( 'rd', 4, 1,  0,  0x31 ),
+  ]
+
+def amo_hypo6():
+  return [
+    #    type opq   addr     len data      type opq test len data
+    req( 'rd', 0, 0x00000010, 0, 0), resp( 'rd', 0, 0,  0,  0x11 ),
+    req( 'rd', 1, 0x00000030, 0, 0), resp( 'rd', 1, 0,  0,  0x31 ),
+    req( 'ad', 2, 0x00000030, 0, 1), resp( 'ad', 2, 0,  0,  0x31 ),
+    req( 'rd', 3, 0x00000030, 0, 0), resp( 'rd', 3, 0,  0,  0x32 ),
+    req( 'rd', 4, 0x00000010, 0, 0), resp( 'rd', 4, 1,  0,  0x11 ),
+  ]
+
+random_memory = rand_mem( 0, 0xffff )
+def rand( size, clw, associativity, num_trans = 100 ):
+  random.seed(0xdeadbeef)
+  global random_memory
+  max_addr = int( size // 4 * 3 * associativity )
+  MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
+  type_choices = [ (MemMsgType.READ,     0.41) , 
+                   (MemMsgType.WRITE,    0.41), 
+                   (MemMsgType.AMO_ADD,  0.12), 
+                  #  (MemMsgType.AMO_AND,  0.02),  
+                  #  (MemMsgType.AMO_OR,   0.02), 
+                  #  (MemMsgType.AMO_SWAP, 0.02), 
+                  #  (MemMsgType.AMO_MIN,  0.02), 
+                  #  (MemMsgType.AMO_MINU, 0.02), 
+                  #  (MemMsgType.AMO_MAX,  0.02), 
+                  #  (MemMsgType.AMO_MAXU, 0.02), 
+                  #  (MemMsgType.AMO_XOR,  0.02) 
+                   ]
+  types = random.choices(
+      population = [ choices for choices,weights in type_choices ],
+      weights = [ weights for choices,weights in type_choices ], 
+      k = num_trans )
+  reqs = []
+  for i in range( num_trans ):
+    data = random.randint(0, 0xffffffff)
+    
+    if types[i] < AMO:
+      len_choices = [  # assuming 32 bit words
+        (0, 0.4),
+        (1, 0.3),
+        (2, 0.3)
+       ]
+      len_ = random.choices( 
+        population = [ choices for choices,weights in len_choices ],
+        weights = [ weights for choices,weights in len_choices ], 
+        k = 1 )
+      len_ = len_[0]
+      if len_ == 1:
+        addr = Bits32(random.randint(0, max_addr)) & 0xffffffff
+      elif len_ == 2:
+        addr = Bits32(random.randint(0, max_addr)) & 0xfffffffe
+      else:
+        addr = Bits32(random.randint(0, max_addr)) & 0xfffffffc
+    else:
+      len_ = 0
+      addr = Bits32(random.randint(0, max_addr)) & 0xfffffffc
+    reqs.append( req( types[i], i, addr, len_, data) )
+
+  trans = gen_req_resp( reqs, random_memory, CacheReqType, CacheRespType, MemReqType, 
+  MemRespType, associativity, size )
+
+  # print stats
+  hits = 0
+  for i in range( 1, num_trans, 2 ):
+    if trans[i].test:
+      hits += 1
+  print( f"\nhit rate:{hits/num_trans}\n")
+
+  return trans
+
+def rand_d_16_64():
+  return rand(16, 64, 1)
+
+def rand_2_32_64():
+  return rand(32, 64, 2)
+
+def rand_2_64_128():
+  return rand(64, 128, 2)
+
 class CiferTests:
   
   @pytest.mark.parametrize( 
@@ -236,6 +340,7 @@ class CiferTests:
     ("AMO",  amo_xo,         0,         1,      0,        0   ),
     ("AMO",  amo_rd,         0,         1,      0,        0   ),
     ("AMO",  amo_hypo,       0,         1,      0,        0   ),
+    ("RAND", rand_d_16_64,   0,         1,      0,        0   ),
     ("AMO",  amo_rd,         0.5,       2,      2,        2   ),
     ("AMO",  amo_diff_tag,   0.5,       2,      2,        2   ),
     ("Hypo", cifer_hypo1,    0.5,       2,      2,        2   ),
@@ -243,8 +348,8 @@ class CiferTests:
     ("AMO",  amo_ad,         0.5,       2,      2,        2   ),
   ])
   def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
-    mem = cifer_test_memory() 
+    stall_prob, latency, src_delay, sink_delay ):    
+    mem = random_memory if name == "RAND" else cifer_test_memory() 
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
     16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
@@ -258,7 +363,7 @@ class CiferTests:
   ])
   def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = cifer_test_memory() 
+    mem = random_memory if name == "RAND" else cifer_test_memory() 
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
     32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
 
@@ -282,23 +387,27 @@ class CiferTests:
     ("AMO",  amo_xu,         0,         1,      0,        0   ),
     ("AMO",  amo_xo,         0,         1,      0,        0   ),
     ("AMO",  amo_rd,         0,         1,      0,        0   ),
-    ("AMO",  amo_hypo,       0,         1,      0,        0   ),
-    ("AMO",  amo_hypo2,      0,         1,      0,        0   ),
+    ("HYPO", amo_hypo,       0,         1,      0,        0   ),
+    ("HYPO", amo_hypo2,      0,         1,      0,        0   ),
+    ("RAND", rand_2_64_128,  0,         1,      0,        0   ),
+    ("HYPO", amo_hypo5,      0,         1,      0,        0   ),
+    ("HYPO", amo_hypo6,      0,         1,      0,        0   ),
   ])
   def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = cifer_test_memory() 
+    mem = random_memory if name == "RAND" else cifer_test_memory() 
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
     64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
 
   @pytest.mark.parametrize( 
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
-    ("AMO",  amo_hypo3,      0,         1,      0,        0   ),
-    ("AMO",  amo_hypo4,      0,         1,      0,        0   ),
+    ("HYPO", amo_hypo3,      0,         1,      0,        0   ),
+    ("HYPO", amo_hypo4,      0,         1,      0,        0   ),
+    ("RAND", rand_2_32_64,   0,         1,      0,        0   ),
   ])
   def test_Cifer_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
     stall_prob, latency, src_delay, sink_delay ):
-    mem = cifer_test_memory() 
+    mem = random_memory if name == "RAND" else cifer_test_memory() 
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
     32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 

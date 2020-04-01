@@ -18,6 +18,7 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
 from mem_pclib.constants.constants import *
+from mem_pclib.test.sim_utils import rand_mem
 from blocking_cache.BlockingCacheFL import ModelCache
 
 # cifer specific memory req/resp msg
@@ -26,25 +27,9 @@ from ifcs.MemMsg     import mk_mem_msg
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
-addr_min = 0
-addr_max = 200 # 4-byte words
-
-def rand_mem(addr_min=0, addr_max=0xfff):
-  '''
-  Randomly generate start state for memory
-  :returns: list of memory addresses w/ random data values
-  '''
-  mem = []
-  curr_addr = addr_min
-  while curr_addr <= addr_max:
-    mem.append(curr_addr)
-    mem.append(random.randint(0,0xffffffff))
-    curr_addr += 4
-  return mem
 
 @st.composite
-def gen_reqs( draw ):
-  len_ = draw( st.integers(0, 2), label="len" )
+def gen_reqs( draw, addr_min, addr_max ):
   addr = draw( st.integers(addr_min, addr_max), label="addr" )
   type_ = draw( st.sampled_from([
     MemMsgType.READ,
@@ -64,6 +49,7 @@ def gen_reqs( draw ):
     addr = addr & Bits32(0xfffffffc)
     len_ = 0
   else:
+    len_ = draw( st.integers(0, 2), label="len" )
     if len_ == 0:
       addr = addr & Bits32(0xfffffffc)
     elif len_ == 1:
@@ -82,6 +68,8 @@ class HypothesisTests:
   def hypothesis_test_harness(s, associativity, clw, num_blocks, transactions,
   req, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     cacheSize = (clw * associativity * num_blocks) // 8
+    addr_min = 0
+    addr_max = int( cacheSize // 4 * 2 * associativity )
     mem = rand_mem(addr_min, addr_max)
     CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
     MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
@@ -90,7 +78,7 @@ class HypothesisTests:
      MemReqType, MemRespType, mem)
     # Grab list of generated transactions
     reqs_lst = req.draw(
-      st.lists( gen_reqs( ), min_size = 1, max_size=transactions ),
+      st.lists( gen_reqs( addr_min, addr_max ), min_size = 1, max_size=transactions ),
       label= "requests"
     )
     for i in range(len(reqs_lst)):
@@ -113,12 +101,12 @@ class HypothesisTests:
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ),
-    transactions = st.integers( 1, 200 ),
+    transactions = st.integers( 20, 200 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
-    latency      = st.integers( 1, 5 ),
-    src_delay    = st.integers( 0, 5 ),
-    sink_delay   = st.integers( 0, 5 )
+    latency      = st.integers( 1, 4 ),
+    src_delay    = st.integers( 0, 4 ),
+    sink_delay   = st.integers( 0, 4 )
   )
   def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob, 
   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
@@ -130,15 +118,41 @@ class HypothesisTests:
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
-    transactions = st.integers( 1, 200 ),
+    transactions = st.integers( 20, 200 ),
     req          = st.data(),
     stall_prob   = st.integers( 0, 1 ),
-    latency      = st.integers( 1, 5 ),
-    src_delay    = st.integers( 0, 5 ),
-    sink_delay   = st.integers( 0, 5 )
+    latency      = st.integers( 1, 4 ),
+    src_delay    = st.integers( 0, 4 ),
+    sink_delay   = st.integers( 0, 4 )
   )
   def test_hypothesis_dmapped(s, clw, block_order, transactions, req, stall_prob,
    latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(1, clw, num_blocks, transactions, req, stall_prob,
+    latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
+
+  @hypothesis.settings( deadline = None, max_examples=600 )
+  @hypothesis.given(
+    transactions = st.integers( 30, 200 ),
+    req          = st.data(),
+    latency      = st.integers( 1, 2 ),
+    src_delay    = st.integers( 0, 1 ),
+    sink_delay   = st.integers( 0, 1 )
+  )
+  def test_hypothesis_2way_stress(s, transactions, req,
+   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
+    s.hypothesis_test_harness(2, 128, 2, transactions, req, 0,
+    latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
+
+  @hypothesis.settings( deadline = None, max_examples=600 )
+  @hypothesis.given(
+    transactions = st.integers( 30, 200 ),
+    req          = st.data(),
+    latency      = st.integers( 1, 2 ),
+    src_delay    = st.integers( 0, 1 ),
+    sink_delay   = st.integers( 0, 1 )
+  )
+  def test_hypothesis_dmapped_stress(s, transactions, req,
+   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
+    s.hypothesis_test_harness(1, 128, 2, transactions, req, 0,
     latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)

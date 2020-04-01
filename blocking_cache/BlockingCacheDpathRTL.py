@@ -388,8 +388,10 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.comparator_set.line_trace()
+    msg += f'wr:{s.write_mask_M2.out} '
+    # msg += s.dirty_line_detector_M1[1].line_trace()
+    msg += s.replacement_bits_M1.line_trace()
     # msg += f'repA:{s.MSHR_alloc_in.repl} repD:{s.MSHR_dealloc_out.repl} way:{s.ctrl_bit_rep_M1} '
     # msg += f'en:{s.ctrl.MSHR_alloc_en} hiway:{s.status.hit_way_M1}'
-    # msg += f'hist:{s.hit_stall_engine.line_trace()}'
+    # msg += f'h:{s.status.hit_M1}'
     return msg

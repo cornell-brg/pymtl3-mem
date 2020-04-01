@@ -9,6 +9,7 @@ Date   : 21 Decemeber 2019
 """
 
 import struct
+import random
 from pymtl3 import *
 
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
@@ -72,6 +73,19 @@ def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespTyp
     elif request.type_ >= MemMsgType.AMO_ADD:
       cache.amo(request.addr, request.data, request.opaque, request.type_)
   return cache.get_transactions()
+
+def rand_mem(addr_min=0, addr_max=0xfff):
+  '''
+  Randomly generate start state for memory
+  :returns: list of memory addresses w/ random data values
+  '''
+  mem = []
+  curr_addr = addr_min
+  while curr_addr <= addr_max:
+    mem.append(curr_addr)
+    mem.append(random.randint(0,0xffffffff))
+    curr_addr += 4
+  return mem
 
 #-------------------------------------------------------------------------
 # TestHarness
