@@ -10,12 +10,14 @@ Date   : 20 March 2020
 
 import random
 import pytest
-from mem_pclib.test.sim_utils import req, resp, CacheReqType, CacheRespType, \
+
+from test.sim_utils import (req, resp, CacheReqType, CacheRespType,
   MemReqType, MemRespType, obw, abw, gen_req_resp, rand_mem
-from mem_pclib.constants.constants  import *
+)
 from ifcs.MemMsg import mk_mem_msg
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3 import *
+from constants.constants  import *
 
 # Main memory used in cifer test cases
 def cifer_test_memory():
@@ -59,28 +61,28 @@ def cifer_test_memory():
 def wr_hit_clean():
   return [
     #    type  opq   addr      len  data       type  opq test len  data
-    req( 'rd', 0x00, 0x00000000, 0, 0),   resp( 'rd', 0x00, 0, 0, 1          ), #refill-write
-    req( 'wr', 0x01, 0x00000000, 0, 0xf), resp( 'wr', 0x01, 1, 0, 0 ),          #evict
-    req( 'wr', 0x02, 0x00000004, 0, 0xe), resp( 'wr', 0x02, 1, 0, 0 ),     #read new written data
-    req( 'wr', 0x03, 0x00000008, 0, 0xc), resp( 'wr', 0x03, 1, 0, 0 ), #read-evicted data
-    req( 'wr', 0x04, 0x0000000c, 0, 0xb), resp( 'wr', 0x04, 1, 0, 0 ), #read-evicted data
-    req( 'wr', 0x05, 0x00000000, 0, 0xa), resp( 'wr', 0x05, 1, 0, 0 ), #read-evicted data
+    req( 'rd', 0x00, 0x00000000, 0, 0),   resp( 'rd', 0x00, 0, 0, 1          ), # refill-write
+    req( 'wr', 0x01, 0x00000000, 0, 0xf), resp( 'wr', 0x01, 1, 0, 0 ),          # evict
+    req( 'wr', 0x02, 0x00000004, 0, 0xe), resp( 'wr', 0x02, 1, 0, 0 ),          # read new written data
+    req( 'wr', 0x03, 0x00000008, 0, 0xc), resp( 'wr', 0x03, 1, 0, 0 ),          # read-evicted data
+    req( 'wr', 0x04, 0x0000000c, 0, 0xb), resp( 'wr', 0x04, 1, 0, 0 ),          # read-evicted data
+    req( 'wr', 0x05, 0x00000000, 0, 0xa), resp( 'wr', 0x05, 1, 0, 0 ),          # read-evicted data
     ]
 
 def cifer_hypo1():
   return [
     #    type  opq   addr      len  data       type  opq test len  data
-    req( 'wr', 0x00, 0x0000005c, 0, 0xfff), resp( 'wr', 0x00, 0, 0, 0 ), #refill-write
-    req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),     #evict
-    req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 0xa ),     #read new written data
+    req( 'wr', 0x00, 0x0000005c, 0, 0xfff), resp( 'wr', 0x00, 0, 0, 0 ), # refill-write
+    req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),     # evict
+    req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 0xa ),   # read new written data
     ]
 
 def amo_subword():
   return [
     #    type  opq   addr       len data         type  opq test len  data
-    req( 'wr', 0x00, 0x00000000, 1, 0x01), resp( 'wr', 0x00, 0,  1,  0    ),          
-    req( 'ad', 0x01, 0x00000000, 0, 0x02), resp( 'ad', 0x01, 0,  0,  0x01 ),  
-    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x3 ),  
+    req( 'wr', 0x00, 0x00000000, 1, 0x01), resp( 'wr', 0x00, 0,  1,  0    ),
+    req( 'ad', 0x01, 0x00000000, 0, 0x02), resp( 'ad', 0x01, 0,  0,  0x01 ),
+    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x3 ),
   ]
 
 def amo_rd():
@@ -109,9 +111,19 @@ def amo_cache_line():
 def amo_diff_tag():
   return [
     #    type opq   addr     len data         type opq test len data
-    req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),  
-    req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),  
-    req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 1,  0,  0xff ),  
+    req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),
+    req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),
+    req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 1,  0,  0xff ),
+  ]
+
+def cache_invalidation_short():
+  return [
+    #    type   opq addr        len data         type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0x01), resp( 'wr',  1,  0,   0,  0 ),
+    req( 'wr',  2,  0x00001004, 0,  0xf1), resp( 'wr',  2,  0,   0,  0 ),
+    req( 'rd',  3,  0x00000000, 0,  0   ), resp( 'rd',  3,  1,   0,  0x01 ),
+    req( 'rd',  4,  0x00001004, 0,  0   ), resp( 'rd',  4,  1,   0,  0xf1 ),
+    req( 'inv', 5,  0x00000000, 0,  0   ), resp( 'inv', 5,  0,   0,  0 ),
   ]
 
 def amo_hypo():
@@ -261,15 +273,15 @@ def rand( size, clw, associativity, num_trans = 100 ):
   MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
   type_choices = [ (MemMsgType.READ,     0.41) , 
                    (MemMsgType.WRITE,    0.41), 
-                   (MemMsgType.AMO_ADD,  0.12), 
-                  #  (MemMsgType.AMO_AND,  0.02),  
-                  #  (MemMsgType.AMO_OR,   0.02), 
-                  #  (MemMsgType.AMO_SWAP, 0.02), 
-                  #  (MemMsgType.AMO_MIN,  0.02), 
-                  #  (MemMsgType.AMO_MINU, 0.02), 
-                  #  (MemMsgType.AMO_MAX,  0.02), 
-                  #  (MemMsgType.AMO_MAXU, 0.02), 
-                  #  (MemMsgType.AMO_XOR,  0.02) 
+                   (MemMsgType.AMO_ADD,  0.02), 
+                   (MemMsgType.AMO_AND,  0.02),  
+                   (MemMsgType.AMO_OR,   0.02), 
+                   (MemMsgType.AMO_SWAP, 0.02), 
+                   (MemMsgType.AMO_MIN,  0.02), 
+                   (MemMsgType.AMO_MINU, 0.02), 
+                   (MemMsgType.AMO_MAX,  0.02), 
+                   (MemMsgType.AMO_MAXU, 0.02), 
+                   (MemMsgType.AMO_XOR,  0.02) 
                    ]
   types = random.choices(
       population = [ choices for choices,weights in type_choices ],
@@ -323,8 +335,8 @@ def rand_2_64_128():
   return rand(64, 128, 2)
 
 class CiferTests:
-  
-  @pytest.mark.parametrize( 
+
+  @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("Hypo", cifer_hypo1,    0,         1,      0,        0   ),
     ("AMO",  amo_subword,    0,         1,      0,        0   ),
@@ -352,9 +364,10 @@ class CiferTests:
     mem = random_memory if name == "RAND" else cifer_test_memory() 
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+                16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
+                max_cycles )
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("DBPW", wr_hit_clean,   0,         1,      0,        0   ),
     ("AMO",  amo_cache_line, 0,         1,      0,        0   ),

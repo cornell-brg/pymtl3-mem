@@ -12,7 +12,7 @@ def pytest_addoption(parser):
   parser.addoption( "--trace-verbosity", action="store", default=1, choices=[0,1,2], type=int,
                     help="verbosity of line trace" )
   parser.addoption( "--max-cycles", action="store",
-                    type=int, default=500,
+                    type=int, default=2000,
                     help="max number of cycles to be simulated" )
 
 @pytest.fixture

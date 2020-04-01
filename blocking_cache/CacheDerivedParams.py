@@ -45,9 +45,6 @@ class CacheDerivedParams:
     self.bitwidth_index            = clog2( self.nblocks_per_way )                   # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
-    # 1 bit for dirty and val. Rest for tag. Need to make sure multiple of 8.
-    self.bitwidth_tag_array        = int( self.bitwidth_tag + 1 + 1 + 7 ) // 8 * 8
-    self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
     self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8         # Data array write byte bitwidth
     self.bitwidth_rd_wd_mux_sel    = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read word mux bitwidth
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8 )                # Read byte mux sel bitwidth
@@ -59,16 +56,13 @@ class CacheDerivedParams:
       self.bitwidth_clog_asso      = clog2( self.associativity )
     self.bitwidth_mem_len          = clog2( self.bitwidth_cacheline // 8 )
 
-    # Cifer chip variables
-    # number of 32 bit words for cifer chip tapeout. Normally, we would only
-    # have 1 bit for dirty
-    self.bitwidth_dirty            = self.bitwidth_cacheline // 32
-    self.bitwidth_val              = 1
+    self.bitwidth_dirty            = self.bitwidth_cacheline // 32  # 1 dirty bit per 32-bit word
+    self.bitwidth_val              = 1                              # Valid bit
 
-    # sum of the tag bitwidth, 1 bit valid, and dirty bit per word and rounded
+    # sum of the tag bitwidth, valid, and dirty bit per word and rounded
     # up to multiple of 8
     self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty + 7 ) // 8 * 8
-    self.bitwidth_tag_wben         = int( self.bitwidth_tag_array + 7 ) // 8         # Tag array write byte bitwidth
+    self.bitwidth_tag_wben         = self.bitwidth_tag_array // 8  # Tag array write byte bitwidth
     self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
 
     print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
@@ -104,6 +98,7 @@ class CacheDerivedParams:
     self.BitsMemLen        = mk_bits( self.bitwidth_mem_len )
 
     # Cifer Bits objects
+    self.BitsVal           = mk_bits( self.bitwidth_val )
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )
 
     #--------------------------------------------------------------------

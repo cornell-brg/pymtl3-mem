@@ -8,12 +8,14 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 12 February 2020
 """
 
-from mem_pclib.constants.constants  import *
 from pymtl3                         import *
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegRst, Reg, RegEn
-from mem_pclib.rtl.registers        import MSHRReg
 from pymtl3.stdlib.rtl.arithmetics  import Mux
+
+from constants.constants import *
+
+from .registers import MSHRReg
 
 class MSHR (Component):
 
@@ -51,7 +53,7 @@ class MSHR (Component):
       s.empty = n
       if s.num_entries_reg.out == BitsEntries(entries) or \
         (s.num_entries_reg.out == BitsEntries(entries - 1) and s.alloc_en):
-        # Considered full if num entries is equal to max entries or if we 
+        # Considered full if num entries is equal to max entries or if we
         # have one less and are allocating an entry
         s.full = y
       if s.num_entries_reg.out == BitsEntries(0):

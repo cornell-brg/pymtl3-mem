@@ -23,6 +23,9 @@ from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 # cifer specific memory req/resp msg
 from ifcs.MemMsg import mk_mem_msg
 
+# # cifer specific memory req/resp msg
+# from ifcs.MemMsg import mk_mem_msg, MemMsgType
+# from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
 
@@ -31,6 +34,7 @@ from blocking_cache.BlockingCacheFL import ModelCache
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
+
 def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
   # print (" -----------starting simulation----------- ")
   if translation:
@@ -60,9 +64,8 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
 #---------------------------------------------------------------------
 def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
  associativity, cacheSize):
-
-  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType, 
-                     MemReqType, MemRespType, mem)
+  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
+  MemReqType, MemRespType, mem)
   for request in reqs:
     if request.type_ == MemMsgType.READ:
       cache.read(request.addr, request.opaque, request.len)

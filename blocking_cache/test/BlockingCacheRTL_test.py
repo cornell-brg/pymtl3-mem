@@ -12,12 +12,14 @@ import pytest
 
 from pymtl3      import *
 
-from mem_pclib.test.sim_utils import run_sim, TestHarness
-from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from .DmappedTestCases               import DmappedTestCases
-from .Asso2WayTestCases              import AssoTestCases
-from .HypothesisTest                 import HypothesisTests
-from .CiferTests                     import CiferTests
+from test.sim_utils import run_sim, TestHarness
+
+from ..BlockingCacheRTL import BlockingCacheRTL
+
+from .DmappedTestCases import DmappedTestCases
+from .Asso2WayTestCases import AssoTestCases
+from .HypothesisTest import HypothesisTests
+from .CiferTests import CiferTests
 
 class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
                               CiferTests ):
@@ -25,7 +27,7 @@ class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64, stall_prob=0,
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
-                test_verilog='zeros', max_cycles = 500, trace=2 ):
+                test_verilog='zeros', max_cycles=2000, trace=2 ):
 
     harness = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
                            src_delay, sink_delay, BlockingCacheRTL,

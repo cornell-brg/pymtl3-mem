@@ -9,7 +9,7 @@ Date   : 29 March 2020
 """
 
 from pymtl3 import *
-from mem_pclib.constants.constants  import *
+from constants.constants import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 

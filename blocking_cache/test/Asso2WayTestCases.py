@@ -10,7 +10,7 @@ Date   : 16 November 2019
 
 import pytest
 
-from mem_pclib.test.sim_utils import (
+from test.sim_utils import (
   req, resp, CacheReqType, CacheRespType, MemReqType, MemRespType
 )
 

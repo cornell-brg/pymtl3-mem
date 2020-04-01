@@ -17,9 +17,9 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
-from mem_pclib.constants.constants import *
-from mem_pclib.test.sim_utils import rand_mem
-from blocking_cache.BlockingCacheFL import ModelCache
+from constants.constants import *
+from test.sim_utils    import rand_mem
+from ..BlockingCacheFL import ModelCache
 
 # cifer specific memory req/resp msg
 from ifcs.MemMsg     import mk_mem_msg
@@ -61,7 +61,7 @@ def gen_reqs( draw, addr_min, addr_max ):
 
   return (addr, type_, data, len_)
 
-max_examples = 200
+max_examples = 100
 hypothesis_max_cycles = 10000
 
 class HypothesisTests:
@@ -108,7 +108,7 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 4 ),
     sink_delay   = st.integers( 0, 4 )
   )
-  def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob, 
+  def test_hypothesis_2way(s, clw, block_order, transactions, req, stall_prob,
   latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles):
     num_blocks = 2**block_order
     s.hypothesis_test_harness(2, clw, num_blocks, transactions, req, stall_prob,
@@ -144,7 +144,7 @@ class HypothesisTests:
     s.hypothesis_test_harness(2, 128, 2, transactions, req, 0,
     latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles)
 
-  @hypothesis.settings( deadline = None, max_examples=600 )
+  @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
     transactions = st.integers( 30, 200 ),
     req          = st.data(),

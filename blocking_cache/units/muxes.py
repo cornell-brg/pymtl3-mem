@@ -2,14 +2,14 @@
 =========================================================================
 Muxes.py
 =========================================================================
-Data select mux: selects the byte accesses of the mux  
+Data select mux: selects the byte accesses of the mux
 
 Author: Eric Tang (et396), Xiaoyu Yan (xy97)
 Date:   27 February 2020
 '''
 
 from pymtl3 import *
-from pymtl3.stdlib.rtl.arithmetics  import Mux
+from pymtl3.stdlib.rtl.arithmetics import Mux
 
 class DataSizeMux( Component ):
   '''
@@ -26,22 +26,22 @@ class DataSizeMux( Component ):
     s.out    = OutPort( p.BitsData )
     s.is_amo = InPort( Bits1 )
 
-    s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel) 
+    s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel)
     s.read_2byte_mux_sel     = Wire(p.BitsRd2ByteMuxSel)
     s.read_byte_mux_sel      = Wire(p.BitsRdByteMuxSel)
     s.subword_access_mux_sel = Wire(Bits2)
-    # Word select mux 
+    # Word select mux
     s.read_word_mux = Mux(p.BitsData, p.bitwidth_cacheline // p.bitwidth_data \
       + 1)(
       sel = s.read_word_mux_sel
     )
-    s.read_word_mux.in_[0] //= p.BitsData(0) 
+    s.read_word_mux.in_[0] //= p.BitsData(0)
     for i in range(1, p.bitwidth_cacheline//p.bitwidth_data+1):
       s.read_word_mux.in_[i] //= s.data[(i - 1) * p.bitwidth_data:i * p.bitwidth_data]
-        
+
     # Two byte select mux
     s.read_2byte_mux = Mux(Bits16, p.bitwidth_data//16)(
-      sel = s.read_2byte_mux_sel 
+      sel = s.read_2byte_mux_sel
     )
     for i in range(p.bitwidth_data//16):
       s.read_2byte_mux.in_[i] //= s.read_word_mux.out[i * 16:(i + 1) * 16]
@@ -105,7 +105,7 @@ class PMux( Component ):
   '''
   N-input Mux that allows for ninputs = 1
   '''
-  
+
   def construct( s, Type, ninputs ):
 
     s.in_ = [ InPort( Type ) for _ in range(ninputs) ]
