@@ -444,40 +444,29 @@ class BlockingCacheCtrlRTL ( Component ):
       s.hit_M1            = n
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
 
-      if ( s.trans_M1.out != TRANS_TYPE_INVALID and
-           s.trans_M1.out != TRANS_TYPE_CACHE_INIT and
-           s.trans_M1.out != TRANS_TYPE_INV_START and
-           s.trans_M1.out != TRANS_TYPE_INV_READ and
-           s.trans_M1.out != TRANS_TYPE_INV_WRITE and
-           s.trans_M1.out != TRANS_TYPE_REPLAY_INV ):
-        if ( s.trans_M1.out != TRANS_TYPE_REFILL and
-             s.trans_M1.out != TRANS_TYPE_REPLAY_WRITE and
-             s.trans_M1.out != TRANS_TYPE_REPLAY_READ and
-             s.trans_M1.out != TRANS_TYPE_REPLAY_AMO and
-             s.trans_M1.out != TRANS_TYPE_AMO_REQ):
-          s.hit_M1 = s.status.hit_M1
-          # if hit, dty bit will come from the way where the hit occured
-          if s.hit_M1:
-            s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
-            s.is_line_valid_M1 = s.status.line_valid_M1[s.status.hit_way_M1]
-
-          if s.trans_M1.out == TRANS_TYPE_INIT_REQ:
-            s.repreq_en_M1      = y
-            s.repreq_is_hit_M1  = n
-
-          if not s.hit_M1 and s.is_dty_M1 and s.is_line_valid_M1:
-            s.is_evict_M1 = y
-
-          if not s.is_evict_M1 and s.trans_M1.out != TRANS_TYPE_CLEAN_HIT:
-            # Better to update replacement bit right away because we need it
-            # for nonblocking capability. For blocking, we can also update
-            # during a refill for misses
-            s.repreq_en_M1      = y
-            s.repreq_hit_ptr_M1 = s.status.hit_way_M1
-            s.repreq_is_hit_M1  = s.hit_M1
-        elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
-          s.is_evict_M1 = s.status.hit_M1
-
+      if ( #s.trans_M1.out == TRANS_TYPE_CLEAN_HIT or
+           s.trans_M1.out == TRANS_TYPE_READ_REQ or
+           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
+           s.trans_M1.out == TRANS_TYPE_INIT_REQ ):
+        s.hit_M1 = s.status.hit_M1
+        # if hit, dty bit will come from the way where the hit occured
+        if s.hit_M1:
+          s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
+          s.is_line_valid_M1 = s.status.line_valid_M1[s.status.hit_way_M1]
+        if s.trans_M1.out == TRANS_TYPE_INIT_REQ:
+          s.repreq_en_M1      = y
+          s.repreq_is_hit_M1  = n
+        if not s.hit_M1 and s.is_dty_M1 and s.is_line_valid_M1:
+          s.is_evict_M1 = y
+        if not s.is_evict_M1 and s.trans_M1.out != TRANS_TYPE_CLEAN_HIT:
+          # Better to update replacement bit right away because we need it
+          # for nonblocking capability. For blocking, we can also update
+          # during a refill for misses
+          s.repreq_en_M1      = y
+          s.repreq_hit_ptr_M1 = s.status.hit_way_M1
+          s.repreq_is_hit_M1  = s.hit_M1
+      elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
+        s.is_evict_M1 = s.status.hit_M1
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M1
 
