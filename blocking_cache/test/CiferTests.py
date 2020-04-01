@@ -49,9 +49,9 @@ def wr_hit_clean():
 def cifer_hypo1():
   return [
     #    type  opq   addr      len  data       type  opq test len  data
-    req( 'wr', 0x00, 0x0000005c, 0, 0xfff), resp( 'wr', 0x00, 0, 0, 0 ), #refill-write
-    req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),     #evict
-    req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 0xa ),     #read new written data
+    req( 'wr', 0x00, 0x0000005c, 0, 0xfff), resp( 'wr', 0x00, 0, 0, 0 ), # refill-write
+    req( 'rd', 0x01, 0x00000008, 0, 0), resp( 'rd', 0x01, 0, 0, 3 ),     # evict
+    req( 'rd', 0x02, 0x00000060, 0, 0), resp( 'rd', 0x02, 0, 0, 0xa ),   # read new written data
     ]
 
 def amo_subword():
@@ -156,4 +156,15 @@ class CiferTests:
     mem = cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 4096, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
+
+  @pytest.mark.parametrize(
+    " name,  test,                       stall_prob,latency,src_delay,sink_delay", [
+    ("INVS", cache_invalidation_short,   0,         1,      0,        0   ),
+  ])
+  def test_Cifer_2way_size256_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                        stall_prob, latency, src_delay, sink_delay ):
+    mem = cifer_test_memory()
+    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
+                256, stall_prob, latency, src_delay, sink_delay, dump_vcd,
                 test_verilog, max_cycles )

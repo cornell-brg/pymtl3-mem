@@ -66,10 +66,12 @@ def mk_ctrl_signals_struct( p ):
     'addr_mux_sel_M0'       : Bits1,
     'wdata_mux_sel_M0'      : Bits1,
     'tag_array_val_M0'      : p.BitsAssoc,
+    'update_tag_way_M0'     : p.BitsAssoclog2,
     'tag_array_type_M0'     : Bits1,
     'tag_array_wben_M0'     : p.BitsTagwben,
     'ctrl_bit_rep_wr_M0'    : Bits1,
     'update_tag_cmd_M0'     : Bits3,
+    'update_tag_sel_M0'     : Bits1,
     'tag_array_idx_sel_M0'  : Bits1,
     'tag_array_init_idx_M0' : p.BitsIdx,
 

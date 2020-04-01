@@ -25,10 +25,13 @@ class UpdateTagArrayUnit( Component ):
     bitwidth_dirty  = p.bitwidth_dirty
     StructTagArray  = p.StructTagArray
     BitsDirty       = p.BitsDirty
+    BitsTag         = p.BitsTag
 
     @s.update
     def new_tag_array_entry_logic():
-      s.out = s.old_entries[s.way]
+      s.out.tag = s.old_entries[s.way].tag
+      s.out.val = s.old_entries[s.way].val
+      s.out.dty = s.old_entries[s.way].dty
       if s.cmd == UpdateTagArrayUnit_CMD_WR_REFILL:
         # Refill on a write, mark the word being written as dirty, the
         # rest is clean
@@ -45,6 +48,7 @@ class UpdateTagArrayUnit( Component ):
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
       elif s.cmd == UpdateTagArrayUnit_CMD_CLEAR:
         # Clear the entire entry
+        s.out.tag = BitsTag(0)
         s.out.val = CACHE_LINE_STATE_INVALID
         s.out.dty = BitsDirty(0)
       elif s.cmd == UpdateTagArrayUnit_CMD_INV:

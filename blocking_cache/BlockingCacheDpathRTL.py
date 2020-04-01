@@ -104,19 +104,43 @@ class BlockingCacheDpathRTL (Component):
     s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
 
     # Update tag-array entry
+    s.update_tag_way_mux_M0 = Mux( p.BitsAssoclog2, 2 )(
+      in_ = {
+        0: s.hit_way_M1_bypass,
+        1: s.ctrl.update_tag_way_M0,
+      },
+      sel = s.ctrl.update_tag_sel_M0,
+    )
+
     s.update_tag_unit = UpdateTagArrayUnit( p )(
-      way    = s.hit_way_M1_bypass,
+      way    = s.update_tag_way_mux_M0.out,
       offset = s.cachereq_M0.addr.offset,
       cmd    = s.ctrl.update_tag_cmd_M0
     )
     for i in range( p.associativity ):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
+    # Mux for tag arrays
+
+    s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
+      in_ = {
+        0: s.cachereq_M0.addr.index,
+        1: s.ctrl.tag_array_init_idx_M0,
+      },
+      sel = s.ctrl.tag_array_idx_sel_M0,
+    )
+
+    s.tag_array_tag_mux_M0 = Mux( p.BitsTag, 2 )(
+      in_ = {
+        0: s.cachereq_M0.addr.tag,
+        1: s.update_tag_unit.out.tag,
+      },
+      sel = s.ctrl.update_tag_sel_M0,
+    )
+
     # Tag array inputs
-    s.tag_array_idx_M0    = Wire( p.BitsIdx )
     s.tag_array_struct_M0 = Wire( p.StructTagArray )
-    s.tag_array_idx_M0        //= s.cachereq_M0.addr.index
-    s.tag_array_struct_M0.tag //= s.cachereq_M0.addr.tag
+    s.tag_array_struct_M0.tag //= s.tag_array_tag_mux_M0.out
     s.tag_array_struct_M0.val //= s.update_tag_unit.out.val
     s.tag_array_struct_M0.dty //= s.update_tag_unit.out.dty
 
@@ -124,16 +148,6 @@ class BlockingCacheDpathRTL (Component):
       s.tag_array_struct_M0.tmp //= p.BitsTagArrayTmp( 0 )
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
     connect_bits2bitstruct( s.tag_array_wdata_M0, s.tag_array_struct_M0 )
-
-    # Mux for tag arrays
-
-    s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
-      in_ = {
-        0: s.tag_array_idx_M0,
-        1: s.ctrl.tag_array_init_idx_M0,
-      },
-      sel = s.ctrl.tag_array_idx_sel_M0,
-    )
 
     # Send the M0 status signals to control
     s.status.memresp_type_M0   //= s.pipeline_reg_M0.out.type_
@@ -382,5 +396,5 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     for i in range( len( s.tag_arrays_M1 ) ):
-      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},idx={s.tag_arrays_M1[i].port0_idx},type={s.tag_arrays_M1[i].port0_type},wdata={s.tag_arrays_M1[i].port0_wdata},rdata={s.tag_arrays_M1[i].port0_rdata};"
+      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},idx={s.tag_arrays_M1[i].port0_idx},type={s.tag_arrays_M1[i].port0_type},wdata={s.tag_array_struct_M0},rdata={s.tag_array_out_M1[i]};"
     return msg
