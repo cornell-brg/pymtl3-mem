@@ -139,17 +139,16 @@ class BlockingCacheCtrlRTL ( Component ):
         # MSHR will be dealloc this cycle
         s.FSM_state_M0_next = M0_FSM_STATE_READY
 
-    # If we hitting a clean word, we need to update the dirty bits, set in M1 stage.
-    s.is_write_hit_clean_M0 = Wire( Bits1 )
-
     #---------------------------------------------------------------------
     # M0 transaction
     #---------------------------------------------------------------------
     # Generate cache control transaction signal based on FSM state and
     # request type from cachereq or MSHR
 
-    s.trans_M0 = Wire( mk_bits(TRANS_TYPE_NBITS) )
+    # If we hitting a clean word, we need to update the dirty bits, set in M1 stage.
+    s.is_write_hit_clean_M0 = Wire( Bits1 )
 
+    s.trans_M0 = Wire( mk_bits(TRANS_TYPE_NBITS) )
     @s.update
     def state_logic_M0():
       s.trans_M0 = TRANS_TYPE_INVALID
@@ -197,12 +196,11 @@ class BlockingCacheCtrlRTL ( Component ):
         elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
           s.ctrl.MSHR_dealloc_en = y
 
-    s.stall_M0 = Wire( Bits1 )
-
     # Stalls originating from M1 and M2
     s.ostall_M1 = Wire( Bits1 )
     s.ostall_M2 = Wire( Bits1 )
 
+    s.stall_M0 = Wire( Bits1 )
     s.stall_M0 //= lambda: s.ostall_M1 | s.ostall_M2
 
     @s.update
@@ -530,12 +528,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def cs_table_M2():
       s.ctrl.hit_M2[1] = b1(0) # hit output expects 2 bits but we only use one bit
-      # dsize_en   = data_size_mux_en_M2
-      # rdata_mux  = read_data_mux_sel_M2
-      # ostall     = ostall_M2
-      # memreq_type= memreq_type
-      # memreq     = memreq_en
-      # cacheresp  = cacheresp_en
+
       #                                                               dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
       s.cs2                                                 = concat( y,       b1(0),    n,     READ,       n,     n        )
       if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
@@ -586,7 +579,6 @@ class BlockingCacheCtrlRTL ( Component ):
       msg_M0 = "(rpy )"
     else:
       assert False
-    # msg_M0 += ",cnt={} ".format(s.counter_M0.out)
 
     if s.trans_M0 == TRANS_TYPE_INVALID:        msg_M0 += "xxx"
     elif s.trans_M0 == TRANS_TYPE_REFILL:       msg_M0 += " rf"
@@ -597,7 +589,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    msg_M0 += " wr"
     elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     msg_M0 += " in"
     elif s.trans_M0 == TRANS_TYPE_CACHE_INIT:   msg_M0 += "ini"
-    elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      msg_M0 += " ad"
+    elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      msg_M0 += "amo"
     elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   msg_M0 += "rpa"
     else:                                       msg_M0 += "   "
 
@@ -615,7 +607,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:    msg_M1 = color_m1 + " wr" + Style.RESET_ALL
     elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     msg_M1 = " in"
     elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   msg_M1 = "ini"
-    elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = " ad"
+    elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = "amo"
     elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   msg_M1 = "rpa"
 
     msg_M2 = "   "
@@ -628,7 +620,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M2.out == TRANS_TYPE_WRITE_REQ:    msg_M2 = " wr"
     elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     msg_M2 = " in"
     elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   msg_M2 = "ini"
-    elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      msg_M2 = " ad"
+    elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      msg_M2 = "amo"
     elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   msg_M2 = "rpa"
 
     msg_memresp = ">" if s.memresp_en else " "
@@ -638,6 +630,7 @@ class BlockingCacheCtrlRTL ( Component ):
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}|{}".format(msg_M2, msg_memreq)
     pipeline = stage1 + stage2 + stage3
+
     add_msgs = ''
-    # add_msgs = f'ht:{s.status.amo_hit_M0}'
+
     return pipeline + add_msgs
