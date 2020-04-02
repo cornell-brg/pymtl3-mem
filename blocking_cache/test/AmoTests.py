@@ -1,8 +1,7 @@
 """
 =========================================================================
- CiferTests.py
+ AmoTests.py
 =========================================================================
-Direct mapped cache test cases
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 20 March 2020
@@ -11,13 +10,15 @@ Date   : 20 March 2020
 import random
 import pytest
 
+from pymtl3 import *
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
 from test.sim_utils import (req, resp, CacheReqType, CacheRespType,
   MemReqType, MemRespType, obw, abw, gen_req_resp, rand_mem
 )
 from ifcs.MemMsg import mk_mem_msg
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3 import *
-from constants.constants  import *
+
+from constants.constants import *
 
 # Main memory used in cifer test cases
 def cifer_test_memory():
@@ -114,18 +115,6 @@ def amo_diff_tag():
     req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),
     req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),
     req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 1,  0,  0xff ),
-  ]
-
-def cache_invalidation_short():
-  return [
-    #    type   opq addr        len data         type   opq test len data
-    req( 'rd',  1,  0x00000000, 0,  0),    resp( 'rd',  1,  0,   0,  0x01 ),
-    req( 'rd',  2,  0x00000010, 0,  0),    resp( 'rd',  2,  0,   0,  0x11 ),
-    req( 'rd',  3,  0x00000020, 0,  0),    resp( 'rd',  3,  0,   0,  0x21 ),
-    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  1,   0,  0x01 ),
-    req( 'rd',  5,  0x00000010, 0,  0),    resp( 'rd',  5,  1,   0,  0x11 ),
-    req( 'rd',  6,  0x00000020, 0,  0),    resp( 'rd',  6,  1,   0,  0x21 ),
-    req( 'inv', 7,  0x00000000, 0,  0),    resp( 'inv', 7,  0,   0,  0 ),
   ]
 
 def amo_hypo():
@@ -336,7 +325,7 @@ def rand_2_32_64():
 def rand_2_64_128():
   return rand(64, 128, 2)
 
-class CiferTests:
+class AmoTests:
 
   @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
@@ -428,16 +417,4 @@ class CiferTests:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
-
-  @pytest.mark.parametrize(
-    " name,  test,                          stall_prob,latency,src_delay,sink_delay", [
-    ("INV",  cache_invalidation_short,      0,         1,      0,        0   ),
-  ])
-  def test_Cifer_2way_size256_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                      stall_prob, latency, src_delay, sink_delay ):
-    mem = random_memory if name == "RAND" else cifer_test_memory()
-    MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
-    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-                256, stall_prob, latency, src_delay, sink_delay, dump_vcd,
                 test_verilog, max_cycles )

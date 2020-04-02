@@ -20,14 +20,14 @@ from ..BlockingCacheFL import ModelCache
 from .DmappedTestCases import DmappedTestCases
 from .Asso2WayTestCases import AssoTestCases
 from .HypothesisTest import HypothesisTests
-from .CiferTests import CiferTests
+from .AmoTests import AmoTests
 
-class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
+class CacheFL_Tests( DmappedTestCases, AssoTestCases, AmoTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=512, stall_prob=0,
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
-                test_verilog='zeros', max_cycles = 500, trace=2 ):
+                test_verilog='zeros', max_cycles=500, trace=2 ):
 
     cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
      MemReqType, MemRespType, mem)
