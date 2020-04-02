@@ -1,8 +1,7 @@
 """
 =========================================================================
-cifer.py
+DirtyLineDetector.py
 =========================================================================
-Modules used in cifer project
 
 Author: Eric Tang (et396), Xiaoyu Yan (xy97)
 Date:   17 March 2020

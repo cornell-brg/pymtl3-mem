@@ -18,7 +18,7 @@ from constants.constants  import *
 from sram.SramPRTL        import SramPRTL
 
 from .constants                import *
-from .units.cifer              import *
+from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
 from .units.arithmetics        import Indexer, Comparator, CacheDataReplicator, OffsetLenSelector
