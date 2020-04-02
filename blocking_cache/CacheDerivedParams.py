@@ -62,7 +62,7 @@ class CacheDerivedParams:
     # sum of the tag bitwidth, valid, and dirty bit per word and rounded
     # up to multiple of 8
     self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty + 7 ) // 8 * 8
-    self.bitwidth_tag_wben         = self.bitwidth_tag_array // 8 * 8  # Tag array write byte bitwidth
+    self.bitwidth_tag_wben         = self.bitwidth_tag_array # Tag array write byte bitwidth
     self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
 
     print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,

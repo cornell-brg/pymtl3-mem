@@ -88,24 +88,24 @@ def amo_subword():
 def amo_rd():
   return [
     #    type  opq   addr       len data         type  opq test len  data
-    req( 'rd', 0x00, 0x00000000, 0, 0),    resp( 'rd', 0x00, 0,  0,  0x1 ),          
-    req( 'ad', 0x01, 0x00000000, 0, 0x10), resp( 'ad', 0x01, 0,  0,  0x1 ),  
-    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x11),  
+    req( 'rd', 0x00, 0x00000000, 0, 0),    resp( 'rd', 0x00, 0,  0,  0x1 ),
+    req( 'ad', 0x01, 0x00000000, 0, 0x10), resp( 'ad', 0x01, 0,  0,  0x1 ),
+    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x11),
   ]
 
 def amo_cache_line():
   return [
     #    type  opq   addr       len data         type  opq test len  data
-    req( 'wr', 0x00, 0x00000000, 0, 0x0f), resp( 'wr', 0x00, 0,  0,  0   ),          
-    req( 'ad', 0x01, 0x00000000, 0, 0x10), resp( 'ad', 0x01, 0,  0,  0x0f),  
-    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x1f),  
-    req( 'wr', 0x00, 0x00000004, 0, 0xf0), resp( 'wr', 0x00, 1,  0,  0   ),          
-    req( 'ad', 0x03, 0x00000004, 0, 0x3),  resp( 'ad', 0x03, 0,  0,  0xf0),  
-    req( 'rd', 0x04, 0x00000004, 0, 0),    resp( 'rd', 0x04, 0,  0,  0xf3),  
-    req( 'ad', 0x05, 0x00000008, 0, 0x4),  resp( 'ad', 0x05, 0,  0,  0x3 ),  
-    req( 'rd', 0x06, 0x00000008, 0, 0),    resp( 'rd', 0x06, 0,  0,  0x7 ),  
-    req( 'ad', 0x05, 0x0000000c, 0, 0x5),  resp( 'ad', 0x05, 0,  0,  0x4 ),  
-    req( 'rd', 0x06, 0x0000000c, 0, 0),    resp( 'rd', 0x06, 0,  0,  0x9 ),  
+    req( 'wr', 0x00, 0x00000000, 0, 0x0f), resp( 'wr', 0x00, 0,  0,  0   ),
+    req( 'ad', 0x01, 0x00000000, 0, 0x10), resp( 'ad', 0x01, 0,  0,  0x0f),
+    req( 'rd', 0x02, 0x00000000, 0, 0),    resp( 'rd', 0x02, 0,  0,  0x1f),
+    req( 'wr', 0x00, 0x00000004, 0, 0xf0), resp( 'wr', 0x00, 1,  0,  0   ),
+    req( 'ad', 0x03, 0x00000004, 0, 0x3),  resp( 'ad', 0x03, 0,  0,  0xf0),
+    req( 'rd', 0x04, 0x00000004, 0, 0),    resp( 'rd', 0x04, 0,  0,  0xf3),
+    req( 'ad', 0x05, 0x00000008, 0, 0x4),  resp( 'ad', 0x05, 0,  0,  0x3 ),
+    req( 'rd', 0x06, 0x00000008, 0, 0),    resp( 'rd', 0x06, 0,  0,  0x7 ),
+    req( 'ad', 0x05, 0x0000000c, 0, 0x5),  resp( 'ad', 0x05, 0,  0,  0x4 ),
+    req( 'rd', 0x06, 0x0000000c, 0, 0),    resp( 'rd', 0x06, 0,  0,  0x9 ),
 ]
 
 def amo_diff_tag():
@@ -119,38 +119,40 @@ def amo_diff_tag():
 def cache_invalidation_short():
   return [
     #    type   opq addr        len data         type   opq test len data
-    req( 'wr',  1,  0x00000000, 0,  0x01), resp( 'wr',  1,  0,   0,  0 ),
-    req( 'wr',  2,  0x00001004, 0,  0xf1), resp( 'wr',  2,  0,   0,  0 ),
-    req( 'rd',  3,  0x00000000, 0,  0   ), resp( 'rd',  3,  1,   0,  0x01 ),
-    req( 'rd',  4,  0x00001004, 0,  0   ), resp( 'rd',  4,  1,   0,  0xf1 ),
-    req( 'inv', 5,  0x00000000, 0,  0   ), resp( 'inv', 5,  0,   0,  0 ),
+    req( 'rd',  1,  0x00000000, 0,  0),    resp( 'rd',  1,  0,   0,  0x01 ),
+    req( 'rd',  2,  0x00000010, 0,  0),    resp( 'rd',  2,  0,   0,  0x11 ),
+    req( 'rd',  3,  0x00000020, 0,  0),    resp( 'rd',  3,  0,   0,  0x21 ),
+    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  1,   0,  0x01 ),
+    req( 'rd',  5,  0x00000010, 0,  0),    resp( 'rd',  5,  1,   0,  0x11 ),
+    req( 'rd',  6,  0x00000020, 0,  0),    resp( 'rd',  6,  1,   0,  0x21 ),
+    req( 'inv', 7,  0x00000000, 0,  0),    resp( 'inv', 7,  0,   0,  0 ),
   ]
 
 def amo_hypo():
   return [
     #    type opq   addr     len data         type opq test len data
-    req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),  
-    req( 'ad', 2, 0x00000004, 0, 0x1 ), resp( 'ad', 2, 0,  0,  2 ),  
-    req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 0,  0,  0xff ),  
+    req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),
+    req( 'ad', 2, 0x00000004, 0, 0x1 ), resp( 'ad', 2, 0,  0,  2 ),
+    req( 'rd', 3, 0x00000000, 0, 0   ), resp( 'rd', 3, 0,  0,  0xff ),
   ]
 
 def amo_2way_line():
   return [
     #    type opq   addr     len data         type opq test len data
     req( 'wr', 1, 0x00000000, 0, 0xff), resp( 'wr', 1, 0,  0,  0 ),# first set
-    req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),# no change lru  
-    req( 'wr', 2, 0x00030000, 0, 0x1f), resp( 'wr', 2, 0,  0,  0 ),# second set  
+    req( 'ad', 2, 0x00020000, 0, 0x1 ), resp( 'ad', 2, 0,  0,  5 ),# no change lru
+    req( 'wr', 2, 0x00030000, 0, 0x1f), resp( 'wr', 2, 0,  0,  0 ),# second set
     req( 'rd', 2, 0x00000000, 0, 0x0 ), resp( 'rd', 2, 1,  0,  0xff ),# read first set
-    req( 'rd', 2, 0x00030000, 0, 0x0 ), resp( 'rd', 2, 1,  0,  0x1f ),# 
-    req( 'rd', 2, 0x00020000, 0, 0x0 ), resp( 'rd', 2, 0,  0,  6 ),# 
+    req( 'rd', 2, 0x00030000, 0, 0x0 ), resp( 'rd', 2, 1,  0,  0x1f ),#
+    req( 'rd', 2, 0x00020000, 0, 0x0 ), resp( 'rd', 2, 0,  0,  6 ),#
   ]
 
 def amo_ad():
   return [
     #    type  opq   addr   len  data     type  opq test len  data
-    req( 'ad', 0, 0x00000004, 0, 1), resp( 'ad', 0, 0, 0, 2 ),   
-    req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 1, 0, 0, 1 ),   
-    req( 'rd', 2, 0x00000004, 0, 0), resp( 'rd', 2, 1, 0, 3 ),   
+    req( 'ad', 0, 0x00000004, 0, 1), resp( 'ad', 0, 0, 0, 2 ),
+    req( 'rd', 1, 0x00000000, 0, 0), resp( 'rd', 1, 0, 0, 1 ),
+    req( 'rd', 2, 0x00000004, 0, 0), resp( 'rd', 2, 1, 0, 3 ),
   ]
 
 def amo_an():
@@ -271,35 +273,35 @@ def rand( size, clw, associativity, num_trans = 100 ):
   global random_memory
   max_addr = int( size // 4 * 3 * associativity )
   MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
-  type_choices = [ (MemMsgType.READ,     0.41) , 
-                   (MemMsgType.WRITE,    0.41), 
-                   (MemMsgType.AMO_ADD,  0.02), 
-                   (MemMsgType.AMO_AND,  0.02),  
-                   (MemMsgType.AMO_OR,   0.02), 
-                   (MemMsgType.AMO_SWAP, 0.02), 
-                   (MemMsgType.AMO_MIN,  0.02), 
-                   (MemMsgType.AMO_MINU, 0.02), 
-                   (MemMsgType.AMO_MAX,  0.02), 
-                   (MemMsgType.AMO_MAXU, 0.02), 
-                   (MemMsgType.AMO_XOR,  0.02) 
+  type_choices = [ (MemMsgType.READ,     0.41) ,
+                   (MemMsgType.WRITE,    0.41),
+                   (MemMsgType.AMO_ADD,  0.02),
+                   (MemMsgType.AMO_AND,  0.02),
+                   (MemMsgType.AMO_OR,   0.02),
+                   (MemMsgType.AMO_SWAP, 0.02),
+                   (MemMsgType.AMO_MIN,  0.02),
+                   (MemMsgType.AMO_MINU, 0.02),
+                   (MemMsgType.AMO_MAX,  0.02),
+                   (MemMsgType.AMO_MAXU, 0.02),
+                   (MemMsgType.AMO_XOR,  0.02)
                    ]
   types = random.choices(
       population = [ choices for choices,weights in type_choices ],
-      weights = [ weights for choices,weights in type_choices ], 
+      weights = [ weights for choices,weights in type_choices ],
       k = num_trans )
   reqs = []
   for i in range( num_trans ):
     data = random.randint(0, 0xffffffff)
-    
+
     if types[i] < AMO:
       len_choices = [  # assuming 32 bit words
         (0, 0.4),
         (1, 0.3),
         (2, 0.3)
        ]
-      len_ = random.choices( 
+      len_ = random.choices(
         population = [ choices for choices,weights in len_choices ],
-        weights = [ weights for choices,weights in len_choices ], 
+        weights = [ weights for choices,weights in len_choices ],
         k = 1 )
       len_ = len_[0]
       if len_ == 1:
@@ -313,7 +315,7 @@ def rand( size, clw, associativity, num_trans = 100 ):
       addr = Bits32(random.randint(0, max_addr)) & 0xfffffffc
     reqs.append( req( types[i], i, addr, len_, data) )
 
-  trans = gen_req_resp( reqs, random_memory, CacheReqType, CacheRespType, MemReqType, 
+  trans = gen_req_resp( reqs, random_memory, CacheReqType, CacheRespType, MemReqType,
   MemRespType, associativity, size )
 
   # print stats
@@ -359,9 +361,9 @@ class CiferTests:
     ("AMO",  amo_subword,    0.5,       2,      2,        2   ),
     ("AMO",  amo_ad,         0.5,       2,      2,        2   ),
   ])
-  def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):    
-    mem = random_memory if name == "RAND" else cifer_test_memory() 
+  def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                       stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
                 16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
@@ -374,13 +376,14 @@ class CiferTests:
     ("DBPW", wr_hit_clean,   0.5,       2,      4,        4   ),
     ("AMO",  amo_cache_line, 0.5,       2,      4,        4   ),
   ])
-  def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
-    mem = random_memory if name == "RAND" else cifer_test_memory() 
+  def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                        stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+                32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("DBPW", wr_hit_clean,   0,         1,      0,        0   ),
     ("AMO",  amo_cache_line, 0,         1,      0,        0   ),
@@ -406,21 +409,35 @@ class CiferTests:
     ("HYPO", amo_hypo5,      0,         1,      0,        0   ),
     ("HYPO", amo_hypo6,      0,         1,      0,        0   ),
   ])
-  def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
-    mem = random_memory if name == "RAND" else cifer_test_memory() 
+  def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                     stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+                64, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
 
-  @pytest.mark.parametrize( 
+  @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
     ("HYPO", amo_hypo3,      0,         1,      0,        0   ),
     ("HYPO", amo_hypo4,      0,         1,      0,        0   ),
     ("RAND", rand_2_32_64,   0,         1,      0,        0   ),
   ])
-  def test_Cifer_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
-    mem = random_memory if name == "RAND" else cifer_test_memory() 
+  def test_Cifer_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                    stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles ) 
+                32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
+
+  @pytest.mark.parametrize(
+    " name,  test,                          stall_prob,latency,src_delay,sink_delay", [
+    ("INV",  cache_invalidation_short,      0,         1,      0,        0   ),
+  ])
+  def test_Cifer_2way_size256_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                      stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
+    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
+                256, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )

@@ -17,11 +17,10 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
 # cifer specific memory req/resp msg
-from ifcs.MemMsg import mk_mem_msg
+from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+from ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 # # cifer specific memory req/resp msg
 # from ifcs.MemMsg import mk_mem_msg, MemMsgType
@@ -150,25 +149,25 @@ MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 def decode_type( type_ ):
   # type_ as string
-  if   type_ == 'rd': type_ = MemMsgType.READ
-  elif type_ == 'wr': type_ = MemMsgType.WRITE
-  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
-  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
-  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
-  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
-  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
-  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
-  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
-  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
-  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
-  
+  if   type_ == 'rd':  type_ = MemMsgType.READ
+  elif type_ == 'wr':  type_ = MemMsgType.WRITE
+  elif type_ == 'in':  type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad':  type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an':  type_ = MemMsgType.AMO_AND
+  elif type_ == 'or':  type_ = MemMsgType.AMO_OR
+  elif type_ == 'sw':  type_ = MemMsgType.AMO_SWAP
+  elif type_ == 'mi':  type_ = MemMsgType.AMO_MIN
+  elif type_ == 'mu':  type_ = MemMsgType.AMO_MINU
+  elif type_ == 'mx':  type_ = MemMsgType.AMO_MAX
+  elif type_ == 'xu':  type_ = MemMsgType.AMO_MAXU
+  elif type_ == 'xo':  type_ = MemMsgType.AMO_XOR
+  elif type_ == 'inv': type_ = MemMsgType.INV
   return type_ # as appropriate int
 
 def req( type_, opaque, addr, len, data ):
   type_ = decode_type( type_ )
-  return CacheReqType( type_, opaque, addr, len, data )
+  return CacheReqType( type_, opaque, addr, len, 0, data )
 
 def resp( type_, opaque, test, len, data ):
   type_ = decode_type( type_ )
-  return CacheRespType( type_, opaque, test, len, data )
+  return CacheRespType( type_, opaque, test, len, 0, data )
