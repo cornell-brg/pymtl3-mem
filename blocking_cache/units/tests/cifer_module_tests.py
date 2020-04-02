@@ -33,12 +33,12 @@ cache_params = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType,
 #-----------------------------------------------------------------------
 
 dirtyLineDetector_header_str = \
-  ( "is_hit", "offset", "dirty_bits", "is_dirty*" )
+  ( "wd_en", "offset", "dirty_bits", "is_dirty*" )
 
 def test_DirtyLineDetector( dump_vcd, test_verilog ):
   # Check the correctness of different inputs
   test_vectors = [ dirtyLineDetector_header_str,
-    # is_hit,offset,dirty_bits,is_dirty*
+    # wd_en ,offset,dirty_bits,is_dirty*
     [    1  ,  0   ,  0b0000  ,  0  ], # hit tests with no dirty
     [    1  ,  0   ,  0b0001  ,  1  ],
     [    1  ,  4   ,  0b0010  ,  1  ],

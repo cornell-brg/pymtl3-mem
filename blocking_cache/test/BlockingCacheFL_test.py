@@ -41,7 +41,7 @@ class CacheFL_Tests(DmappedTestCases, AssoTestCases, CiferTests):
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque, trans.len)
       elif trans.type_ >= MemMsgType.AMO_ADD:
-        cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
+        cache.amo(trans.addr, trans.data, trans.opaque, trans.type_)
     resps = cache.get_transactions()[1::2]
     print("")
     for i in range(len(sink)):

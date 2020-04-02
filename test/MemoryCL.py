@@ -102,6 +102,14 @@ class MemoryCL( Component ):
               assert req.wr_mask.nbits == req.data.nbits // 32
               for j in range(req.wr_mask.nbits):
                 if req.wr_mask[j]:
+                  # data = req.data[32*j:32*(j+1)]
+                  # addr = int(req.addr + 4 * j)
+                  # end  = addr + 4
+
+                  # while addr < end:
+                  #   s.mem.mem[addr] = data & 255
+                  #   data >>= 8
+                  #   addr += 1
                   s.mem.write( req.addr + 4 * j, 4, req.data[32*j:32*(j+1)] )
               resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0, 0 )
             else:
@@ -113,7 +121,7 @@ class MemoryCL( Component ):
 
           else: # AMOS
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0,
-               s.mem.amo( req.type_, req.addr, len_, req.data ) )
+               s.mem.amo( req.type_, req.addr, len_, req.data[0:32] ) )
 
           s.resp_qs[i].enq( resp )
 

@@ -19,7 +19,7 @@ class DirtyLineDetector( Component ):
   """
 
   def construct( s, p ):
-    s.is_hit     = InPort ( Bits1 )
+    s.wd_en      = InPort ( Bits1 )
     s.offset     = InPort ( p.BitsOffset )
     s.dirty_bits = InPort ( p.BitsDirty )
     s.is_dirty   = OutPort( Bits1 )
@@ -29,7 +29,7 @@ class DirtyLineDetector( Component ):
 
     @s.update
     def is_dirty_logic():
-      if s.is_hit:
+      if s.wd_en:
         # Check if the specific word is dirty
         s.is_dirty = s.dirty_bits[s.offset[2:bitwidth_offset]]
       else:
@@ -41,5 +41,5 @@ class DirtyLineDetector( Component ):
 
   def line_trace( s ):
     msg = ""
-    msg += f"o:{s.is_dirty} mask:{s.dirty_bits} "
+    msg += f"o:{s.is_dirty} m:{s.dirty_bits} "
     return msg

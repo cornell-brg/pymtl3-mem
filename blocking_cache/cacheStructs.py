@@ -14,15 +14,6 @@ def mk_dpath_status_struct( p ):
   cls_name    = "StructDpathStatus"
   req_cls = mk_bitstruct( cls_name, {
 
-    # Interface
-    'cacheresp_opaque_M2' : p.BitsOpaque,
-    'cacheresp_type_M2'   : p.BitsType,
-    'cacheresp_data_M2'   : p.BitsData,
-    'cacheresp_len_M2'    : p.BitsLen,
-    'memreq_opaque_M2'    : p.BitsOpaque,
-    'memreq_addr_M2'      : p.StructAddr,
-    'memreq_data_M2'      : p.BitsCacheline,
-
     # M0 Dpath Signals
     'cachereq_type_M0'    : p.BitsType,
     'memresp_type_M0'     : p.BitsType,
@@ -36,22 +27,22 @@ def mk_dpath_status_struct( p ):
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
     'line_valid_M1'       : p.BitsAssoc,
+    
+    ## Signals for multiway associativity
+    'hit_way_M1'          : p.BitsAssoclog2,
+    'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
+    'amo_hit_way_M1'      : p.BitsAssoclog2,
 
+    # M2 Dpath Signals
+    'cachereq_type_M2'    : p.BitsType,
+    
     # MSHR Signals
     'MSHR_full'           : Bits1,
     'MSHR_empty'          : Bits1,
     'MSHR_type'           : p.BitsType,
     'MSHR_ptr'            : p.BitsAssoclog2,
 
-    # Signals for multiway associativity
-    'hit_way_M1'          : p.BitsAssoclog2,
-    'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
 
-    # M2 Dpath Signals
-    'cachereq_type_M2'    : p.BitsType,
-    'offset_M2'           : p.BitsOffset,
-    'len_M2'              : p.BitsLen,
-    'write_mask_M2'       : p.BitsDirty,
   })
   return req_cls
 
@@ -74,29 +65,31 @@ def mk_ctrl_signals_struct( p ):
     'update_tag_sel_M0'     : Bits1,
     'tag_array_idx_sel_M0'  : Bits1,
     'tag_array_init_idx_M0' : p.BitsIdx,
+    'is_amo_M0'             : Bits1,
 
     # M1 Ctrl Signals
-    'reg_en_M1'         : Bits1,
-    'data_array_val_M1' : Bits1,
-    'data_array_type_M1': Bits1,
-    'data_array_wben_M1': p.BitsDataWben,
-    'evict_mux_sel_M1'  : Bits1,
-    'stall_mux_sel_M1'  : Bits1,
-    'stall_reg_en_M1'   : Bits1,
-    'ctrl_bit_rep_en_M1': Bits1,
-    'way_offset_M1'     : p.BitsAssoclog2,
+    'reg_en_M1'           : Bits1,
+    'data_array_val_M1'   : Bits1,
+    'data_array_type_M1'  : Bits1,
+    'data_array_wben_M1'  : p.BitsDataWben,
+    'evict_mux_sel_M1'    : Bits1,
+    'stall_reg_en_M1'     : Bits1,
+    'hit_stall_eng_en_M1' : Bits1,
+    'ctrl_bit_rep_en_M1'  : Bits1,
+    'way_offset_M1'       : p.BitsAssoclog2,
+    'is_init_M1'          : Bits1,
+    'wd_en_M1'            : Bits1,
 
     # M2 Ctrl Signals
     'reg_en_M2'           : Bits1,
     'read_data_mux_sel_M2': Bits1,
     'data_size_mux_en_M2' : Bits1,
     'stall_reg_en_M2'     : Bits1,
-    'stall_mux_sel_M2'    : Bits1,
     'hit_M2'              : Bits2,
     'memreq_type'         : p.BitsType,
     'MSHR_alloc_en'       : Bits1,
     'MSHR_dealloc_en'     : Bits1,
-    'MSHR_amo_hit'        : Bits1,
+    'is_amo_M2'           : Bits1,
 
   })
   return req_cls
@@ -238,5 +231,12 @@ def mk_tag_ctrl_M1_struct( p ):
     'val': Bits1,
     'dty': p.BitsDirty,
     'tag': p.BitsTag,
+  } )
+  return struct
+
+def mk_hit_stall_struct( p ):
+  struct = mk_bitstruct( "StructHitInfo", {
+    'hit': Bits1,
+    'hit_way': p.BitsAssoclog2,
   } )
   return struct

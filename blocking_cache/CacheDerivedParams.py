@@ -54,6 +54,7 @@ class CacheDerivedParams:
       self.bitwidth_clog_asso      = 1
     else:
       self.bitwidth_clog_asso      = clog2( self.associativity )
+    self.bitwidth_mem_len          = clog2( self.bitwidth_cacheline // 8 )
 
     self.bitwidth_dirty            = self.bitwidth_cacheline // 32  # 1 dirty bit per 32-bit word
     self.bitwidth_val              = 1                              # Valid bit
@@ -94,6 +95,9 @@ class CacheDerivedParams:
     self.BitsAssoclog2     = mk_bits( self.bitwidth_clog_asso )
     self.BitsClogNlines    = mk_bits( clog2(self.total_num_cachelines) )
     self.BitsNlinesPerWay  = mk_bits( self.nblocks_per_way )
+    self.BitsMemLen        = mk_bits( self.bitwidth_mem_len )
+
+    # Cifer Bits objects
     self.BitsVal           = mk_bits( self.bitwidth_val )
     self.BitsDirty         = mk_bits( self.bitwidth_dirty )
 
@@ -114,6 +118,7 @@ class CacheDerivedParams:
     self.PipelineMsg    = mk_pipeline_msg( self )
     self.MSHRMsg        = mk_MSHR_msg( self )
     self.StructTagArray = mk_tag_array_struct( self )
+    self.StructHit      = mk_hit_stall_struct( self )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl

@@ -4,11 +4,12 @@ sim_util.py
 =========================================================================
 Utilty functions for running a testing simulation
 
-Author : Xiaoyu Yan, Eric Tang
+Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 21 Decemeber 2019
 """
 
 import struct
+import random
 from pymtl3 import *
 
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
@@ -16,12 +17,18 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
+from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 
 # cifer specific memory req/resp msg
-from ifcs.MemMsg import mk_mem_msg, MemMsgType
-from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+from ifcs.MemMsg import mk_mem_msg
+
+# # cifer specific memory req/resp msg
+# from ifcs.MemMsg import mk_mem_msg, MemMsgType
+# from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 from .proc_model import ProcModel
 from .MemoryCL   import MemoryCL as CiferMemoryCL
+
 from blocking_cache.BlockingCacheFL import ModelCache
 
 #----------------------------------------------------------------------
@@ -60,15 +67,28 @@ def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespTyp
   cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
   MemReqType, MemRespType, mem)
   for request in reqs:
-    if trans.type_ == MemMsgType.READ:
-      cache.read(trans.addr, trans.opaque, trans.len)
-    elif trans.type_ == MemMsgType.WRITE:
-      cache.write(trans.addr, trans.data, trans.opaque, trans.len)
-    elif trans.type_ == MemMsgType.WRITE_INIT:
-      cache.init(trans.addr, trans.data, trans.opaque, trans.len)
-    elif trans.type_ >= MemMsgType.AMO_ADD:
-      cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
+    if request.type_ == MemMsgType.READ:
+      cache.read(request.addr, request.opaque, request.len)
+    elif request.type_ == MemMsgType.WRITE:
+      cache.write(request.addr, request.data, request.opaque, request.len)
+    elif request.type_ == MemMsgType.WRITE_INIT:
+      cache.init(request.addr, request.data, request.opaque, request.len)
+    elif request.type_ >= MemMsgType.AMO_ADD:
+      cache.amo(request.addr, request.data, request.opaque, request.type_)
   return cache.get_transactions()
+
+def rand_mem(addr_min=0, addr_max=0xfff):
+  '''
+  Randomly generate start state for memory
+  :returns: list of memory addresses w/ random data values
+  '''
+  mem = []
+  curr_addr = addr_min
+  while curr_addr <= addr_max:
+    mem.append(curr_addr)
+    mem.append(random.randint(0,0xffffffff))
+    curr_addr += 4
+  return mem
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -128,18 +148,27 @@ clw  = 128 # cacheline bitwidth
 CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
+def decode_type( type_ ):
+  # type_ as string
+  if   type_ == 'rd': type_ = MemMsgType.READ
+  elif type_ == 'wr': type_ = MemMsgType.WRITE
+  elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
+  elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
+  
+  return type_ # as appropriate int
+
 def req( type_, opaque, addr, len, data ):
-  if   type_ == 'rd':  type_ = MemMsgType.READ
-  elif type_ == 'wr':  type_ = MemMsgType.WRITE
-  elif type_ == 'in':  type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad':  type_ = MemMsgType.AMO_ADD
-  elif type_ == 'inv': type_ = MemMsgType.INV
-  return CacheReqType( type_, opaque, addr, len, 0, data )
+  type_ = decode_type( type_ )
+  return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
-  if   type_ == 'rd':  type_ = MemMsgType.READ
-  elif type_ == 'wr':  type_ = MemMsgType.WRITE
-  elif type_ == 'in':  type_ = MemMsgType.WRITE_INIT
-  elif type_ == 'ad':  type_ = MemMsgType.AMO_ADD
-  elif type_ == 'inv': type_ = MemMsgType.INV
-  return CacheRespType( type_, opaque, test, len, 0, data )
+  type_ = decode_type( type_ )
+  return CacheRespType( type_, opaque, test, len, data )

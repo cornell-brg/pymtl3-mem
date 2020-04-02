@@ -182,8 +182,10 @@ class BlockingCacheCtrlRTL ( Component ):
     # Generate cache control transaction signal based on FSM state and
     # request type from cachereq or MSHR
 
-    s.trans_M0 = Wire( mk_bits(TRANS_TYPE_NBITS) )
+    # If we hitting a clean word, we need to update the dirty bits, set in M1 stage.
+    s.is_write_hit_clean_M0 = Wire( Bits1 )
 
+    s.trans_M0 = Wire( mk_bits(TRANS_TYPE_NBITS) )
     @s.update
     def state_logic_M0():
       s.trans_M0 = TRANS_TYPE_INVALID
@@ -254,12 +256,11 @@ class BlockingCacheCtrlRTL ( Component ):
         elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
           s.ctrl.MSHR_dealloc_en = y
 
-    s.stall_M0 = Wire( Bits1 )
-
     # Stalls originating from M1 and M2
     s.ostall_M1 = Wire( Bits1 )
     s.ostall_M2 = Wire( Bits1 )
 
+    s.stall_M0 = Wire( Bits1 )
     s.stall_M0 //= lambda: s.ostall_M1 | s.ostall_M2
 
     @s.update
@@ -331,6 +332,8 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.reg_en_M0 = ~s.stall_M0
       # use higher bits of the counter to select index
       s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
+      s.ctrl.is_amo_M0 = (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) | 
+                           ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
 
     @s.update
     def tag_array_val_logic_M0():
@@ -411,11 +414,12 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE or
            s.trans_M1.out == TRANS_TYPE_REFILL ):
         s.ctrl.way_offset_M1 = s.way_ptr_M1.out
-      elif ( s.trans_M1.out == TRANS_TYPE_READ_REQ or
-             s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
-             s.trans_M1.out == TRANS_TYPE_AMO_REQ ):
-        if s.is_evict_M1:
+      elif (s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == 
+        TRANS_TYPE_WRITE_REQ):
+        if ~s.hit_M1:
           s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
+      elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
+        s.ctrl.way_offset_M1 = s.status.amo_hit_way_M1
 
     # Change M0 state in case of writing to a clean bits
     @s.update
@@ -443,31 +447,44 @@ class BlockingCacheCtrlRTL ( Component ):
       s.repreq_hit_ptr_M1 = x
       s.hit_M1            = n
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
+      s.ctrl.wd_en_M1     = n
 
-      if ( s.trans_M1.out == TRANS_TYPE_READ_REQ or
-           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
-           s.trans_M1.out == TRANS_TYPE_INIT_REQ ):
+      
+      if ( s.trans_M1.out == TRANS_TYPE_INIT_REQ or 
+           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or 
+           s.trans_M1.out == TRANS_TYPE_READ_REQ ):
         s.hit_M1 = s.status.hit_M1
+        s.ctrl.wd_en_M1 = s.hit_M1
         # if hit, dty bit will come from the way where the hit occured
         if s.hit_M1:
           s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
           s.is_line_valid_M1 = s.status.line_valid_M1[s.status.hit_way_M1]
+
         if s.trans_M1.out == TRANS_TYPE_INIT_REQ:
           s.repreq_en_M1      = y
           s.repreq_is_hit_M1  = n
+
         if not s.hit_M1 and s.is_dty_M1 and s.is_line_valid_M1:
           s.is_evict_M1 = y
-        if not s.is_evict_M1:
+
+        if not s.is_evict_M1 and s.trans_M1.out != TRANS_TYPE_CLEAN_HIT:
           # Better to update replacement bit right away because we need it
           # for nonblocking capability. For blocking, we can also update
           # during a refill for misses
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = s.status.hit_way_M1
           s.repreq_is_hit_M1  = s.hit_M1
+      
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
-        s.is_evict_M1 = s.status.hit_M1
+        s.hit_M1 = s.status.hit_M1
+        s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
+        s.is_evict_M1 = s.is_dty_M1 & s.hit_M1
+        if s.hit_M1:
+          s.repreq_en_M1      = y
+          s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
+          s.repreq_is_hit_M1  = y 
 
-      s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M1
+      s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
 
     # Calculating shift amount
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
@@ -489,6 +506,10 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.wben_in,
       shamt = s.status.offset_M1,
     )
+
+    s.was_stalled = RegRst( Bits1 )
+    s.was_stalled.in_ //= s.ostall_M2
+    s.evict_bypass = Wire( Bits1 )
 
     #---------------------------------------------------------------------
     # M1 control signal table
@@ -538,17 +559,11 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.evict_mux_sel_M1   = s.cs1[ CS_evict_mux_sel_M1   ]
       s.ctrl.MSHR_alloc_en      = s.cs1[ CS_MSHR_alloc_en      ] & ~s.stall_M1
       s.ctrl.reg_en_M1 = ~s.stall_M1 & ~s.is_evict_M1
-
-    s.was_stalled = RegRst( Bits1 )(
-      in_ = s.ostall_M2,
-    )
-
-    @s.update
-    def stall_logic_M1():
       # Logic for the SRAM tag array as a result of a stall in cache since the
       # values from the SRAM are valid for one cycle
-      s.ctrl.stall_mux_sel_M1 = s.was_stalled.out
       s.ctrl.stall_reg_en_M1  = ~s.was_stalled.out
+      s.ctrl.hit_stall_eng_en_M1 = ~s.was_stalled.out & ~s.evict_bypass
+      s.ctrl.is_init_M1 = (s.trans_M1.out == TRANS_TYPE_INIT_REQ)
 
     #=====================================================================
     # M2 Stage
@@ -563,7 +578,7 @@ class BlockingCacheCtrlRTL ( Component ):
       in_ = s.is_evict_M1,
       en  = s.ctrl.reg_en_M2,
     )
-    s.ctrl.MSHR_amo_hit //= s.is_evict_M2.out
+    s.evict_bypass //= s.is_evict_M2.out
 
     s.hit_reg_M2 = RegEnRst( Bits1 )(
       in_ = s.hit_M1,
@@ -590,12 +605,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def cs_table_M2():
       s.ctrl.hit_M2[1] = b1(0) # hit output expects 2 bits but we only use one bit
-      # dsize_en   = data_size_mux_en_M2
-      # rdata_mux  = read_data_mux_sel_M2
-      # ostall     = ostall_M2
-      # memreq_type= memreq_type
-      # memreq     = memreq_en
-      # cacheresp  = cacheresp_en
+
       #                                                               dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
       s.cs2                                                 = concat( y,       b1(0),    n,     READ,       n,     n        )
       if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
@@ -630,11 +640,10 @@ class BlockingCacheCtrlRTL ( Component ):
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 
       s.ctrl.reg_en_M2 = ~s.stall_M2
-
-    @s.update
-    def stall_logic_M2():
-      s.ctrl.stall_mux_sel_M2 = s.was_stalled.out
       s.ctrl.stall_reg_en_M2 = ~s.was_stalled.out
+      s.ctrl.is_amo_M2 = (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) | 
+                         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) & 
+                          ~s.is_evict_M2.out)
 
   #=======================================================================
   # line_trace
@@ -664,7 +673,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    msg_M0 += " wr"
     elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     msg_M0 += " in"
     elif s.trans_M0 == TRANS_TYPE_CACHE_INIT:   msg_M0 += "ini"
-    elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      msg_M0 += " ad"
+    elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      msg_M0 += "amo"
     elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   msg_M0 += "rpa"
     elif s.trans_M0 == TRANS_TYPE_INV_READ:     msg_M0 += "ivr"
     elif s.trans_M0 == TRANS_TYPE_INV_WRITE:    msg_M0 += "ivw"
@@ -686,7 +695,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:    msg_M1 = color_m1 + " wr" + Style.RESET_ALL
     elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     msg_M1 = " in"
     elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   msg_M1 = "ini"
-    elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = " ad"
+    elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = "amo"
     elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   msg_M1 = "rpa"
     elif s.trans_M1.out == TRANS_TYPE_INV_READ:     msg_M1 = "ivr"
     elif s.trans_M1.out == TRANS_TYPE_INV_WRITE:    msg_M1 = "ivw"
@@ -703,7 +712,7 @@ class BlockingCacheCtrlRTL ( Component ):
     elif s.trans_M2.out == TRANS_TYPE_WRITE_REQ:    msg_M2 = " wr"
     elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     msg_M2 = " in"
     elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   msg_M2 = "ini"
-    elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      msg_M2 = " ad"
+    elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      msg_M2 = "amo"
     elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   msg_M2 = "rpa"
     elif s.trans_M2.out == TRANS_TYPE_INV_READ:     msg_M2 = "ivr"
     elif s.trans_M2.out == TRANS_TYPE_INV_WRITE:    msg_M2 = "ivw"
@@ -717,5 +726,7 @@ class BlockingCacheCtrlRTL ( Component ):
     stage2 = "|{}".format(msg_M1)
     stage3 = "|{}|{}".format(msg_M2, msg_memreq)
     pipeline = stage1 + stage2 + stage3
-    add_msgs = ""
+
+    add_msgs = ''
+
     return pipeline + add_msgs

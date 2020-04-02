@@ -1,4 +1,4 @@
-
+  
 """
 =========================================================================
  BlockingCacheFL.py
@@ -11,7 +11,6 @@ Date:   23 December 2019
 """
 
 import math
-import random
 
 from pymtl3 import *
 from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
@@ -19,14 +18,23 @@ from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 # Assumes 32 bit address and 32 bit data
 
 #-------------------------------------------------------------------------
-# make messages
+# Make messages
 #-------------------------------------------------------------------------
 
 def req( CacheReqType, type_, opaque, addr, len, data ):
+  # type_ as string
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
@@ -34,7 +42,19 @@ def resp( CacheRespType, type_, opaque, test, len, data ):
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
   return CacheRespType( type_, opaque, test, len, data )
+
+#-------------------------------------------------------------------------
+# Define AMO functions
+#-------------------------------------------------------------------------
 
 AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_AND  : lambda m,a : m&a,
@@ -46,6 +66,7 @@ AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_MAXU : max,
              MemMsgType.AMO_XOR  : lambda m,a : m^a,
            }
+
 #----------------------------------------------------------------------
 # Enhanced random tests
 #----------------------------------------------------------------------
@@ -77,18 +98,16 @@ class HitMissTracker:
     self.tag_start = self.idx_end
     self.tag_end = 32
 
-    # print(self.offset_start,self.bank_start,self.idx_start,self.tag_start)
     # Initialize the tag and valid array
     # Both arrays are of the form line[idx][way]
-    # Note that line[idx] is a one-element array for
-    # a direct-mapped cache
+    # Note that line[idx] is a one-element array for a direct-mapped cache
     self.line = []
     self.valid = []
     for n in range(self.nlines):
       self.line.insert(n, [Bits(32, 0) for x in range(nways)])
       self.valid.insert(n, [False for x in range(nways)])
 
-    # Initialize the lru array
+    # Initialize the LRU array
     # Implemented as an array for each set index
     # lru[idx][0] is the most recently used
     # lru[idx][-1] is the least recently used
@@ -139,8 +158,19 @@ class HitMissTracker:
     hit = self.tag_check(tag, idx)
     if not hit:
       self.refill(tag, idx)
-
     return hit
+
+  def lru_set(self, idx, way):
+    self.lru[idx].remove(way)
+    self.lru[idx].append(way)
+
+  def amo_req(self, addr):
+    (tag, idx, offset) = self.split_address(addr)
+    for way in range(self.nways):
+      if self.valid[idx][way] and self.line[idx][way] == tag:
+        self.valid[idx][way] = False
+        self.lru_set( idx, way )
+        break
 
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
@@ -204,9 +234,8 @@ class ModelCache:
     else:
       value = Bits(32, 0)
 
-    # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheReqType,'rd', opaque, addr, len_, 0))
-    self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit, len_, value))
+    self.transactions.append(req (self.CacheReqType, 'rd', opaque, addr, len_, 0))
+    self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit,  len_, value))
     self.opaque += 1
 
   def write(self, addr, value, opaque, len_):
@@ -225,9 +254,8 @@ class ModelCache:
     else:
       self.mem[new_addr.int()] = value
 
-    # opaque = random.randint(0,255)
-    self.transactions.append(req(self.CacheReqType,'wr', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit, len_, 0))
+    self.transactions.append(req (self.CacheReqType, 'wr', opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit,  len_, 0))
     self.opaque += 1
 
   def init(self, addr, value, opaque, len_):
@@ -250,24 +278,17 @@ class ModelCache:
     self.transactions.append(resp(self.CacheRespType,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
-  def amo(self, addr, value, opaque, len_, func):
+  def amo(self, addr, value, opaque, func):
+    # AMO operations are on the word level only 
     value = Bits(32, value)
-
-    offset = addr[self.offset_start:self.offset_end]
     new_addr = addr & Bits32(0xfffffffc)
-    hit = self.check_hit(new_addr)
+    self.tracker.amo_req(new_addr)
+    # hit = self.check_hit(new_addr)
+    ret = self.mem[new_addr.int()]
+    self.mem[new_addr.int()] = AMO_FUNS[ int(func) ]( ret, value )
 
-    if len_ == 1: # byte access
-      offset = offset[0:2].uint()
-      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
-    elif len_ == 2: # half word access
-      offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
-    else:
-      self.mem[new_addr.int()] = value
-
-    self.transactions.append(req(self.CacheReqType,'ad', opaque, addr, len_, value))
-    self.transactions.append(resp(self.CacheRespType,'ad', opaque, 0, len_, 0))
+    self.transactions.append(req (self.CacheReqType, func, opaque, addr, 0, value))
+    self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    0, ret))
     self.opaque += 1
 
   def get_transactions(self):
