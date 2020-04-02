@@ -125,7 +125,7 @@ def mk_ctrl_pipeline_struct( ):
 #  dpathStructs.py
 # =========================================================================
 
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+from ifcs.MemMsg import MemMsgType
 
 def mk_pipeline_msg( p ):
   cls_name    = f"StructDpathPipeline"

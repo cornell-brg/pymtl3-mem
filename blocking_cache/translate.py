@@ -12,14 +12,12 @@ import argparse
 import os
 import sys
 
-sys.path.append('../')
-
 # Import the translation pass from verilog backend
 from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 
 # Import the Cache generator
-from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+from .BlockingCacheRTL import BlockingCacheRTL
+from ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 #=========================================================================
 # Command line processing
@@ -47,14 +45,14 @@ def main():
   CacheReqType, CacheRespType = mk_mem_msg(opts.obw, opts.abw, opts.dbw)
   MemReqType, MemRespType = mk_mem_msg(opts.obw, opts.abw, opts.clw)
   # Instantiate the cache
-  dut = BlockingCacheRTL(CacheReqType, CacheRespType, MemReqType, \
-    MemRespType, opts.size, opts.asso)
+  dut = BlockingCacheRTL( CacheReqType, CacheRespType, MemReqType,
+                          MemRespType, opts.size, opts.asso )
   success = False
   dut.verilog_translate = True
   # dut.config_verilog_translate = TranslationConfigs(
-  #     explicit_module_name = 'BlockingCache_{}_{}_{}_{}_{}'.format(opts.size, 
+  #     explicit_module_name = 'BlockingCache_{}_{}_{}_{}_{}'.format(opts.size,
   #     opts.clw, opts.abw, opts.dbw, opts.asso),
-  #   ) 
+  #   )
   try:
     dut.elaborate()
     dut.apply( TranslationPass() )

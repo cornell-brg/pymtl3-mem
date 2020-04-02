@@ -11,10 +11,12 @@ from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2S
 from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.test import run_sim
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
-from sram.SramPRTL     import SramPRTL
-
 from pymtl3.stdlib.rtl.registers import RegRst
+
+from ifcs.MemMsg import MemMsgType, mk_mem_msg
+
+from ..SramPRTL  import SramPRTL
+
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,10,32)
 
 class memWrapper(Component):

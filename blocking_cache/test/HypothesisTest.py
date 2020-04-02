@@ -14,15 +14,15 @@ import hypothesis
 from hypothesis import strategies as st
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
-from pymtl3.stdlib.ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+
+# cifer specific memory req/resp msg
+from ifcs.MemMsg import MemMsgType
+from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+from ifcs.MemMsg import mk_mem_msg
 
 from constants.constants import *
 from test.sim_utils    import rand_mem
 from ..BlockingCacheFL import ModelCache
-
-# cifer specific memory req/resp msg
-from ifcs.MemMsg     import mk_mem_msg
 
 obw  = 8   # Short name for opaque bitwidth
 abw  = 32  # Short name for addr bitwidth
@@ -36,13 +36,13 @@ def gen_reqs( draw, addr_min, addr_max ):
     MemMsgType.WRITE,
     MemMsgType.AMO_ADD,
     MemMsgType.AMO_AND,
-    MemMsgType.AMO_OR,  
+    MemMsgType.AMO_OR,
     MemMsgType.AMO_SWAP,
-    MemMsgType.AMO_MIN, 
+    MemMsgType.AMO_MIN,
     MemMsgType.AMO_MINU,
-    MemMsgType.AMO_MAX, 
+    MemMsgType.AMO_MAX,
     MemMsgType.AMO_MAXU,
-    MemMsgType.AMO_XOR,   
+    MemMsgType.AMO_XOR,
   ]), label="type" )
   data = draw( st.integers(0, 0xffffffff), label="data" )
   if type_ >= AMO:

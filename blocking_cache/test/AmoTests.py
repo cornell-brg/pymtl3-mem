@@ -11,12 +11,11 @@ import random
 import pytest
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
 
 from test.sim_utils import (req, resp, CacheReqType, CacheRespType,
   MemReqType, MemRespType, obw, abw, gen_req_resp, rand_mem
 )
-from ifcs.MemMsg import mk_mem_msg
+from ifcs.MemMsg import mk_mem_msg, MemMsgType
 
 from constants.constants import *
 

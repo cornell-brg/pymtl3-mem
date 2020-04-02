@@ -13,7 +13,8 @@ import struct
 import random
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType, mk_mem_msg
+
+from ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 from ..BlockingCacheFL import ModelCache
 
@@ -29,8 +30,8 @@ class CacheFL_Tests( DmappedTestCases, AssoTestCases, AmoTests ):
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
                 test_verilog='zeros', max_cycles=500, trace=2 ):
 
-    cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
-     MemReqType, MemRespType, mem)
+    cache = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,
+                        MemReqType, MemRespType, mem )
     src = msgs[::2]
     sink = msgs[1::2]
     for trans in src:

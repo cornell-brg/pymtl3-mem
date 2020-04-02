@@ -10,8 +10,7 @@ Date   : 12/23/19
 
 from pymtl3                         import *
 from pymtl3.stdlib.ifcs.SendRecvIfc import RecvIfcRTL
-from pymtl3.stdlib.ifcs.MemMsg      import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.rtl.registers import RegEnRst, RegRst
+from pymtl3.stdlib.rtl.registers    import RegEnRst, RegRst
 
 class ReplacementPolicy (Component):
   """
