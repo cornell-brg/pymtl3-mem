@@ -12,23 +12,21 @@ class SramGenericPRTL( Component ):
   def construct( s, num_bits = 32, num_words = 256 ):
 
     addr_width = clog2( num_words )      # address width
-    nbytes     = int( num_bits + 7 ) // 8 # $ceil(num_bits/8)
-
-    dtype = mk_bits( num_bits )
+    dtype      = mk_bits( num_bits )
 
     # port names set to match the ARM memory compiler
 
     # clock (in PyMTL simulation it uses implict .clk port when
     # translated to Verilog, actual clock ports should be CE1
 
-    s.CE1  = InPort ( Bits1 )          # clk
-    s.WEB1 = InPort ( Bits1 )          # bar( write en )
-    s.OEB1 = InPort ( Bits1 )          # bar( out en )
-    s.CSB1 = InPort ( Bits1 )          # bar( whole SRAM en )
+    s.CE1  = InPort ( Bits1 )               # clk
+    s.WEB1 = InPort ( Bits1 )               # bar( write en )
+    s.OEB1 = InPort ( Bits1 )               # bar( out en )
+    s.CSB1 = InPort ( Bits1 )               # bar( whole SRAM en )
     s.A1   = InPort ( mk_bits(addr_width) ) # address
-    s.I1   = InPort ( dtype )   # write data
-    s.O1   = OutPort( dtype )   # read data
-    s.WBM1 = InPort ( mk_bits(nbytes) )     # byte write en
+    s.I1   = InPort ( dtype )               # write data
+    s.O1   = OutPort( dtype )               # read data
+    s.WBM1 = InPort ( mk_bits( num_bits ) ) # bit-level write mask
 
     # memory array
 
@@ -53,9 +51,9 @@ class SramGenericPRTL( Component ):
     def write_logic():
       for i in range( num_words ):
         s.ram_next[i] = s.ram[i]
-      for i in range( nbytes ):
+      for i in range( num_bits ):
         if not s.CSB1 and not s.WEB1 and s.WBM1[i]:
-          s.ram_next[s.A1][ i*8 : i*8+8 ] = s.I1[ i*8 : i*8+8 ]
+          s.ram_next[s.A1][i] = s.I1[i]
 
     @s.update
     def comb_logic():
@@ -71,4 +69,4 @@ class SramGenericPRTL( Component ):
         s.ram[i] <<= s.ram_next[i]
 
   def line_trace( s ):
-    return "(WE={} OE={} A1={} I1A={} O1={} s.WBM1={})".format(~s.WEB1, ~s.OEB1, s.A1, s.I1, s.O1, s.WBM1)
+    return f"(WE={~s.WEB1} OE={~s.OEB1} A1={s.A1} I1A={s.I1} O1={s.O1} s.WBM1={s.WBM1})"

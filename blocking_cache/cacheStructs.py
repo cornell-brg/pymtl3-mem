@@ -27,7 +27,7 @@ def mk_dpath_status_struct( p ):
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
     'line_valid_M1'       : p.BitsAssoc,
-    
+
     ## Signals for multiway associativity
     'hit_way_M1'          : p.BitsAssoclog2,
     'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
@@ -35,7 +35,7 @@ def mk_dpath_status_struct( p ):
 
     # M2 Dpath Signals
     'cachereq_type_M2'    : p.BitsType,
-    
+
     # MSHR Signals
     'MSHR_full'           : Bits1,
     'MSHR_empty'          : Bits1,
@@ -59,7 +59,7 @@ def mk_ctrl_signals_struct( p ):
     'tag_array_val_M0'      : p.BitsAssoc,
     'update_tag_way_M0'     : p.BitsAssoclog2,
     'tag_array_type_M0'     : Bits1,
-    'tag_array_wben_M0'     : p.BitsTagwben,
+    'tag_array_wben_M0'     : p.BitsTagWben,
     'ctrl_bit_rep_wr_M0'    : Bits1,
     'update_tag_cmd_M0'     : Bits3,
     'update_tag_sel_M0'     : Bits1,

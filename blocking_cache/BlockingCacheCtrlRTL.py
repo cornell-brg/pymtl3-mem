@@ -89,6 +89,7 @@ class BlockingCacheCtrlRTL ( Component ):
     clog_asso          = clog2( p.associativity )
     BitsAssoclog2      = p.BitsAssoclog2
     BitsClogNlines     = p.BitsClogNlines
+    BitsTagWben        = p.BitsTagWben
     bitwidth_num_lines = p.bitwidth_num_lines
 
     #=====================================================================
@@ -291,7 +292,7 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_tag_array_idx_sel_M0  = slice( 1, 2 )
     CS_update_tag_tag_sel_M0 = slice( 0, 1 )
 
-    tg_wbenf = p.tg_wbenf
+    tg_wbenf = BitsTagWben( -1 ) # all-enable
 
     none      = UpdateTagArrayUnit_CMD_NONE
     clear     = UpdateTagArrayUnit_CMD_CLEAR
@@ -332,7 +333,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.reg_en_M0 = ~s.stall_M0
       # use higher bits of the counter to select index
       s.ctrl.tag_array_init_idx_M0 = s.counter_M0.out[ clog_asso : bitwidth_num_lines ]
-      s.ctrl.is_amo_M0 = (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) | 
+      s.ctrl.is_amo_M0 = (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) |
                            ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
 
     @s.update
@@ -414,7 +415,7 @@ class BlockingCacheCtrlRTL ( Component ):
            s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE or
            s.trans_M1.out == TRANS_TYPE_REFILL ):
         s.ctrl.way_offset_M1 = s.way_ptr_M1.out
-      elif (s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out == 
+      elif (s.trans_M1.out == TRANS_TYPE_READ_REQ or s.trans_M1.out ==
         TRANS_TYPE_WRITE_REQ):
         if ~s.hit_M1:
           s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
@@ -449,9 +450,9 @@ class BlockingCacheCtrlRTL ( Component ):
       s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
       s.ctrl.wd_en_M1     = n
 
-      
-      if ( s.trans_M1.out == TRANS_TYPE_INIT_REQ or 
-           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or 
+
+      if ( s.trans_M1.out == TRANS_TYPE_INIT_REQ or
+           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
            s.trans_M1.out == TRANS_TYPE_READ_REQ ):
         s.hit_M1 = s.status.hit_M1
         s.ctrl.wd_en_M1 = s.hit_M1
@@ -474,7 +475,7 @@ class BlockingCacheCtrlRTL ( Component ):
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = s.status.hit_way_M1
           s.repreq_is_hit_M1  = s.hit_M1
-      
+
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.hit_M1 = s.status.hit_M1
         s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
@@ -482,30 +483,44 @@ class BlockingCacheCtrlRTL ( Component ):
         if s.hit_M1:
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
-          s.repreq_is_hit_M1  = y 
+          s.repreq_is_hit_M1  = y
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
 
-    # Calculating shift amount
+    # Generate byte-enable for SRAM write
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
-    s.wben_in    = Wire(p.BitsDataWben)
-    BitsDataWben = p.BitsDataWben
+    nbyte        = p.bitwidth_data_wben / 8
+    BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
     BitsLen      = p.BitsLen
+    BitsDataWben = p.BitsDataWben
+    bitwidth_data_wben = p.bitwidth_data_wben
+
+    s.wben_in = Wire( BitsNByte )
 
     @s.update
     def mask_select_M1():
       if s.status.len_M1 == BitsLen(0):
-        s.wben_in = BitsDataWben( data_array_word_mask )
+        s.wben_in = BitsNByte( data_array_word_mask )
       elif s.status.len_M1 == BitsLen(1):
-        s.wben_in = BitsDataWben( data_array_byte_mask )
+        s.wben_in = BitsNByte( data_array_byte_mask )
       elif s.status.len_M1 == BitsLen(2):
-        s.wben_in = BitsDataWben( data_array_2byte_mask )
+        s.wben_in = BitsNByte( data_array_2byte_mask )
       else:
-        s.wben_in = BitsDataWben( data_array_word_mask )
-    s.WbenGen = LeftLogicalShifter( BitsDataWben, clog2(p.bitwidth_data_wben) )(
+        s.wben_in = BitsNByte( data_array_word_mask )
+
+    s.WbenGen = LeftLogicalShifter( BitsNByte, clog2(nbyte) )(
       in_ = s.wben_in,
       shamt = s.status.offset_M1,
     )
+
+    # expand byte-enable to bit-enable
+    s.wben_M1 = Wire( BitsDataWben )
+
+    @s.update
+    def expand_wben_M1():
+      s.wben_M1 = BitsDataWben( 0 )
+      for i in range( bitwidth_data_wben ):
+        s.wben_M1[i] =s.WbenGen.out[ i / 8 ]
 
     s.was_stalled = RegRst( Bits1 )
     s.was_stalled.in_ //= s.ostall_M2
@@ -529,7 +544,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def cs_table_M1():
-      wben = s.WbenGen.out
+      wben = s.wben_M1
 
       #                                                                wben| ty|val|ostall|evict mux|alloc_en
       s.cs1                                                 = concat( wben0, x , n, n,     b1(0),    n       )
@@ -641,8 +656,8 @@ class BlockingCacheCtrlRTL ( Component ):
 
       s.ctrl.reg_en_M2 = ~s.stall_M2
       s.ctrl.stall_reg_en_M2 = ~s.was_stalled.out
-      s.ctrl.is_amo_M2 = (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) | 
-                         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) & 
+      s.ctrl.is_amo_M2 = (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) |
+                         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) &
                           ~s.is_evict_M2.out)
 
   #=======================================================================

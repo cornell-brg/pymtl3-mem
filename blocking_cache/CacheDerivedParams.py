@@ -45,7 +45,7 @@ class CacheDerivedParams:
     self.bitwidth_index            = clog2( self.nblocks_per_way )                   # index width
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
-    self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8         # Data array write byte bitwidth
+    self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8 * 8     # Data array write mask bitwidth
     self.bitwidth_rd_wd_mux_sel    = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read word mux bitwidth
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8 )                # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )               # Read half word mux sel bitwidth
@@ -62,7 +62,7 @@ class CacheDerivedParams:
     # sum of the tag bitwidth, valid, and dirty bit per word and rounded
     # up to multiple of 8
     self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty + 7 ) // 8 * 8
-    self.bitwidth_tag_wben         = self.bitwidth_tag_array // 8  # Tag array write byte bitwidth
+    self.bitwidth_tag_wben         = self.bitwidth_tag_array // 8 * 8  # Tag array write byte bitwidth
     self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
 
     print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
@@ -86,8 +86,8 @@ class CacheDerivedParams:
     self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset
     self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
     self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_remainder ) # number of bits free in tag array
-    self.BitsTagwben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write byte enable
-    self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write byte enable
+    self.BitsTagWben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write bit enable
+    self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write bit enable
     self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2
     self.BitsRd2ByteMuxSel = mk_bits( self.bitwidth_rd_2byte_mux_sel )
     self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
@@ -140,4 +140,4 @@ class CacheDerivedParams:
     self.acmx0 = Bits2(0) # access select 0
     self.wben0 = self.BitsDataWben(0)
     self.wbenf = self.BitsDataWben(-1)
-    self.tg_wbenf = self.BitsTagwben(-1)
+    self.tg_wbenf = self.BitsTagWben(-1)
