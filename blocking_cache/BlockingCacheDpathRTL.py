@@ -24,7 +24,7 @@ from .units.muxes              import *
 from .units.arithmetics        import Indexer, Comparator, CacheDataReplicator, OffsetLenSelector
 from .units.registers          import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 from .units.UpdateTagArrayUnit import UpdateTagArrayUnit
-from mem_pclib.rtl.utils       import StallEngine
+from .units.StallEngine        import StallEngine
 
 class BlockingCacheDpathRTL (Component):
 
@@ -362,7 +362,7 @@ class BlockingCacheDpathRTL (Component):
       offset = s.cachereq_M2.out.addr.offset,
       is_amo = s.ctrl.is_amo_M2,
     )
-    
+
     # selects the appropriate offset and len for memreq based on the type
     s.mem_req_off_len_M2 = OffsetLenSelector( p )(
       offset_i = s.cachereq_M2.out.addr.offset,

@@ -1,8 +1,7 @@
 """
 #=========================================================================
-# utils.py
+# StallEngine.py
 #=========================================================================
-RTL used in the cache dpath 
 
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 29 March 2020
@@ -16,7 +15,7 @@ from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
 class StallEngine( Component ):
 
   def construct( s, dtype ):
-    
+
     s.in_ = InPort( dtype )
     s.en  = InPort( Bits1 )
     s.out = OutPort( dtype )
@@ -34,7 +33,7 @@ class StallEngine( Component ):
       out = s.out
     )
     s.stall_mux_M2.sel //= lambda: ~s.en
-  
+
   def line_trace( s ):
     msg = ''
     msg += f'in:{s.in_} out:{s.out} en:{s.en} '
