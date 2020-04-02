@@ -1,4 +1,4 @@
-  
+
 """
 =========================================================================
  BlockingCacheFL.py
@@ -13,7 +13,8 @@ Date:   23 December 2019
 import math
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.MemMsg import MemMsgType
+
+from ifcs.MemMsg import MemMsgType
 
 # Assumes 32 bit address and 32 bit data
 
@@ -27,30 +28,30 @@ def req( CacheReqType, type_, opaque, addr, len, data ):
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
-  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
-  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
-  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
-  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
-  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
-  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
-  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
-  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
-  return CacheReqType( type_, opaque, addr, len, data )
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
+  return CacheReqType( type_, opaque, addr, len, 0, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
   elif type_ == 'wr': type_ = MemMsgType.WRITE
   elif type_ == 'in': type_ = MemMsgType.WRITE_INIT
   elif type_ == 'ad': type_ = MemMsgType.AMO_ADD
-  elif type_ == 'an': type_ = MemMsgType.AMO_AND  
-  elif type_ == 'or': type_ = MemMsgType.AMO_OR   
-  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP 
-  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN  
-  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU 
-  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX  
-  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU 
-  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR  
-  return CacheRespType( type_, opaque, test, len, data )
+  elif type_ == 'an': type_ = MemMsgType.AMO_AND
+  elif type_ == 'or': type_ = MemMsgType.AMO_OR
+  elif type_ == 'sw': type_ = MemMsgType.AMO_SWAP
+  elif type_ == 'mi': type_ = MemMsgType.AMO_MIN
+  elif type_ == 'mu': type_ = MemMsgType.AMO_MINU
+  elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
+  elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
+  elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
+  return CacheRespType( type_, opaque, test, len, 0, data )
 
 #-------------------------------------------------------------------------
 # Define AMO functions
@@ -279,7 +280,7 @@ class ModelCache:
     self.opaque += 1
 
   def amo(self, addr, value, opaque, func):
-    # AMO operations are on the word level only 
+    # AMO operations are on the word level only
     value = Bits(32, value)
     new_addr = addr & Bits32(0xfffffffc)
     self.tracker.amo_req(new_addr)

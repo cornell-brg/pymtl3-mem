@@ -257,6 +257,7 @@ def amo_hypo6():
   ]
 
 random_memory = rand_mem( 0, 0xffff )
+
 def rand( size, clw, associativity, num_trans = 100 ):
   random.seed(0xdeadbeef)
   global random_memory
@@ -305,7 +306,7 @@ def rand( size, clw, associativity, num_trans = 100 ):
     reqs.append( req( types[i], i, addr, len_, data) )
 
   trans = gen_req_resp( reqs, random_memory, CacheReqType, CacheRespType, MemReqType,
-  MemRespType, associativity, size )
+                        MemRespType, associativity, size )
 
   # print stats
   hits = 0

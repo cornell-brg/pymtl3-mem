@@ -61,10 +61,11 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
 #----------------------------------------------------------------------
 # Generate req/response pair from the requests using ref model
 #---------------------------------------------------------------------
+
 def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
- associativity, cacheSize):
-  cache = ModelCache(cacheSize, associativity, 0, CacheReqType, CacheRespType,
-  MemReqType, MemRespType, mem)
+                  associativity, cacheSize ):
+  cache = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,
+                      MemReqType, MemRespType, mem )
   for request in reqs:
     if request.type_ == MemMsgType.READ:
       cache.read(request.addr, request.opaque, request.len)
