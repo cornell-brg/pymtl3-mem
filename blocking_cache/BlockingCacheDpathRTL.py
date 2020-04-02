@@ -395,7 +395,8 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    msg += s.replacement_bits_M1.line_trace()
-    # for i in range( len( s.tag_arrays_M1 ) ):
-    #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},idx={s.tag_arrays_M1[i].port0_idx},type={s.tag_arrays_M1[i].port0_type},wdata={s.tag_array_struct_M0},rdata={s.tag_array_out_M1[i]};"
+    # msg += s.replacement_bits_M1.line_trace()
+    for i in range( len( s.tag_arrays_M1 ) ):
+      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
+    msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
     return msg

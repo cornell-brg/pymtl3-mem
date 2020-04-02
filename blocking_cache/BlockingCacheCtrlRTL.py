@@ -225,8 +225,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.counter_en_M0 = Wire( Bits1 )
     s.counter_en_M0 //= lambda: ( ( s.FSM_state_M0.out == M0_FSM_STATE_INIT ) or
-                                  ( s.FSM_state_M0.out == M0_FSM_STATE_INV ) or
-                                  ( s.trans_M0 == TRANS_TYPE_REPLAY_INV )
+                                  ( s.FSM_state_M0.out == M0_FSM_STATE_INV )
                                 )
 
     s.counter_M0.count_down //= b1(1)
