@@ -374,17 +374,19 @@ class BlockingCacheDpathRTL (Component):
 
     # Construct the memreq signal
     # build a addr struct to zip the addr, idx, and tag together
-    s.memreq_addr_out = Wire(p.StructAddr)
+    s.memreq_addr_out = Wire( p.StructAddr )
     s.memreq_addr_out.tag    //= s.cachereq_M2.out.addr.tag
     s.memreq_addr_out.index  //= s.cachereq_M2.out.addr.index
     s.memreq_addr_out.offset //= s.mem_req_off_len_M2.offset_o
+    s.memreq_addr_bits = Wire( p.BitsAddr )
                           # Bits32                     # StructAddr
-    connect_bits2bitstruct( s.memreq_M2.addr, s.memreq_addr_out )
+    connect_bits2bitstruct( s.memreq_addr_bits, s.memreq_addr_out )
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type
     s.memreq_M2.data    //= s.read_data_mux_M2.out
     s.memreq_M2.len     //= s.mem_req_off_len_M2.len
     s.memreq_M2.wr_mask //= s.write_mask_M2.out
+    s.memreq_M2.addr    //= s.memreq_addr_bits
 
     # Construct the cacheresp signal
     s.cacheresp_M2.data   //= s.data_size_mux_M2.out
@@ -395,8 +397,7 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.replacement_bits_M1.line_trace()
-    for i in range( len( s.tag_arrays_M1 ) ):
-      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
-    msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
+    # for i in range( len( s.tag_arrays_M1 ) ):
+    #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
+    # msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
     return msg
