@@ -95,6 +95,16 @@ def cache_invalidation_medium():
     req( 'rd',  17, 0x00000020, 0,  0),    resp( 'rd',  17, 0,   0,  0x21 ),
   ]
 
+def cache_flush_short():
+  return [
+    #    type   opq addr        len data                  type   opq test len data
+    req( 'rd',  1,  0x00000000, 0,  0),             resp( 'rd',  1,  0,   0,  0x01 ),
+    req( 'wr',  2,  0x00000010, 0,  0xdeadbeef),    resp( 'wr',  2,  0,   0,  0 ),
+    req( 'rd',  3,  0x00000020, 0,  0),             resp( 'rd',  3,  0,   0,  0x21 ),
+    req( 'wr',  4,  0x00000030, 0,  0x0c0ffee),     resp( 'wr',  4,  0,   0,  0 ),
+    req( 'fl',  5,  0,          0,  0),             resp( 'fl',  5,  0,   0,  0 ),
+  ]
+
 #-------------------------------------------------------------------------
 # Test driver
 #-------------------------------------------------------------------------
@@ -102,9 +112,10 @@ def cache_invalidation_medium():
 class InvFlushTests:
 
   @pytest.mark.parametrize(
-    " name,  test,                          stall_prob,latency,src_delay,sink_delay", [
-    ("INV",  cache_invalidation_short,      0,         1,      0,        0   ),
-    ("INV",  cache_invalidation_medium,     0,         1,      0,        0   ),
+    " name,   test,                          stall_prob,latency,src_delay,sink_delay", [
+    ("INV",   cache_invalidation_short,      0,         1,      0,        0   ),
+    ("INV",   cache_invalidation_medium,     0,         1,      0,        0   ),
+    ("FLUSH", cache_flush_short,             0,         1,      0,        0   ),
   ])
   def test_Cifer_2way_size256_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
                                       stall_prob, latency, src_delay, sink_delay ):

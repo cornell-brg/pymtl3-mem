@@ -34,12 +34,12 @@ class BlockingCacheDpathRTL (Component):
     # Interface
     #--------------------------------------------------------------------
 
-    s.cachereq_Y   = InPort ( p.CacheReqType )
+    s.cachereq_Y   = InPort ( p.CacheReqType  )
     s.cacheresp_M2 = OutPort( p.CacheRespType )
-    s.memresp_Y    = InPort ( p.MemRespType  )
-    s.memreq_M2    = OutPort( p.MemReqType)
-    s.ctrl         = InPort ( p.StructCtrl   ) # Control signals from Ctrl unit
-    s.status       = OutPort( p.StructStatus ) # Status signals to Ctrl unit
+    s.memresp_Y    = InPort ( p.MemRespType   )
+    s.memreq_M2    = OutPort( p.MemReqType    )
+    s.ctrl         = InPort ( p.StructCtrl    ) # Control signals from Ctrl unit
+    s.status       = OutPort( p.StructStatus  ) # Status signals to Ctrl unit
 
     #--------------------------------------------------------------------
     # M0 Stage
