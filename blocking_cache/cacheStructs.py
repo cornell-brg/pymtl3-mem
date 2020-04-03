@@ -236,7 +236,7 @@ def mk_tag_ctrl_M1_struct( p ):
 
 def mk_hit_stall_struct( p ):
   struct = mk_bitstruct( "StructHitInfo", {
-    'hit': Bits1,
+    'hit':     Bits1,
     'hit_way': p.BitsAssoclog2,
   } )
   return struct

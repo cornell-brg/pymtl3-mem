@@ -34,12 +34,12 @@ class BlockingCacheDpathRTL (Component):
     # Interface
     #--------------------------------------------------------------------
 
-    s.cachereq_Y   = InPort ( p.CacheReqType )
+    s.cachereq_Y   = InPort ( p.CacheReqType  )
     s.cacheresp_M2 = OutPort( p.CacheRespType )
-    s.memresp_Y    = InPort ( p.MemRespType  )
-    s.memreq_M2    = OutPort( p.MemReqType)
-    s.ctrl         = InPort ( p.StructCtrl   ) # Control signals from Ctrl unit
-    s.status       = OutPort( p.StructStatus ) # Status signals to Ctrl unit
+    s.memresp_Y    = InPort ( p.MemRespType   )
+    s.memreq_M2    = OutPort( p.MemReqType    )
+    s.ctrl         = InPort ( p.StructCtrl    ) # Control signals from Ctrl unit
+    s.status       = OutPort( p.StructStatus  ) # Status signals to Ctrl unit
 
     #--------------------------------------------------------------------
     # M0 Stage
@@ -374,11 +374,11 @@ class BlockingCacheDpathRTL (Component):
 
     # Construct the memreq signal
     # build a addr struct to zip the addr, idx, and tag together
-    s.memreq_addr_out = Wire(p.StructAddr)
+    s.memreq_addr_out = Wire( p.StructAddr )
     s.memreq_addr_out.tag    //= s.cachereq_M2.out.addr.tag
     s.memreq_addr_out.index  //= s.cachereq_M2.out.addr.index
     s.memreq_addr_out.offset //= s.mem_req_off_len_M2.offset_o
-                          # Bits32                     # StructAddr
+                            # Bits32          # StructAddr
     connect_bits2bitstruct( s.memreq_M2.addr, s.memreq_addr_out )
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type

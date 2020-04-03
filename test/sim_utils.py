@@ -163,6 +163,7 @@ def decode_type( type_ ):
   elif type_ == 'xu':  type_ = MemMsgType.AMO_MAXU
   elif type_ == 'xo':  type_ = MemMsgType.AMO_XOR
   elif type_ == 'inv': type_ = MemMsgType.INV
+  elif type_ == 'fl':  type_ = MemMsgType.FLUSH
   return type_ # as appropriate int
 
 def req( type_, opaque, addr, len, data ):
