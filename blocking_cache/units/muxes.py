@@ -107,18 +107,17 @@ class PMux( Component ):
   '''
 
   def construct( s, Type, ninputs ):
-
+    BitsSel = Bits1 if ninputs == 1 else mk_bits( clog2(ninputs) )
     s.in_ = [ InPort( Type ) for _ in range(ninputs) ]
     s.out = OutPort( Type )
+    s.sel = InPort( BitsSel )
 
-    if ninputs > 1:
-      s.sel = InPort( int if Type is int else mk_bits( clog2(ninputs) ) )
-      @s.update
-      def up_mux():
-        s.out = s.in_[ s.sel ]
+    @s.update
+    def up_mux():
+      s.out = s.in_[ s.sel ]
 
-    else:
-      s.sel = InPort ( Bits1 )
-      @s.update
-      def up_mux():
-        s.out = s.in_[0]
+  def line_trace( s ):
+    msg = ''
+    for i in range(len(s.in_)):
+      msg += f'i{i}:{s.in_[i]} '
+    return msg + f'o:{s.out} '

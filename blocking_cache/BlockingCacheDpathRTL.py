@@ -385,6 +385,7 @@ class BlockingCacheDpathRTL (Component):
     s.memreq_M2.data    //= s.read_data_mux_M2.out
     s.memreq_M2.len     //= s.mem_req_off_len_M2.len
     s.memreq_M2.wr_mask //= s.write_mask_M2.out
+    s.memreq_M2.addr    //= s.memreq_addr_bits
 
     # Construct the cacheresp signal
     s.cacheresp_M2.data   //= s.data_size_mux_M2.out
@@ -395,8 +396,7 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += s.replacement_bits_M1.line_trace()
-    for i in range( len( s.tag_arrays_M1 ) ):
-      msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
-    msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
+    # for i in range( len( s.tag_arrays_M1 ) ):
+    #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
+    # msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
     return msg
