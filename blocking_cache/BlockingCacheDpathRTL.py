@@ -378,8 +378,9 @@ class BlockingCacheDpathRTL (Component):
     s.memreq_addr_out.tag    //= s.cachereq_M2.out.addr.tag
     s.memreq_addr_out.index  //= s.cachereq_M2.out.addr.index
     s.memreq_addr_out.offset //= s.mem_req_off_len_M2.offset_o
-                            # Bits32          # StructAddr
-    connect_bits2bitstruct( s.memreq_M2.addr, s.memreq_addr_out )
+    s.memreq_addr_bits = Wire( p.BitsAddr )
+                            # Bits32            # StructAddr
+    connect_bits2bitstruct( s.memreq_addr_bits, s.memreq_addr_out )
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type
     s.memreq_M2.data    //= s.read_data_mux_M2.out
