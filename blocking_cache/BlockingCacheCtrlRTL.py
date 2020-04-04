@@ -671,6 +671,11 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.hit_stall_eng_en_M1 = ~s.was_stalled.out & ~s.evict_bypass
       s.ctrl.is_init_M1 = (s.trans_M1.out == TRANS_TYPE_INIT_REQ)
 
+      if s.trans_M1.out == TRANS_TYPE_FLUSH_READ:
+        s.ctrl.flush_idx_mux_sel_M1 = b1(1)
+      else:
+        s.ctrl.flush_idx_mux_sel_M1 = b1(0)
+
     #=====================================================================
     # M2 Stage
     #=====================================================================

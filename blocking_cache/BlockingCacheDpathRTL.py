@@ -166,6 +166,12 @@ class BlockingCacheDpathRTL (Component):
       in_ = s.cachereq_M0,
     )
 
+    # Idx for flushing
+    s.flush_idx_M1 = RegEnRst( p.BitsIdx )(
+      en  = s.ctrl.reg_en_M1,
+      in_ = s.ctrl.tag_array_init_idx_M0
+    )
+
     # Foward the M1 addr to M0
     connect_bits2bitstruct( s.cachereq_addr_M1_forward, s.cachereq_M1.out.addr )
 
@@ -279,9 +285,17 @@ class BlockingCacheDpathRTL (Component):
     for i in range( p.associativity ):
       s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i].out.tag
 
+    s.flush_idx_mux_M1 = Mux( p.BitsIdx, 2 )(
+      in_ = {
+        0: s.cachereq_M1.out.addr.index,
+        1: s.flush_idx_M1.out,
+      },
+      sel = s.ctrl.flush_idx_mux_sel_M1,
+    )
+
     s.evict_addr_M1 = Wire( p.StructAddr )
     s.evict_addr_M1.tag    //= s.evict_way_mux_M1.out
-    s.evict_addr_M1.index  //= s.cachereq_M1.out.addr.index
+    s.evict_addr_M1.index  //= s.flush_idx_mux_M1.out # s.cachereq_M1.out.addr.index
     s.evict_addr_M1.offset //= p.BitsOffset(0) # Memreq offset doesn't matter
 
     s.cachereq_M1_2 = Wire( p.PipelineMsg )
@@ -300,7 +314,8 @@ class BlockingCacheDpathRTL (Component):
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data
 
     s.index_offset_M1 = Indexer( p )(
-      index  = s.cachereq_M1.out.addr.index,
+      # index  = s.cachereq_M1.out.addr.index,
+      index  = s.cachereq_M1_2.addr.index,
       offset = s.ctrl.way_offset_M1,
     )
 
@@ -400,4 +415,5 @@ class BlockingCacheDpathRTL (Component):
     # for i in range( len( s.tag_arrays_M1 ) ):
     #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
     # msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
+    # msg += f"darray idx={s.index_offset_M1.out}"
     return msg
