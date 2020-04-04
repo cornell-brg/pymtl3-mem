@@ -14,7 +14,6 @@ class CounterEnRst( Component ):
 
   def construct( s, Type, reset_value=0 ):
 
-    s.reset      = InPort ( Bits1 )
     s.en         = InPort ( Bits1 )
     s.load       = InPort ( Bits1 )
     s.count_down = InPort ( Bits1 )
