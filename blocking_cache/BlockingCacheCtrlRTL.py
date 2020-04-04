@@ -306,6 +306,8 @@ class BlockingCacheCtrlRTL ( Component ):
     s.counter_M0.load       //= b1(0)
     s.counter_M0.en         //= lambda: s.ctrl.reg_en_M0 & s.counter_en_M0
 
+    # When the flush ack come back, the counter has already been
+    # decremented one extra time, so we need to add it back
     s.update_way_idx_M0 //= lambda: s.counter_M0.out + ( BitsClogNlines(1) if s.trans_M0 == TRANS_TYPE_FLUSH_WRITE else BitsClogNlines(0) )
 
     #---------------------------------------------------------------------
@@ -323,14 +325,11 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def cachereq_rdy_logic():
       s.cachereq_rdy = y
-      if s.FSM_state_M0.out == M0_FSM_STATE_INIT:
-        s.cachereq_rdy = n
-      if s.is_write_hit_clean_M0:
-        s.cachereq_rdy = n
-      elif s.stall_M0: # stall in the cache due to evict, stalls in M1 and M2
-        s.cachereq_rdy = n
-      elif s.status.MSHR_full or not s.status.MSHR_empty:
-        # no space in MSHR or we have replay
+      if ( s.FSM_state_M0.out == M0_FSM_STATE_INIT or
+           s.is_write_hit_clean_M0 or
+           s.stall_M0 or   # stall in the cache due to evict, stalls in M1 and M2
+           ( not s.status.MSHR_empty ) or
+           s.status.MSHR_full ):
         s.cachereq_rdy = n
 
     #---------------------------------------------------------------------
