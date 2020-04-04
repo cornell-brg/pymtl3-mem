@@ -98,7 +98,6 @@ class MSHRReg( Component ):
   def line_trace( s ):
     return f"[{'en' if s.en else '  '}|{s.in_} > {s.out}]"
 
-
 class ValReg( Component ):
   """
   Wrapper for the valid bits register. We need it because we need more control
