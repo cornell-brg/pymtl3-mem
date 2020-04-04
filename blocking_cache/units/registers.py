@@ -44,8 +44,9 @@ class DpathPipelineReg( Component ):
 
     s.reset_value = Wire( p.PipelineMsg )
     s.reset_value //= p.PipelineMsg(
-      p.BitsType(0), p.BitsOpaque(0), p.StructAddr(p.BitsTag(0),p.BitsIdx(0),\
-        p.BitsOffset(0)), p.BitsLen(0), p.BitsCacheline(0)
+      p.BitsType(0), p.BitsOpaque(0),
+      p.StructAddr( p.BitsTag(0), p.BitsIdx(0), p.BitsOffset(0) ),
+      p.BitsLen(0), p.BitsCacheline(0)
     )
 
     @s.update_ff
@@ -65,7 +66,7 @@ class CtrlPipelineReg( Component ):
     s.en  = InPort( Bits1 )
 
     s.reset_value = Wire( p.CtrlMsg )
-    s.reset_value //= p.CtrlMsg(b1(0),b1(0),b1(0),b1(0))
+    s.reset_value //= p.CtrlMsg( b1(0), b1(0), b1(0), b1(0) )
 
     @s.update_ff
     def up_regenrst():
@@ -85,7 +86,8 @@ class MSHRReg( Component ):
 
     s.reset_value = Wire(p.MSHRMsg)
     s.reset_value //= p.MSHRMsg(
-      p.BitsType(0), p.BitsOpaque(0), p.BitsAddr(0), p.BitsLen(0), p.BitsCacheline(0), p.BitsAssoclog2(0)
+      p.BitsType(0), p.BitsOpaque(0), p.BitsAddr(0), p.BitsLen(0),
+      p.BitsCacheline(0), p.BitsAssoclog2(0)
     )
 
     @s.update_ff
