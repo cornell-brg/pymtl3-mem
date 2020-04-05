@@ -552,7 +552,10 @@ class BlockingCacheCtrlRTL ( Component ):
           s.repreq_en_M1      = y
           s.repreq_is_hit_M1  = n
 
-        if not s.hit_M1 and s.is_dty_M1 and s.is_line_valid_M1:
+        # moyang: we are not check s.is_line_valid_M1 because for invalid
+        # but dirty cache lines (due to cache invalidation), we still need
+        # to evict them
+        if not s.hit_M1 and s.is_dty_M1:
           s.is_evict_M1 = y
 
         if not s.is_evict_M1 and s.trans_M1.out != TRANS_TYPE_CLEAN_HIT:
