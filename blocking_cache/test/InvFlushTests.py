@@ -50,6 +50,9 @@ def cifer_test_memory():
     0x00030004, 0xe,
     0x00030008, 0xf,
     0x0003000c, 0x10,
+    0x00030010, 0xaaa,
+    0x00030014, 0xbbb,
+    0x00030018, 0xccc,
     0x0000005c, 9,
     0x00000060, 0xa,
   ]
@@ -71,6 +74,31 @@ def cache_invalidation_short():
     req( 'rd',  8,  0x00000000, 0,  0),    resp( 'rd',  8,  0,   0,  0x01 ), # should be miss after invalidation
     req( 'rd',  9,  0x00000010, 0,  0),    resp( 'rd',  9,  0,   0,  0x11 ),
     req( 'rd',  10, 0x00000020, 0,  0),    resp( 'rd',  10, 0,   0,  0x21 ),
+  ]
+
+def cache_invalidation_short():
+  return [
+    #    type   opq addr        len data         type   opq test len data
+    req( 'rd',  1,  0x00000000, 0,  0),    resp( 'rd',  1,  0,   0,  0x01 ),
+    req( 'rd',  2,  0x00000010, 0,  0),    resp( 'rd',  2,  0,   0,  0x11 ),
+    req( 'rd',  3,  0x00000020, 0,  0),    resp( 'rd',  3,  0,   0,  0x21 ),
+    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  1,   0,  0x01 ), # hit
+    req( 'rd',  5,  0x00000010, 0,  0),    resp( 'rd',  5,  1,   0,  0x11 ),
+    req( 'rd',  6,  0x00000020, 0,  0),    resp( 'rd',  6,  1,   0,  0x21 ),
+    req( 'inv', 7,  0x00000000, 0,  0),    resp( 'inv', 7,  0,   0,  0 ),
+    req( 'rd',  8,  0x00000000, 0,  0),    resp( 'rd',  8,  0,   0,  0x01 ), # should be miss after invalidation
+    req( 'rd',  9,  0x00000010, 0,  0),    resp( 'rd',  9,  0,   0,  0x11 ),
+    req( 'rd',  10, 0x00000020, 0,  0),    resp( 'rd',  10, 0,   0,  0x21 ),
+  ]
+
+def cache_inv_evict_short():
+  return [
+    #    type   opq addr        len data             type   opq test len data
+    req( 'wr',  1,  0x00000014, 0,  0xc0ffee), resp( 'wr',  1,  0,   0,  0 ),        # line 0x10 are valid and dirty
+    req( 'rd',  2,  0x00020014, 0,  0),        resp( 'rd',  2,  0,   0,  0xa ),      # line 0x20 is of the same set as 0x10
+    req( 'inv', 3,  0x00000000, 0,  0),        resp( 'inv', 3,  0,   0,  0 ),        # line 0x10 are invalid but dirty
+    req( 'rd',  4,  0x00030014, 0,  0),        resp( 'rd',  4,  0,   0,  0xbbb ),    # this will replace the line addr=0x10
+    req( 'rd',  5,  0x00000014, 0,  0),        resp( 'rd',  5,  0,   0,  0xc0ffee ), # check if line 0x10 is properly written back
   ]
 
 def cache_invalidation_medium():
@@ -134,6 +162,7 @@ class InvFlushTests:
     " name,    test,                          stall_prob,latency,src_delay,sink_delay", [
     ("INV",    cache_invalidation_short,      0,         1,      0,        0   ),
     ("INV",    cache_invalidation_medium,     0,         1,      0,        0   ),
+    ("INV",    cache_inv_evict_short,         0,         1,      0,        0   ),
     ("FLUSH",  cache_flush_short,             0,         1,      0,        0   ),
     ("INVFL",  cache_inv_flush_short,         0,         1,      0,        0   ),
     ("INV",    cache_invalidation_short,      0,         5,      0,        0   ),
