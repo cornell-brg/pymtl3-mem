@@ -12,11 +12,16 @@ import argparse
 import os
 import sys
 
+file_path   = os.path.abspath( __file__ )
+dir_path    = os.path.dirname( file_path )
+parent_path = os.path.dirname( dir_path )
+sys.path.insert( 0, parent_path )
+
 # Import the translation pass from verilog backend
 from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 
 # Import the Cache generator
-from .BlockingCacheRTL import BlockingCacheRTL
+from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
 from ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 #=========================================================================
