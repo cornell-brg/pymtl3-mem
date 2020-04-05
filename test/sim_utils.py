@@ -19,8 +19,8 @@ from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
 
 # cifer specific memory req/resp msg
-from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-from ifcs.MemMsg import MemMsgType, mk_mem_msg
+from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 # # cifer specific memory req/resp msg
 # from ifcs.MemMsg import mk_mem_msg, MemMsgType

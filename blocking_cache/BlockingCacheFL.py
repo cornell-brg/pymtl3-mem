@@ -14,7 +14,7 @@ import math
 
 from pymtl3 import *
 
-from ifcs.MemMsg import MemMsgType
+from mem_ifcs.MemMsg import MemMsgType
 
 # Assumes 32 bit address and 32 bit data
 

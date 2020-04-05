@@ -15,7 +15,7 @@ from pymtl3 import *
 from test.sim_utils import (req, resp, CacheReqType, CacheRespType,
   MemReqType, MemRespType, obw, abw, gen_req_resp, rand_mem
 )
-from ifcs.MemMsg import mk_mem_msg, MemMsgType
+from mem_ifcs.MemMsg import mk_mem_msg, MemMsgType
 
 from constants.constants import *
 

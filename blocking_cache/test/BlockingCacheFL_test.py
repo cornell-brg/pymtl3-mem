@@ -14,7 +14,7 @@ import random
 
 from pymtl3 import *
 
-from ifcs.MemMsg import MemMsgType, mk_mem_msg
+from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 from ..BlockingCacheFL import ModelCache
 

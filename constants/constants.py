@@ -10,7 +10,7 @@ Date   : 10 February 2020
 
 from pymtl3 import *
 
-from ifcs.MemMsg import MemMsgType
+from mem_ifcs.MemMsg import MemMsgType
 
 # General
 

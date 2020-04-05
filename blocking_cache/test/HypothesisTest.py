@@ -16,9 +16,9 @@ from hypothesis import strategies as st
 from pymtl3 import *
 
 # cifer specific memory req/resp msg
-from ifcs.MemMsg import MemMsgType
-from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-from ifcs.MemMsg import mk_mem_msg
+from mem_ifcs.MemMsg import MemMsgType
+from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+from mem_ifcs.MemMsg import mk_mem_msg
 
 from constants.constants import *
 from test.sim_utils    import rand_mem
