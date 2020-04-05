@@ -22,8 +22,8 @@ from .HypothesisTest import HypothesisTests
 from .AmoTests import AmoTests
 from .InvFlushTests import InvFlushTests
 
-class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, HypothesisTests,
-                              InvFlushTests, AmoTests ):
+class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, InvFlushTests, AmoTests,
+                              HypothesisTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64, stall_prob=0,
