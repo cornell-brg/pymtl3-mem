@@ -211,7 +211,8 @@ class BlockingCacheCtrlRTL ( Component ):
           else:
             s.FSM_state_M0_next = M0_FSM_STATE_REPLAY
         # MSHR will be dealloc this cycle
-        s.FSM_state_M0_next = M0_FSM_STATE_READY
+        else:
+          s.FSM_state_M0_next = M0_FSM_STATE_READY
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH:
         if s.has_flush_sent_M1_bypass:
           s.FSM_state_M0_next = M0_FSM_STATE_FLUSH_WAIT
