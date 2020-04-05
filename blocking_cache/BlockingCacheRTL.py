@@ -22,7 +22,7 @@ from .CacheDerivedParams     import CacheDerivedParams
 class BlockingCacheRTL ( Component ):
 
   def construct( s, CacheReqType, CacheRespType, MemReqType, MemRespType,
-                 num_bytes=4096, associativity=1 ):
+                 num_bytes=4096, associativity=2 ):
     """
       Parameters
       ----------
