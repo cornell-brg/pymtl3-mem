@@ -32,7 +32,7 @@ def parse_cmdline():
   p.add_argument( "--dbw", default=32, type=int )
   p.add_argument( "--abw", default=32, type=int )
   p.add_argument( "--obw", default=8, type=int )
-  p.add_argument( "--asso", default=1, type=int )
+  p.add_argument( "--asso", default=2, type=int )
   opts = p.parse_args()
   return opts
 
