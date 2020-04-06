@@ -168,6 +168,16 @@ def cache_inv_simple2():
     req( 'rd',  3,  0x00000000, 0,  0),  resp( 'rd',  3,  0,   0,  0x01 ),
   ]
 
+def cache_inv_simple3():
+  return [
+    #    type   opq addr        len data               type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0xff),       resp( 'wr',  1,  0,   0,  0x00 ),
+    req( 'inv', 2,  0x00000000, 0,  0),          resp( 'inv', 2,  0,   0,  0 ),
+    req( 'wr',  3,  0x00000004, 0,  0x22),       resp( 'wr',  3,  0,   0,  0 ),
+    req( 'rd',  4,  0x00000000, 0,  0),          resp( 'rd',  4,  1,   0,  0xff ),
+    req( 'rd',  4,  0x00000004, 0,  0),          resp( 'rd',  4,  1,   0,  0x22 ),
+  ]
+
 def cache_inv_refill_short1():
   return [
     #    type   opq addr        len data               type   opq test len data
@@ -315,6 +325,7 @@ class InvFlushTests:
     ("INV",    cache_inv_refill_short4, 0,         1,      0,        0   ),
     ("INV",    cache_inv_simple1,       0,         1,      0,        0   ),
     ("INV",    cache_inv_simple2,       0,         1,      0,        0   ),
+    ("INV",    cache_inv_simple3,       0,         1,      0,        0   ),
     ("INV",    cache_inv_refill1,       0,         1,      0,        0   ),
     ("INV",    cache_inv_refill2,       0,         1,      0,        0   ),
     ("INV",    cache_inv_refill3,       0,         1,      0,        0   ),
