@@ -22,7 +22,7 @@ from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
-from ifcs.MemMsg import MemMsgType, mk_mem_msg
+from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 #=========================================================================
 # Command line processing
