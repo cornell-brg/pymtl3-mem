@@ -47,8 +47,8 @@ class BlockingCacheDpathRTL (Component):
 
     # Pipeline Registers
     s.pipeline_reg_M0 = DpathPipelineRegM0( p )(
+      in_ = s.memresp_Y,
       en  = s.ctrl.reg_en_M0,
-      in_ = s.memresp_Y
     )
 
     # Forward declaration: output from MSHR
@@ -162,14 +162,20 @@ class BlockingCacheDpathRTL (Component):
 
     # Pipeline registers
     s.cachereq_M1 = DpathPipelineReg( p )(
-      en  = s.ctrl.reg_en_M1,
       in_ = s.cachereq_M0,
+      en  = s.ctrl.reg_en_M1,
     )
 
     # Idx for flushing
     s.flush_idx_M1 = RegEnRst( p.BitsIdx )(
+      in_ = s.ctrl.tag_array_init_idx_M0,
       en  = s.ctrl.reg_en_M1,
-      in_ = s.ctrl.tag_array_init_idx_M0
+    )
+
+    s.dty_bits_mask_M1 = RegEnRst( p.BitsDirty )(
+      in_ = s.MSHR_dealloc_out.dirty_bits, # From M0 stage
+      en  = s.ctrl.reg_en_M1,
+      out = s.status.dty_bits_mask_M1,
     )
 
     # Foward the M1 addr to M0
@@ -228,6 +234,8 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.repl    //= s.ctrl.way_offset_M1
     s.MSHR_alloc_in_amo_hit_bypass = Wire( p.StructHit )
     s.MSHR_alloc_in.amo_hit //= s.MSHR_alloc_in_amo_hit_bypass.hit
+    s.MSHR_alloc_in.dirty_bits //=  lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
+    
     s.MSHR_alloc_id = Wire(p.BitsOpaque)
 
     s.mshr = MSHR( p, 1 )(
@@ -247,7 +255,10 @@ class BlockingCacheDpathRTL (Component):
       hit      = s.status.hit_M1,
       hit_way  = s.status.hit_way_M1,
       line_val = s.status.line_valid_M1,
+      inval_hit= s.status.inval_hit_M1,
     )
+    for i in range( p.associativity ):
+      s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
@@ -255,9 +266,6 @@ class BlockingCacheDpathRTL (Component):
     s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit,  s.comparator_set.hit_way )
     s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
     s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
-
-    for i in range( p.associativity ):
-      s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
 
     s.hit_way_M1_bypass //= s.comparator_set.hit_way
 
@@ -277,6 +285,7 @@ class BlockingCacheDpathRTL (Component):
 
     for i in range( p.associativity ):
       s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
+      s.comparator_set.dirty_line[i] //= s.dirty_line_detector_M1[i].is_dirty
 
     # Mux for choosing which way to evict
     s.evict_way_mux_M1 = PMux( p.BitsTag, p.associativity )(
@@ -416,4 +425,8 @@ class BlockingCacheDpathRTL (Component):
     #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
     # msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
     # msg += f"darray idx={s.index_offset_M1.out}"
+    # msg += f"w={s.ctrl.way_offset_M1} "
+    # msg += f"mshra={s.MSHR_alloc_in.dirty_bits} mshrd={s.MSHR_dealloc_out.dirty_bits}"
+    # msg += f"dty:{s.status.ctrl_bit_dty_rd_M1} "
+    msg += f"idx:{s.ctrl.way_offset_M1} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
     return msg

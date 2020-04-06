@@ -101,16 +101,6 @@ def cache_inv_evict_short():
     req( 'rd',  5,  0x00000014, 0,  0),        resp( 'rd',  5,  0,   0,  0xc0ffee ), # check if line 0x10 is properly written back
   ]
 
-def cache_inv_refill_short():
-  return [
-    #    type   opq addr        len data               type   opq test len data
-    req( 'wr',  1,  0x00000014, 0,  0xc0ffee),   resp( 'wr',  1,  0,   0,  0 ),          # line 0x10 word 1
-    req( 'wr',  2,  0x0000001c, 0,  0xdeadbeef), resp( 'wr',  2,  1,   0,  0 ),          # line 0x10 word 3
-    req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
-    req( 'rd',  4,  0x00000014, 0,  0),          resp( 'rd',  4,  0,   0,  0xc0ffee ),   # check the dirty word (0 and 3) are not overwritten by the refill
-    req( 'rd',  5,  0x0000001c, 0,  0),          resp( 'rd',  5,  0,   0,  0xdeadbeef ),
-  ]
-
 def cache_invalidation_medium():
   return [
     #    type   opq addr        len data         type   opq test len data
@@ -162,6 +152,79 @@ def cache_inv_flush_short():
     req( 'rd',  10, 0x00000030, 0,  0),          resp( 'rd',  10, 0,   0,  0x0c0ffee ),
   ]
 
+def cache_inv_simple1():
+  return [
+    #    type   opq addr        len data               type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0xff),       resp( 'wr',  1,  0,   0,  0x00 ),
+    req( 'inv', 2,  0x00000000, 0,  0),          resp( 'inv', 2,  0,   0,  0 ),
+    req( 'rd',  3,  0x00000000, 0,  0),          resp( 'rd',  3,  0,   0,  0xff ),
+  ]
+
+def cache_inv_simple2():
+  return [
+    #    type   opq addr        len data       type   opq test len data
+    req( 'rd',  1,  0x00000000, 0,  0),  resp( 'rd',  1,  0,   0,  0x01 ),
+    req( 'inv', 2,  0x00000000, 0,  0),  resp( 'inv', 2,  0,   0,  0 ),
+    req( 'rd',  3,  0x00000000, 0,  0),  resp( 'rd',  3,  0,   0,  0x01 ),
+  ]
+
+def cache_inv_refill_short1():
+  return [
+    #    type   opq addr        len data               type   opq test len data
+    req( 'wr',  1,  0x00000014, 0,  0xc0ffee),   resp( 'wr',  1,  0,   0,  0 ),          # line 0x10 word 1
+    req( 'wr',  2,  0x0000001c, 0,  0xdeadbeef), resp( 'wr',  2,  1,   0,  0 ),          # line 0x10 word 3
+    req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
+    req( 'rd',  4,  0x00000014, 0,  0),          resp( 'rd',  4,  0,   0,  0xc0ffee ),   # check the dirty word (0 and 3) are not overwritten by the refill
+    req( 'rd',  5,  0x0000001c, 0,  0),          resp( 'rd',  5,  1,   0,  0xdeadbeef ),
+  ]
+
+def cache_inv_refill_short2():
+  return [
+    #    type   opq addr        len data         type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0x1),  resp( 'wr',  1,  0,   0,  0x00 ), # way 0
+    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1 
+    req( 'inv', 3,  0x00000000, 0,  0),    resp( 'inv', 3,  0,   0,  0 ),
+    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  0,   0,  0x1 ), # way 1
+    req( 'rd',  5,  0x00020000, 0,  0),    resp( 'rd',  5,  0,   0,  0x2 ),
+    req( 'rd',  6,  0x00020004, 0,  0),    resp( 'rd',  6,  1,   0,  0x6 ),
+  ]
+
+def cache_inv_refill_short3():
+  return [
+    #    type   opq addr        len data         type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0x1),  resp( 'wr',  1,  0,   0,  0x00 ), # way 0
+    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1 
+    req( 'inv', 3,  0x00000000, 0,  0),    resp( 'inv', 3,  0,   0,  0 ),
+    req( 'rd',  4,  0x00020000, 0,  0),    resp( 'rd',  4,  0,   0,  0x2 ), # way 1
+    req( 'rd',  5,  0x00000000, 0,  0),    resp( 'rd',  5,  0,   0,  0x1 ),
+    req( 'rd',  6,  0x00020004, 0,  0),    resp( 'rd',  6,  1,   0,  0x6 ),
+  ]
+
+def cache_inv_refill_short4():
+  return [
+    #    type   opq addr        len data               type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0xc0ffee),   resp( 'wr',  1,  0,   0,  0 ),          # line 0x10 word 1
+    req( 'wr',  2,  0x0000000c, 0,  0xdeadbeef), resp( 'wr',  2,  1,   0,  0 ),          # line 0x10 word 3
+    req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
+    req( 'wr',  4,  0x00020000, 0,  0x1),        resp( 'wr',  4,  0,   0,  0 ),   # check the dirty word (0 and 3) are not overwritten by the refill
+    req( 'rd',  5,  0x0000000c, 0,  0),          resp( 'rd',  5,  0,   0,  0xdeadbeef ),
+    req( 'rd',  6,  0x00000000, 0,  0),          resp( 'rd',  6,  1,   0,  0xc0ffee ),
+    req( 'rd',  7,  0x00020000, 0,  0),          resp( 'rd',  7,  1,   0,  0x1 ),
+  ]
+
+def cache_inv_refill_short5():
+  # test with amo operations
+  return [
+    #    type   opq addr        len data               type   opq test len data
+    req( 'wr',  1,  0x00000000, 0,  0xc0ffee),   resp( 'wr',  1,  0,   0,  0 ),          # line 0x10 word 1
+    req( 'wr',  2,  0x0000000c, 0,  0xdeadbeef), resp( 'wr',  2,  1,   0,  0 ),          # line 0x10 word 3
+    req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
+    req( 'wr',  4,  0x00020000, 0,  0x1),        resp( 'wr',  4,  0,   0,  0 ),   # check the dirty word (0 and 3) are not overwritten by the refill
+    req( 'rd',  5,  0x0000000c, 0,  0),          resp( 'rd',  5,  0,   0,  0xdeadbeef ),
+    req( 'rd',  6,  0x00000000, 0,  0),          resp( 'rd',  6,  1,   0,  0xc0ffee ),
+    req( 'rd',  7,  0x00020000, 0,  0),          resp( 'rd',  7,  1,   0,  0x1 ),
+  ]
+
 #-------------------------------------------------------------------------
 # Test driver
 #-------------------------------------------------------------------------
@@ -173,7 +236,8 @@ class InvFlushTests:
     ("INV",    cache_invalidation_short,      0,         1,      0,        0   ),
     ("INV",    cache_invalidation_medium,     0,         1,      0,        0   ),
     ("INV",    cache_inv_evict_short,         0,         1,      0,        0   ),
-    ("INV",    cache_inv_refill_short,        0,         1,      0,        0   ),
+    ("INV",    cache_inv_refill_short1,       0,         1,      0,        0   ),
+    ("INV",    cache_inv_refill_short2,       0,         1,      0,        0   ),
     ("FLUSH",  cache_flush_short,             0,         1,      0,        0   ),
     ("INVFL",  cache_inv_flush_short,         0,         1,      0,        0   ),
     ("INV",    cache_invalidation_short,      0,         5,      0,        0   ),
@@ -206,4 +270,21 @@ class InvFlushTests:
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 4096, stall_prob, latency, src_delay, sink_delay, dump_vcd,
+                test_verilog, max_cycles )
+  
+  @pytest.mark.parametrize(
+    " name,    test,                    stall_prob,latency,src_delay,sink_delay", [
+    ("INV",    cache_inv_refill_short1, 0,         1,      0,        0   ),
+    ("INV",    cache_inv_refill_short2, 0,         1,      0,        0   ),
+    ("INV",    cache_inv_refill_short3, 0,         1,      0,        0   ),
+    ("INV",    cache_inv_refill_short4, 0,         1,      0,        0   ),
+    ("INV",    cache_inv_simple1,       0,         1,      0,        0   ),
+    ("INV",    cache_inv_simple2,       0,         1,      0,        0   ),
+    ])
+  def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                      stall_prob, latency, src_delay, sink_delay ):
+    mem = random_memory if name == "RAND" else cifer_test_memory()
+    MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
+    s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
+                64, stall_prob, latency, src_delay, sink_delay, dump_vcd,
                 test_verilog, max_cycles )

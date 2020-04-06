@@ -27,11 +27,13 @@ def mk_dpath_status_struct( p ):
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
     'line_valid_M1'       : p.BitsAssoc,
+    'inval_hit_M1'        : Bits1,
 
     ## Signals for multiway associativity
     'hit_way_M1'          : p.BitsAssoclog2,
     'ctrl_bit_rep_rd_M1'  : p.BitsAssoclog2,
     'amo_hit_way_M1'      : p.BitsAssoclog2,
+    'dty_bits_mask_M1'    : p.BitsDirty,
 
     # M2 Dpath Signals
     'cachereq_type_M2'    : p.BitsType,
@@ -167,13 +169,14 @@ def mk_MSHR_msg( p ):
     )
 
   req_cls = mk_bitstruct( cls_name, {
-    'type_':  p.BitsType,
-    'opaque': p.BitsOpaque,
-    'addr':   p.BitsAddr,
-    'len':    p.BitsLen,
-    'data':   p.BitsData,
-    'repl':   p.BitsAssoclog2,
-    'amo_hit':Bits1,
+    'type_':   p.BitsType,
+    'opaque':  p.BitsOpaque,
+    'addr':    p.BitsAddr,
+    'len':     p.BitsLen,
+    'data':    p.BitsData,
+    'repl':    p.BitsAssoclog2,
+    'amo_hit': Bits1,
+    'dirty_bits': p.BitsDirty
   },
   namespace = {
     '__str__' : req_to_str

@@ -96,6 +96,9 @@ class Comparator( Component ):
     s.hit       = OutPort( Bits1 )
     s.hit_way   = OutPort( p.BitsAssoclog2 )
     s.line_val  = OutPort( p.BitsAssoc )
+    
+    s.dirty_line = InPort( p.BitsAssoc )
+    s.inval_hit  = OutPort( Bits1 )
 
     BitsAssoclog2 = p.BitsAssoclog2
     BitsAssoc     = p.BitsAssoc
@@ -103,17 +106,20 @@ class Comparator( Component ):
 
     @s.update
     def comparing_logic():
-      s.hit      = n
-      s.hit_way  = BitsAssoclog2(0)
-      s.line_val = BitsAssoc(0)
-      if s.is_init:
-        s.hit = n
-      else:
+      s.hit       = n
+      s.inval_hit = n
+      s.hit_way   = BitsAssoclog2(0)
+      s.line_val  = BitsAssoc(0)
+      if not s.is_init:
         for i in range( associativity ):
-          if ( s.tag_array[i].val == CACHE_LINE_STATE_VALID ):
+          if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
             s.line_val[i] = y
             if s.tag_array[i].tag == s.addr_tag:
               s.hit = y
+              s.hit_way = BitsAssoclog2(i)
+          elif s.dirty_line[i]:
+            if s.tag_array[i].tag == s.addr_tag:
+              s.inval_hit = y
               s.hit_way = BitsAssoclog2(i)
     
   def line_trace( s ):
