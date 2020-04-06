@@ -568,13 +568,13 @@ class BlockingCacheCtrlRTL ( Component ):
           # during a refill for misses
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = s.status.hit_way_M1
-          s.repreq_is_hit_M1  = s.hit_M1
+          s.repreq_is_hit_M1  = s.hit_M1 | s.status.inval_hit_M1
 
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.hit_M1 = s.status.hit_M1
         s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
-        s.is_evict_M1 = s.is_dty_M1 & s.hit_M1
-        if s.hit_M1:
+        s.is_evict_M1 = s.is_dty_M1 & (s.hit_M1 | s.status.inval_hit_M1)
+        if s.hit_M1 | s.status.inval_hit_M1:
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
           s.repreq_is_hit_M1  = y

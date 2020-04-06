@@ -263,7 +263,8 @@ class BlockingCacheDpathRTL (Component):
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
     s.hit_stall_engine = StallEngine( StructHit )
-    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit,  s.comparator_set.hit_way )
+    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit|s.comparator_set.inval_hit,
+      s.comparator_set.hit_way )
     s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
     s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
 
@@ -427,6 +428,7 @@ class BlockingCacheDpathRTL (Component):
     # msg += f"darray idx={s.index_offset_M1.out}"
     # msg += f"w={s.ctrl.way_offset_M1} "
     # msg += f"mshra={s.MSHR_alloc_in.dirty_bits} mshrd={s.MSHR_dealloc_out.dirty_bits}"
-    # msg += f"dty:{s.status.ctrl_bit_dty_rd_M1} "
-    msg += f"idx:{s.ctrl.way_offset_M1} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
+    # msg += f"wben:{s.ctrl.data_array_wben_M1} "
+    msg += f"w:{s.status.MSHR_ptr} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
+    # msg += f"amo_hit:{s.status.amo_hit_M0} "
     return msg
