@@ -547,14 +547,17 @@ class BlockingCacheCtrlRTL ( Component ):
           s.repreq_en_M1      = y
           s.repreq_is_hit_M1  = n
 
-        # moyang: we are not check s.is_line_valid_M1 because for invalid
-        # but dirty cache lines (due to cache invalidation), we still need
-        # to evict them
-        if not s.hit_M1 and s.is_dty_M1:
-          s.is_evict_M1 = y
-        elif s.hit_M1 and not s.is_dty_M1:
-          if s.trans_M1.out == TRANS_TYPE_WRITE_REQ:
-            s.is_write_hit_clean_M0 = y
+        # Check that we don't have a situation where ~val and dty but we're
+        # still accessing the same address.
+        if not s.status.inval_hit_M1:
+          # moyang: we are not check s.is_line_valid_M1 because for invalid
+          # but dirty cache lines (due to cache invalidation), we still need
+          # to evict them
+          if not s.hit_M1 and s.is_dty_M1:
+            s.is_evict_M1 = y
+          elif s.hit_M1 and not s.is_dty_M1:
+            if s.trans_M1.out == TRANS_TYPE_WRITE_REQ:
+              s.is_write_hit_clean_M0 = y
 
         if not s.is_evict_M1:
           # Better to update replacement bit right away because we need it

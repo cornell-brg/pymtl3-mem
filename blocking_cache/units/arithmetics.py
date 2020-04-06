@@ -118,6 +118,9 @@ class Comparator( Component ):
               s.hit = y
               s.hit_way = BitsAssoclog2(i)
           elif s.dirty_line[i]:
+            # If not valid, then we check if the line is dirty at all 
+            # If its dirty, then we flag the transaction as an access to a 
+            # partially dirty line that may require special attention
             if s.tag_array[i].tag == s.addr_tag:
               s.inval_hit = y
               s.hit_way = BitsAssoclog2(i)
