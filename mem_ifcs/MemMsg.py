@@ -33,6 +33,8 @@ class MemMsgType:
   INV        = 14 # Cache invalidation
   FLUSH      = 15 # Cache flush
 
+  AMO = AMO_ADD
+
   str = {
     READ       : "rd",
     WRITE      : "wr",
@@ -70,6 +72,8 @@ MemMsgType_LR         = b4(12)
 MemMsgType_SC         = b4(13)
 MemMsgType_INV        = b4(14)
 MemMsgType_FLUSH      = b4(15)
+
+MemMsgType_AMO = MemMsgType_AMO_ADD
 
 #-------------------------------------------------------------------------
 # mk_mem_req_msg
