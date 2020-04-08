@@ -323,6 +323,11 @@ class BlockingCacheCtrlRTL ( Component ):
     s.stall_M0 = Wire( Bits1 )
     s.stall_M0 //= lambda: s.ostall_M1 | s.ostall_M2
 
+    # We will select MSHR dealloc output instead of incoming cachereq if:
+    # 1. We have a valid memresp ( we prioritize handling refills/replays ) 
+    # 2. We are in a middle of a replay
+    s.ctrl.memresp_mux_sel_M0 //= lambda: (s.FSM_state_M0.out == M0_FSM_STATE_REPLAY) | s.memresp_en_M0.out 
+
     @s.update
     def cachereq_rdy_logic():
       s.cachereq_rdy = y
@@ -337,12 +342,12 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 control signal table
     #---------------------------------------------------------------------
 
-    s.cs0 = Wire( mk_bits( 10 + p.bitwidth_tag_wben ) )
+    s.cs0 = Wire( mk_bits( 9 + p.bitwidth_tag_wben ) )
 
-    CS_tag_array_wben_M0     = slice( 10, 10 + p.bitwidth_tag_wben )
-    CS_wdata_mux_sel_M0      = slice( 9, 10 )
-    CS_addr_mux_sel_M0       = slice( 8, 9 )
-    CS_memresp_mux_sel_M0    = slice( 7, 8 )
+    CS_tag_array_wben_M0     = slice( 9, 9 + p.bitwidth_tag_wben )
+    CS_wdata_mux_sel_M0      = slice( 8, 9 )
+    CS_addr_mux_sel_M0       = slice( 7, 8 )
+    # CS_memresp_mux_sel_M0    = slice( 7, 8 )
     CS_tag_array_type_M0     = slice( 6, 7 )
     CS_tag_update_cmd_M0     = slice( 3, 6 )
     CS_tag_array_idx_sel_M0  = slice( 2, 3 )
@@ -368,31 +373,31 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def cs_table_M0():
-      #                                                             tag_wben|wdat_mux|addr_mux|memrp_mux|tg_ty|tag_update|tidx_sel|up_tag_sel|mshr_de
-      s.cs0 =                                             concat( wben_none, b1(0),   b1(0),       x,    rd,   none,      b1(0),   b1(0),     n )
-      if   s.trans_M0 == TRANS_TYPE_CACHE_INIT:   s.cs0 = concat( wben_all,  b1(0),   b1(0),       x,    wr,   clear,     b1(1),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_REFILL:       s.cs0 = concat( wben_all,  b1(1),   b1(0),   b1(1),    wr,   rd_refill, b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  s.cs0 = concat( wben_none,     x,   b1(0),   b1(1),    rd,   none,      b1(0),   b1(0),     y )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: s.cs0 = concat( wben_all,  b1(0),   b1(0),   b1(1),    wr,   wr_refill, b1(0),   b1(0),     y )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( wben_all,  b1(1),   b1(0),   b1(1),    wr,   clear,     b1(0),   b1(0),     y )
-      elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    s.cs0 = concat( wben_all,  b1(0),   b1(1),   b1(0),    wr,   wr_hit,    b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     s.cs0 = concat( wben_all,  b1(0),   b1(0),   b1(0),    wr,   rd_refill, b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( wben_none, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    s.cs0 = concat( wben_none, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      s.cs0 = concat( wben_none, b1(0),   b1(0),   b1(0),    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_INV_START:    s.cs0 = concat( wben_none, b1(0),   b1(0),       x,    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_INV_WRITE:    s.cs0 = concat( wben_val,  b1(0),   b1(0),       x,    wr,   inv,       b1(1),   b1(1),     n )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_INV:   s.cs0 = concat( wben_val,  b1(0),   b1(0),   b1(1),    wr,   inv,       b1(1),   b1(1),     y )
-      elif s.trans_M0 == TRANS_TYPE_FLUSH_START:  s.cs0 = concat( wben_none, b1(0),   b1(0),       x,    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_FLUSH_READ:   s.cs0 = concat( wben_none, b1(0),   b1(0),       x,    rd,   none,      b1(1),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_FLUSH_WAIT:   s.cs0 = concat( wben_none, b1(0),   b1(0),       x,    rd,   none,      b1(0),   b1(0),     n )
-      elif s.trans_M0 == TRANS_TYPE_FLUSH_WRITE:  s.cs0 = concat( wben_dty,  b1(0),   b1(0),   b1(1),    wr,   flush,     b1(1),   b1(1),     n )
-      elif s.trans_M0 == TRANS_TYPE_REPLAY_FLUSH: s.cs0 = concat( wben_dty,  b1(0),   b1(0),   b1(1),    wr,   flush,     b1(1),   b1(1),     y )
+      #                                                             tag_wben|wdat_mux|addr_mux|tg_ty|tag_update|tidx_sel|up_tag_sel|mshr_de
+      s.cs0 =                                             concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      if   s.trans_M0 == TRANS_TYPE_CACHE_INIT:   s.cs0 = concat( wben_all,  b1(0),   b1(0),   wr,   clear,     b1(1),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_REFILL:       s.cs0 = concat( wben_all,  b1(1),   b1(0),   wr,   rd_refill, b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_READ:  s.cs0 = concat( wben_none,     x,   b1(0),   rd,   none,      b1(0),   b1(0),     y )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_WRITE: s.cs0 = concat( wben_all,  b1(0),   b1(0),   wr,   wr_refill, b1(0),   b1(0),     y )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO:   s.cs0 = concat( wben_all,  b1(1),   b1(0),   wr,   clear,     b1(0),   b1(0),     y )
+      elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:    s.cs0 = concat( wben_all,  b1(0),   b1(1),   wr,   wr_hit,    b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_INIT_REQ:     s.cs0 = concat( wben_all,  b1(0),   b1(0),   wr,   rd_refill, b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_READ_REQ:     s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_WRITE_REQ:    s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_AMO_REQ:      s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_INV_START:    s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_INV_WRITE:    s.cs0 = concat( wben_val,  b1(0),   b1(0),   wr,   inv,       b1(1),   b1(1),     n )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_INV:   s.cs0 = concat( wben_val,  b1(0),   b1(0),   wr,   inv,       b1(1),   b1(1),     y )
+      elif s.trans_M0 == TRANS_TYPE_FLUSH_START:  s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_FLUSH_READ:   s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(1),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_FLUSH_WAIT:   s.cs0 = concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
+      elif s.trans_M0 == TRANS_TYPE_FLUSH_WRITE:  s.cs0 = concat( wben_dty,  b1(0),   b1(0),   wr,   flush,     b1(1),   b1(1),     n )
+      elif s.trans_M0 == TRANS_TYPE_REPLAY_FLUSH: s.cs0 = concat( wben_dty,  b1(0),   b1(0),   wr,   flush,     b1(1),   b1(1),     y )
 
       s.ctrl.tag_array_wben_M0      = s.cs0[ CS_tag_array_wben_M0     ]
       s.ctrl.wdata_mux_sel_M0       = s.cs0[ CS_wdata_mux_sel_M0      ]
       s.ctrl.addr_mux_sel_M0        = s.cs0[ CS_addr_mux_sel_M0       ]
-      s.ctrl.memresp_mux_sel_M0     = s.cs0[ CS_memresp_mux_sel_M0    ]
+      # s.ctrl.memresp_mux_sel_M0     = s.cs0[ CS_memresp_mux_sel_M0    ]
       s.ctrl.tag_array_type_M0      = s.cs0[ CS_tag_array_type_M0     ]
       s.ctrl.update_tag_cmd_M0      = s.cs0[ CS_tag_update_cmd_M0     ]
       s.ctrl.tag_array_idx_sel_M0   = s.cs0[ CS_tag_array_idx_sel_M0  ]
