@@ -13,6 +13,9 @@ from pymtl3 import *
 from .cacheStructs import *
 
 class CacheDerivedParams:
+  def __repr__( self ):
+    return f"{self.CacheReqType}_{self.CacheRespType}_"\
+           f"{self.MemReqType}_{self.MemRespType}_{self.num_bytes}_{self.associativity}"
 
   def __init__( self, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 num_bytes, associativity ):

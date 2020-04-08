@@ -162,9 +162,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.no_flush_needed_M1_bypass = Wire( Bits1 )
     s.prev_flush_done_M0        = Wire( Bits1 )
 
-    s.prev_flush_done_M0 //= lambda: ( s.no_flush_needed_M1_bypass |
-                                       ( s.has_flush_sent_M1_bypass & s.memresp_wr_ack_M0 )
-                                     )
+    s.prev_flush_done_M0 //= lambda: s.no_flush_needed_M1_bypass | s.memresp_wr_ack_M0
 
     #---------------------------------------------------------------------
     # M0 stage FSM
@@ -309,7 +307,12 @@ class BlockingCacheCtrlRTL ( Component ):
 
     # When the flush ack come back, the counter has already been
     # decremented one extra time, so we need to add it back
-    s.update_way_idx_M0 //= lambda: s.counter_M0.out + ( BitsClogNlines(1) if s.trans_M0 == TRANS_TYPE_FLUSH_WRITE else BitsClogNlines(0) )
+    @s.update
+    def update_way_idx_M0_loigc():
+      s.update_way_idx_M0 = s.counter_M0.out
+      if ( ( s.trans_M0 == TRANS_TYPE_FLUSH_WRITE ) |
+           ( s.trans_M0 == TRANS_TYPE_REPLAY_FLUSH ) ):
+        s.update_way_idx_M0 = s.counter_M0.out + BitsClogNlines(1)
 
     #---------------------------------------------------------------------
     # M0 control signals
@@ -429,7 +432,7 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.tag_array_val_M0[i] = y
             s.ctrl.update_tag_way_M0 = BitsAssoclog2(i)
       elif ( s.trans_M0 == TRANS_TYPE_REFILL or
-             s.trans_M0 == TRANS_TYPE_REPLAY_WRITE ): 
+             s.trans_M0 == TRANS_TYPE_REPLAY_WRITE ):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
       elif s.trans_M0 == TRANS_TYPE_REPLAY_AMO and s.status.amo_hit_M0:
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] = y
@@ -500,7 +503,7 @@ class BlockingCacheCtrlRTL ( Component ):
              s.trans_M1.out == TRANS_TYPE_WRITE_REQ ):
         if ~s.hit_M1:
           if s.status.inval_hit_M1:
-            s.ctrl.way_offset_M1 = s.status.hit_way_M1 
+            s.ctrl.way_offset_M1 = s.status.hit_way_M1
           else:
             s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
@@ -582,7 +585,7 @@ class BlockingCacheCtrlRTL ( Component ):
           s.repreq_is_hit_M1  = y
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
-  
+
     # Generate byte-enable for SRAM write
     # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
     nbyte        = p.bitwidth_data_wben / 8

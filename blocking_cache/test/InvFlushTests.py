@@ -192,9 +192,9 @@ def cache_inv_refill_short2():
   return [
     #    type   opq addr        len data         type   opq test len data
     req( 'wr',  1,  0x00000000, 0,  0x1),  resp( 'wr',  1,  0,   0,  0x00 ), # way 0
-    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1 
+    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1
     req( 'inv', 3,  0x00000000, 0,  0),    resp( 'inv', 3,  0,   0,  0 ),
-    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  0,   0,  0x1 ), # way 1
+    req( 'rd',  4,  0x00000000, 0,  0),    resp( 'rd',  4,  0,   0,  0x1 ),  # way 1
     req( 'rd',  5,  0x00020000, 0,  0),    resp( 'rd',  5,  0,   0,  0x2 ),
     req( 'rd',  6,  0x00020004, 0,  0),    resp( 'rd',  6,  1,   0,  0x6 ),
   ]
@@ -203,9 +203,9 @@ def cache_inv_refill_short3():
   return [
     #    type   opq addr        len data         type   opq test len data
     req( 'wr',  1,  0x00000000, 0,  0x1),  resp( 'wr',  1,  0,   0,  0x00 ), # way 0
-    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1 
+    req( 'wr',  2,  0x00020000, 0,  0x2),  resp( 'wr',  2,  0,   0,  0x00 ), # way 1
     req( 'inv', 3,  0x00000000, 0,  0),    resp( 'inv', 3,  0,   0,  0 ),
-    req( 'rd',  4,  0x00020000, 0,  0),    resp( 'rd',  4,  0,   0,  0x2 ), # way 1
+    req( 'rd',  4,  0x00020000, 0,  0),    resp( 'rd',  4,  0,   0,  0x2 ),  # way 1
     req( 'rd',  5,  0x00000000, 0,  0),    resp( 'rd',  5,  0,   0,  0x1 ),
     req( 'rd',  6,  0x00020004, 0,  0),    resp( 'rd',  6,  1,   0,  0x6 ),
   ]
@@ -216,7 +216,7 @@ def cache_inv_refill_short4():
     req( 'wr',  1,  0x00000000, 0,  0xc0ffee),   resp( 'wr',  1,  0,   0,  0 ),          # line 0x10 word 1
     req( 'wr',  2,  0x0000000c, 0,  0xdeadbeef), resp( 'wr',  2,  1,   0,  0 ),          # line 0x10 word 3
     req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
-    req( 'wr',  4,  0x00020000, 0,  0x1),        resp( 'wr',  4,  0,   0,  0 ),   # check the dirty word (0 and 3) are not overwritten by the refill
+    req( 'wr',  4,  0x00020000, 0,  0x1),        resp( 'wr',  4,  0,   0,  0 ),          # check the dirty word (0 and 3) are not overwritten by the refill
     req( 'rd',  5,  0x0000000c, 0,  0),          resp( 'rd',  5,  0,   0,  0xdeadbeef ),
     req( 'rd',  6,  0x00000000, 0,  0),          resp( 'rd',  6,  1,   0,  0xc0ffee ),
     req( 'rd',  7,  0x00020000, 0,  0),          resp( 'rd',  7,  1,   0,  0x1 ),
@@ -230,8 +230,8 @@ def cache_inv_refill1():
     req( 'wr',  2,  0x0002000c, 0,  0xdeadbeef), resp( 'wr',  2,  0,   0,  0 ),          # line 0x10 word 3
     req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
     req( 'rd',  4,  0x00000000, 0,  0),          resp( 'rd',  4,  0,   0,  0xc0ffee ),
-    req( 'rd',  5,  0x00030000, 0,  0),          resp( 'rd',  5,  0,   0,  0xd ), # replace way 1; LRU way 0
-    req( 'rd',  7,  0x00000000, 0,  0),          resp( 'rd',  7,  1,   0,  0xc0ffee ), # LRU way 1
+    req( 'rd',  5,  0x00030000, 0,  0),          resp( 'rd',  5,  0,   0,  0xd ),        # replace way 1; LRU way 0
+    req( 'rd',  7,  0x00000000, 0,  0),          resp( 'rd',  7,  1,   0,  0xc0ffee ),   # LRU way 1
     req( 'rd',  6,  0x0002000c, 0,  0),          resp( 'rd',  6,  0,   0,  0xdeadbeef ), # replace way 1; LRU way 0
   ]
 
@@ -254,8 +254,8 @@ def cache_inv_refill3():
     req( 'wr',  2,  0x00020000, 0,  0x1),        resp( 'wr',  2,  0,   0,  0 ),          # line 0x10 word 3
     req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
     req( 'ad',  4,  0x00020000, 0,  0x10),       resp( 'ad',  4,  0,   0,  0x1 ),
-    req( 'rd',  5,  0x00000000, 0,  0),          resp( 'rd',  5,  0,   0,  0xc0ffee ), # replace way 1; LRU way 0
-    req( 'rd',  6,  0x00020000, 0,  0),          resp( 'rd',  6,  0,   0,  0x11 ), # replace way 1; LRU way 0
+    req( 'rd',  5,  0x00000000, 0,  0),          resp( 'rd',  5,  0,   0,  0xc0ffee ),   # replace way 1; LRU way 0
+    req( 'rd',  6,  0x00020000, 0,  0),          resp( 'rd',  6,  0,   0,  0x11 ),       # replace way 1; LRU way 0
   ]
 
 # test with amos b4 inv
@@ -266,8 +266,8 @@ def cache_inv_refill4():
     req( 'wr',  2,  0x00020000, 0,  0x1),        resp( 'wr',  2,  0,   0,  0 ),          # line 0x10 word 3
     req( 'ad',  4,  0x00020000, 0,  0x10),       resp( 'ad',  4,  0,   0,  0x1 ),
     req( 'inv', 3,  0x00000000, 0,  0),          resp( 'inv', 3,  0,   0,  0 ),          # line 0x10 are invalid but dirty
-    req( 'rd',  5,  0x00000000, 0,  0),          resp( 'rd',  5,  0,   0,  0xc0ffee ), # replace way 1; LRU way 0
-    req( 'rd',  6,  0x00020000, 0,  0),          resp( 'rd',  6,  0,   0,  0x11 ), # replace way 1; LRU way 0
+    req( 'rd',  5,  0x00000000, 0,  0),          resp( 'rd',  5,  0,   0,  0xc0ffee ),   # replace way 1; LRU way 0
+    req( 'rd',  6,  0x00020000, 0,  0),          resp( 'rd',  6,  0,   0,  0x11 ),       # replace way 1; LRU way 0
   ]
 
 #-------------------------------------------------------------------------
@@ -316,7 +316,7 @@ class InvFlushTests:
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 4096, stall_prob, latency, src_delay, sink_delay, dump_vcd,
                 test_verilog, max_cycles )
-  
+
   @pytest.mark.parametrize(
     " name,    test,                    stall_prob,latency,src_delay,sink_delay", [
     ("INV",    cache_inv_refill_short1, 0,         1,      0,        0   ),
