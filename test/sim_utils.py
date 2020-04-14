@@ -12,14 +12,15 @@ import struct
 import random
 from pymtl3 import *
 
+from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
-from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
+from pymtl3.passes.backends.verilog  import (
+  TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass)
 
 # cifer specific memory req/resp msg
-# from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 from .ProcModel import ProcModel
@@ -40,6 +41,7 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
           vl_trace = True if dump_vcd else False, # view vcd using gtkwave
           vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
       )
+    th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
 
   th.apply( SimulationPass() )
@@ -215,19 +217,38 @@ class CacheTestParams:
 #-------------------------------------------------------------------------
 # MultiCacheTestHarness
 #-------------------------------------------------------------------------
+
+# Helper module to store all the caches for translation
+class MultiCache( Component ):
+
+  def construct( s, Cache, p ):
+    s.p = p
+    s.config_verilog_translate = TranslationConfigs(
+      explicit_module_name = f'MultiCache_{p.ncaches}'
+    )
+    s.mem_minion_ifc = [ MemMinionIfcRTL( p.CacheReqType, p.CacheRespType ) for i in range( p.ncaches ) ]
+    s.mem_master_ifc = [ MemMasterIfcRTL( p.MemReqType, p.MemRespType ) for i in range( p.ncaches ) ]
+
+    s.caches = [ Cache( p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType,
+                         p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]
+    for i in range( p.ncaches ):
+      s.caches[i].mem_minion_ifc //= s.mem_minion_ifc[i]
+      s.caches[i].mem_master_ifc //= s.mem_master_ifc[i]
+  
+  def line_trace( s ):
+    for i in range(s.p.ncaches):
+      msg += s.caches[i].line_trace()
+
 # Test Harness for multi-cache tests
 class MultiCacheTestHarness( Component ):
   def construct( s, Cache, test_params ):
     p = s.tp = test_params
     s.proc = MulticoreModel( p )
-    s.cache = [ Cache( p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType,
-                         p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]
-    # s.net   = ReqRespMemNet( MemMsg.Req, MemMsg.Resp, ncaches )
+    s.cache = MultiCache( Cache, p )
     s.mem   = CiferMemoryCL( p.ncaches, [(p.MemReqType, p.MemRespType)]*p.ncaches, latency=p.latency )
     for i in range( p.ncaches ):
-      connect( s.cache[i].mem_master_ifc,      s.mem.ifc[i]      )
-      s.proc.mem_master_ifc[i].req //= s.cache[i].mem_minion_ifc.req
-      s.proc.mem_master_ifc[i].resp //= s.cache[i].mem_minion_ifc.resp
+      connect( s.proc.mem_master_ifc[i],  s.cache.mem_minion_ifc[i] )
+      connect( s.cache.mem_master_ifc[i], s.mem.ifc[i]              )
   
   def load( s ):
     addrs = s.tp.mem[::2]
@@ -241,11 +262,8 @@ class MultiCacheTestHarness( Component ):
     return s.proc.done()
 
   def line_trace( s, trace ):
-    
     msg = ''
-    for i in range(s.tp.ncaches):
-      msg += s.cache[i].line_trace()
-    # msg += s.cache[1].line_trace()
-    # msg += s.proc.line_trace()
-    # msg+=s.mem.
+    # msg += s.cache.line_trace()
+    msg += s.proc.line_trace()
+    # msg += s.mem.line_trace()
     return msg

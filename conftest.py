@@ -9,10 +9,9 @@ def pytest_addoption(parser):
                     help="run verilog translation, " )
   parser.addoption( "--dump-vcd", action="store_true",
                     help="dump vcd for each test" )
-  parser.addoption( "--trace-verbosity", action="store", default=1, choices=[0,1,2], type=int,
+  parser.addoption( "--line-trace", action="store", default=1, choices=[0,1,2], type=int,
                     help="verbosity of line trace" )
-  parser.addoption( "--max-cycles", action="store",
-                    type=int, default=2000,
+  parser.addoption( "--max-cycles", action="store", type=int, default=2000,
                     help="max number of cycles to be simulated" )
 
 @pytest.fixture
@@ -31,8 +30,8 @@ def dump_vcd(request):
     return ''
 
 @pytest.fixture
-def trace_verbosity(request):
-  return request.config.option.trace_verbosity
+def line_trace(request):
+  return request.config.option.line_trace
 
 @pytest.fixture
 def max_cycles(request):

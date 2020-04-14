@@ -29,7 +29,6 @@ class MulticoreModel( Component ):
     s.p = p
     srcMsg = mk_multicache_test_struct( p )
 
-
     s.mem_master_ifc = [MemMasterIfcRTL( p.CacheReqType, p.CacheRespType ) 
     for _ in range(p.ncaches)]
 
@@ -103,13 +102,23 @@ class MulticoreModel( Component ):
   def line_trace( s ):
     msg = ''
     for i in range( s.p.ncaches ):
-      msg += f'{i}:' + s.src[i].line_trace() 
+      if s.src[i].send.en:
+        msg += f'{i}:{s.src[i].send.msg} '  
+      elif s.src[i].send.rdy:
+        msg += ' '*(39)
+      else:
+        msg += '#'+' '*(38)
     for i in range( s.p.ncaches ):
-      msg += f'{i}:' + s.sink[i].line_trace() 
+      if s.sink[i].recv.en:
+        msg += f'{i}:{s.sink[i].recv.msg} '  
+      elif s.sink[i].recv.rdy:
+        msg += ' '*(23)
+      else:
+        msg += ' #'+' '*(21)
 
-    msg += s.curr_order_in_flight.line_trace()
-    msg += s.curr_order.line_trace()
-    msg += f' lden:{s.curr_order_in_flight.ld_en} lda:{s.curr_order_in_flight.ld_amt} '
+    # msg += s.curr_order_in_flight.line_trace()
+    # msg += s.curr_order.line_trace()
+    # msg += f' lden:{s.curr_order_in_flight.ld_en} lda:{s.curr_order_in_flight.ld_amt} '
     # msg += s.proc_model[0].line_trace()
 
     return msg

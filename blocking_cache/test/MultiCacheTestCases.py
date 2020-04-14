@@ -44,31 +44,72 @@ def multicache_mem():
     0x00002074, 0x75ca1ded,
   ]
 
-def gen_test1():
+def simple_2c():
   associativities = [ 1, 1 ]
   cache_sizes = [ 32, 32 ]
   msgs = [
-    #     cache ord type  opq addr        len data         type  opq test len  data
-    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,   0          ),
-    mreq( 0,    0,  'wr', 0,  0x00000000, 0,  0x01), resp( 'wr', 0,  1,   0,   0          ),
-    mreq( 0,    0,  'rd', 0,  0x00020004, 0,  0x00), resp( 'rd', 0,  0,   0,   0xd        ),
-    mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,   0x01       ),
+    #     cache ord type  opq addr        len data         type  opq test len data
+    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0          ),
+    mreq( 0,    0,  'wr', 0,  0x00000000, 0,  0x01), resp( 'wr', 0,  1,   0,  0          ),
+    mreq( 0,    0,  'rd', 0,  0x00020004, 0,  0x00), resp( 'rd', 0,  0,   0,  0xd        ),
+    mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01       ),
   ]
   return associativities, cache_sizes, msgs
 
+def inv_fl_2c():
+  associativities = [ 1, 1 ]
+  cache_sizes = [ 32, 32 ]
+  msgs = [
+    #     cache ord type   opq addr        len data         type   opq test len data
+    mreq( 0,    0,  'wr',  0,  0x00000000, 0,  0x01), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 0,    0,  'wr',  1,  0x00000008, 0,  0x03), resp( 'wr',  1,  1,   0,  0        ),
+    mreq( 1,    0,  'wr',  0,  0x00000004, 0,  0x12), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 1,    0,  'fl',  1,  0x00000000, 0,  0x00), resp( 'fl',  1,  0,   0,  0        ),
+    mreq( 0,    0,  'inv', 2,  0x00000000, 0,  0x00), resp( 'inv', 2,  0,   0,  0x0      ),
+    mreq( 0,    1,  'rd',  3,  0x00000008, 0,  0x00), resp( 'rd',  3,  0,   0,  0x03     ),
+    mreq( 0,    1,  'rd',  4,  0x00000004, 0,  0x00), resp( 'rd',  4,  1,   0,  0x12     ),
+  ]
+  return associativities, cache_sizes, msgs
+
+def inv_fl_4c():
+  associativities = [ 2, 2, 2, 2 ]
+  cache_sizes = [ 64, 64, 64, 64 ]
+  msgs = [
+    #     cache ord type   opq addr        len data         type   opq test len data
+    mreq( 0,    0,  'wr',  0,  0x00000000, 0,  0x01), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 1,    0,  'wr',  0,  0x00000004, 0,  0x12), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 2,    0,  'wr',  0,  0x00000008, 0,  0x23), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 3,    0,  'wr',  0,  0x0000000c, 0,  0x34), resp( 'wr',  0,  0,   0,  0        ),
+    mreq( 0,    0,  'fl',  1,  0x00000000, 0,  0x00), resp( 'fl',  1,  0,   0,  0        ),
+    mreq( 1,    0,  'fl',  1,  0x00000000, 0,  0x00), resp( 'fl',  1,  0,   0,  0        ),
+    mreq( 2,    0,  'fl',  1,  0x00000000, 0,  0x00), resp( 'fl',  1,  0,   0,  0        ),
+    mreq( 3,    0,  'fl',  1,  0x00000000, 0,  0x00), resp( 'fl',  1,  0,   0,  0        ),
+    mreq( 0,    0,  'inv', 2,  0x00000000, 0,  0x00), resp( 'inv', 2,  0,   0,  0        ),
+    mreq( 1,    0,  'inv', 2,  0x00000000, 0,  0x00), resp( 'inv', 2,  0,   0,  0        ),
+    mreq( 2,    0,  'inv', 2,  0x00000000, 0,  0x00), resp( 'inv', 2,  0,   0,  0        ),
+    mreq( 3,    0,  'inv', 2,  0x00000000, 0,  0x00), resp( 'inv', 2,  0,   0,  0        ),
+    mreq( 0,    1,  'rd',  3,  0x0000000c, 0,  0x00), resp( 'rd',  3,  0,   0,  0x34     ),
+    mreq( 1,    1,  'rd',  3,  0x00000008, 0,  0x00), resp( 'rd',  3,  0,   0,  0x23     ),
+    mreq( 2,    1,  'rd',  3,  0x00000004, 0,  0x00), resp( 'rd',  3,  0,   0,  0x12     ),
+    mreq( 3,    1,  'rd',  3,  0x00000000, 0,  0x00), resp( 'rd',  3,  0,   0,  0x01     ),
+  ]
+  return associativities, cache_sizes, msgs
 
 class MultiCacheTestCases:
 
   @pytest.mark.parametrize(
-    " name,  test,          stall_prob,latency,src_delay,sink_delay", [
-    ("",  gen_test1,         0.0,       1,      0,        0   ),
+    " name,   test,          stall_prob,latency,src_delay,sink_delay", [
+    ("SIMP",  simple_2c,     0.0,       1,      0,        0   ),
+    ("SIMP",  simple_2c,     0.0,       2,      1,        1   ),
+    ("INVFL", inv_fl_2c,     0.0,       1,      0,        0   ),
+    ("INVFL", inv_fl_4c,     0.0,       1,      0,        0   ),
     ])
   # defaults to 4 word cache line by importing from sim_utils
-  def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, stall_prob,
-   latency, src_delay, sink_delay ):
+  def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, line_trace, 
+    stall_prob, latency, src_delay, sink_delay ):
     mem = multicache_mem()
     associativities, cache_sizes, msgs = test()
     tp = CacheTestParams( msgs, mem, CacheReqType, CacheRespType, MemReqType,
     MemRespType, associativities, cache_sizes, stall_prob, latency, src_delay, 
     sink_delay )
-    s.run_test( tp, dump_vcd, test_verilog, max_cycles, stall_prob )
+    s.run_test( tp, dump_vcd, test_verilog, max_cycles, line_trace )
