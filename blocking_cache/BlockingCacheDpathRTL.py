@@ -429,6 +429,6 @@ class BlockingCacheDpathRTL (Component):
     # msg += f"w={s.ctrl.way_offset_M1} "
     # msg += f"mshra={s.MSHR_alloc_in.dirty_bits} mshrd={s.MSHR_dealloc_out.dirty_bits}"
     # msg += f"wben:{s.ctrl.data_array_wben_M1} "
-    msg += f"w:{s.status.MSHR_ptr} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
+    # msg += f"w:{s.status.MSHR_ptr} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
     # msg += f"amo_hit:{s.status.amo_hit_M0} "
     return msg

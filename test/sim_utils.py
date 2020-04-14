@@ -19,15 +19,12 @@ from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2
 from pymtl3.passes.backends.verilog  import TranslationImportPass, VerilatorImportConfigs
 
 # cifer specific memory req/resp msg
-from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
+# from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
-# # cifer specific memory req/resp msg
-# from ifcs.MemMsg import mk_mem_msg, MemMsgType
-# from ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-from .proc_model import ProcModel
-from .MemoryCL   import MemoryCL as CiferMemoryCL
-
+from .ProcModel import ProcModel
+from .MemoryCL  import MemoryCL as CiferMemoryCL
+from .MulticoreModel import MulticoreModel
 from blocking_cache.BlockingCacheFL import ModelCache
 
 #----------------------------------------------------------------------
@@ -145,7 +142,7 @@ abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 clw  = 128 # cacheline bitwidth
 
-CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
+CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 def decode_type( type_ ):
@@ -173,3 +170,82 @@ def req( type_, opaque, addr, len, data ):
 def resp( type_, opaque, test, len, data ):
   type_ = decode_type( type_ )
   return CacheRespType( type_, opaque, test, len, 0, data )
+
+# Request wrapper for testing multi-cache configureations
+# cache: transaction for that cache
+# order: decides if transaction will happen sequentially or in parallel
+def mreq( cache, order, type_, opaque, addr, len, data ):
+  type_ = decode_type( type_ )
+  return (cache, order, CacheReqType( type_, opaque, addr, len, 0, data ))
+
+#-------------------------------------------------------------------------
+# CacheTestParams
+#-------------------------------------------------------------------------
+# Test parameters for the cache
+
+class CacheTestParams:
+  def __init__( self, msgs, mem, CacheReqType, CacheRespType, MemReqType,
+                MemRespType, associativity=[1], cache_size=[64], stall_prob=0,
+                latency=1, src_delay=0, sink_delay=0 ):
+    assert isinstance(associativity, list) and len(associativity) > 0, \
+      f'associativity must be an array, len={len(associativity)}'
+    assert isinstance(associativity, list) and len(cache_size) > 0, \
+      f'cache_size must be an array, len={len(cache_size)}'
+    assert len(associativity) == len(cache_size), \
+      f'cache_size must equal to Assoc, cache_size={len(associativity)} Assoc={len(cache_size)}'
+    self.msgs = msgs
+    self.mem = mem
+    self.CacheReqType = CacheReqType
+    self.CacheRespType = CacheRespType
+    self.MemReqType = MemReqType
+    self.MemRespType = MemRespType
+    self.associativity = associativity
+    self.cache_size = cache_size
+    self.stall_prob = stall_prob
+    self.latency = latency
+    self.src_delay = src_delay
+    self.sink_delay = sink_delay
+    self.ncaches = len(associativity)
+    self.src_init_delay = 0
+    self.sink_init_delay = 0
+    # self.src_init_delay = [0] * self.ncaches
+    # self.sink_init_delay = [0] * self.ncaches
+
+
+#-------------------------------------------------------------------------
+# MultiCacheTestHarness
+#-------------------------------------------------------------------------
+# Test Harness for multi-cache tests
+class MultiCacheTestHarness( Component ):
+  def construct( s, Cache, test_params ):
+    p = s.tp = test_params
+    s.proc = MulticoreModel( p )
+    s.cache = [ Cache( p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType,
+                         p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]
+    # s.net   = ReqRespMemNet( MemMsg.Req, MemMsg.Resp, ncaches )
+    s.mem   = CiferMemoryCL( p.ncaches, [(p.MemReqType, p.MemRespType)]*p.ncaches, latency=p.latency )
+    for i in range( p.ncaches ):
+      connect( s.cache[i].mem_master_ifc,      s.mem.ifc[i]      )
+      s.proc.mem_master_ifc[i].req //= s.cache[i].mem_minion_ifc.req
+      s.proc.mem_master_ifc[i].resp //= s.cache[i].mem_minion_ifc.resp
+  
+  def load( s ):
+    addrs = s.tp.mem[::2]
+    data_ints = s.tp.mem[1::2]
+    for addr, data_int in zip( addrs, data_ints ):
+      data_bytes_a = bytearray()
+      data_bytes_a.extend( struct.pack("<I",data_int) )
+      s.mem.write_mem( addr, data_bytes_a )
+
+  def done( s ):
+    return s.proc.done()
+
+  def line_trace( s, trace ):
+    
+    msg = ''
+    for i in range(s.tp.ncaches):
+      msg += s.cache[i].line_trace()
+    # msg += s.cache[1].line_trace()
+    # msg += s.proc.line_trace()
+    # msg+=s.mem.
+    return msg

@@ -1,6 +1,6 @@
 """
 =========================================================================
-proc_model.py
+ProcModel.py
 =========================================================================
 Models the processor handshake by unifying the src and sink signals
 
@@ -53,5 +53,5 @@ class ProcModel( Component ):
 
   def line_trace( s ):
     msg = ''
-    # msg = f"{s.trans_in_flight.out}"
+    msg = f"{s.proc.resp.en}"
     return msg
