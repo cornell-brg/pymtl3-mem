@@ -36,7 +36,7 @@ def req( CacheReqType, type_, opaque, addr, len, data ):
   elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
   elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
   elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
-  return CacheReqType( type_, opaque, addr, len, 0, data )
+  return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
   if   type_ == 'rd': type_ = MemMsgType.READ
@@ -51,7 +51,7 @@ def resp( CacheRespType, type_, opaque, test, len, data ):
   elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
   elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
   elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
-  return CacheRespType( type_, opaque, test, len, 0, data )
+  return CacheRespType( type_, opaque, test, len, data )
 
 #-------------------------------------------------------------------------
 # Define AMO functions

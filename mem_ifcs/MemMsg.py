@@ -80,7 +80,7 @@ MemMsgType_AMO = MemMsgType_AMO_ADD
 #-------------------------------------------------------------------------
 # Generate bitstruct: "MemReqMsg_{}_{}_{}".format( opq, addr, data )
 
-def mk_mem_req_msg( opq, addr, data ):
+def mk_mem_req_msg( opq, addr, data, has_wr_mask=True ):
   OpqType       = mk_bits( opq            )
   AddrType      = mk_bits( addr           )
   LenType       = mk_bits( clog2(data>>3) )
@@ -89,27 +89,49 @@ def mk_mem_req_msg( opq, addr, data ):
   cls_name      = "MemReqMsg_{}_{}_{}".format( opq, addr, data )
 
   def req_to_str( self ):
-    return "{}:{}:{}:{}:{}:{}".format(
-      MemMsgType.str[ int( self.type_ ) ],
-      OpqType( self.opaque ),
-      AddrType( self.addr ),
-      LenType( self.len ),
-      WriteMaskType( self.wr_mask ),
-      DataType( self.data ) if self.type_ != MemMsgType.READ else
-      " " * ( data//4 ),
-    )
+    if has_wr_mask:
+      return "{}:{}:{}:{}:{}:{}".format(
+        MemMsgType.str[ int( self.type_ ) ],
+        OpqType( self.opaque ),
+        AddrType( self.addr ),
+        LenType( self.len ),
+        WriteMaskType( self.wr_mask ),
+        DataType( self.data ) if self.type_ != MemMsgType.READ else
+        " " * ( data//4 ),
+      )
+    else:
+      return "{}:{}:{}:{}:{}".format(
+        MemMsgType.str[ int( self.type_ ) ],
+        OpqType( self.opaque ),
+        AddrType( self.addr ),
+        LenType( self.len ),
+        DataType( self.data ) if self.type_ != MemMsgType.READ else
+        " " * ( data//4 ),
+      )
 
-  req_cls = mk_bitstruct( cls_name, {
-    'type_':   Bits4,
-    'opaque':  OpqType,
-    'addr':    AddrType,
-    'len':     LenType,
-    'wr_mask': WriteMaskType,
-    'data':    DataType,
-  },
-  namespace = {
-    '__str__' : req_to_str
-  })
+  if has_wr_mask:
+    req_cls = mk_bitstruct( cls_name, {
+      'type_':   Bits4,
+      'opaque':  OpqType,
+      'addr':    AddrType,
+      'len':     LenType,
+      'wr_mask': WriteMaskType,
+      'data':    DataType,
+    },
+    namespace = {
+      '__str__' : req_to_str
+    })
+  else:
+    req_cls = mk_bitstruct( cls_name, {
+      'type_':   Bits4,
+      'opaque':  OpqType,
+      'addr':    AddrType,
+      'len':     LenType,
+      'data':    DataType,
+    },
+    namespace = {
+      '__str__' : req_to_str
+    })
 
   req_cls.data_nbits = data
   return req_cls
@@ -119,35 +141,58 @@ def mk_mem_req_msg( opq, addr, data ):
 #-------------------------------------------------------------------------
 # Generate bitstruct: "MemRespMsg_{}_{}".format( opq, data )
 
-def mk_mem_resp_msg( opq, data ):
+def mk_mem_resp_msg( opq, data, has_wr_mask=True):
   OpqType       = mk_bits( opq            )
   LenType       = mk_bits( clog2(data>>3) )
   WriteMaskType = mk_bits( data >> 5      )
   DataType      = mk_bits( data           )
+
   cls_name = "MemRespMsg_{}_{}".format( opq, data )
 
   def resp_to_str( self ):
-    return "{}:{}:{}:{}:{}:{}".format(
-      MemMsgType.str[ int( self.type_ ) ],
-      OpqType( self.opaque ),
-      Bits2( self.test ),
-      LenType( self.len ),
-      WriteMaskType( self.wr_mask ),
-      DataType( self.data ) if self.type_ != MemMsgType.WRITE else
-      " " * ( data//4 ),
-    )
+    if has_wr_mask:
+      return "{}:{}:{}:{}:{}:{}".format(
+        MemMsgType.str[ int( self.type_ ) ],
+        OpqType( self.opaque ),
+        Bits2( self.test ),
+        LenType( self.len ),
+        WriteMaskType( self.wr_mask ),
+        DataType( self.data ) if self.type_ != MemMsgType.WRITE else
+        " " * ( data//4 ),
+      )
+    else:
+      return "{}:{}:{}:{}:{}".format(
+        MemMsgType.str[ int( self.type_ ) ],
+        OpqType( self.opaque ),
+        Bits2( self.test ),
+        LenType( self.len ),
+        DataType( self.data ) if self.type_ != MemMsgType.WRITE else
+        " " * ( data//4 ),
+      )
 
-  resp_cls = mk_bitstruct( cls_name, {
-    'type_':   Bits4,
-    'opaque':  OpqType,
-    'test':    Bits2,
-    'len':     LenType,
-    'wr_mask': WriteMaskType,
-    'data':    DataType,
-  },
-  namespace = {
-    '__str__' : resp_to_str
-  })
+  if has_wr_mask:
+    resp_cls = mk_bitstruct( cls_name, {
+      'type_':   Bits4,
+      'opaque':  OpqType,
+      'test':    Bits2,
+      'len':     LenType,
+      'wr_mask': WriteMaskType,
+      'data':    DataType,
+    },
+    namespace = {
+      '__str__' : resp_to_str
+    })
+  else:
+    resp_cls = mk_bitstruct( cls_name, {
+      'type_':   Bits4,
+      'opaque':  OpqType,
+      'test':    Bits2,
+      'len':     LenType,
+      'data':    DataType,
+    },
+    namespace = {
+      '__str__' : resp_to_str
+    })
 
   resp_cls.data_nbits = data
   return resp_cls
@@ -158,5 +203,5 @@ def mk_mem_resp_msg( opq, data ):
 # Generate a pair of bitstructs (MemReqMsg, MemRespMsg) with consistent
 # bit width
 
-def mk_mem_msg( opq, addr, data ):
-  return mk_mem_req_msg( opq, addr, data ), mk_mem_resp_msg( opq, data )
+def mk_mem_msg( opq, addr, data, has_wr_mask=True ):
+  return mk_mem_req_msg( opq, addr, data, has_wr_mask ), mk_mem_resp_msg( opq, data, has_wr_mask )
