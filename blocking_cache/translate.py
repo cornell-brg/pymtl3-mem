@@ -69,7 +69,7 @@ def replace_sram( file_name ):
 #=========================================================================
 
 def main( opts ):
-  CacheReqType, CacheRespType = mk_mem_msg(opts.obw, opts.abw, opts.dbw)
+  CacheReqType, CacheRespType = mk_mem_msg(opts.obw, opts.abw, opts.dbw, has_wr_mask=False)
   MemReqType, MemRespType = mk_mem_msg(opts.obw, opts.abw, opts.clw)
   # Instantiate the cache
   dut = BlockingCacheRTL( CacheReqType, CacheRespType, MemReqType,

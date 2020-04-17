@@ -72,7 +72,7 @@ class HypothesisTests:
     addr_min = 0
     addr_max = int( cacheSize // 4 * 2 * associativity )
     mem = rand_mem(addr_min, addr_max)
-    CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw)
+    CacheReqType, CacheRespType = mk_cache_msg(obw, abw, dbw, has_wr_mask=False)
     MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
     # FL Model to generate expected transactions
     model = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,

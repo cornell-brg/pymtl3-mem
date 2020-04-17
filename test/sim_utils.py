@@ -149,7 +149,7 @@ abw  = 32  # Short name for addr bitwidth
 dbw  = 32  # Short name for data bitwidth
 clw  = 128 # cacheline bitwidth
 
-CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw)
+CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw, has_wr_mask=False)
 MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
 
 def decode_type( type_ ):
@@ -172,18 +172,18 @@ def decode_type( type_ ):
 
 def req( type_, opaque, addr, len, data ):
   type_ = decode_type( type_ )
-  return CacheReqType( type_, opaque, addr, len, 0, data )
+  return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( type_, opaque, test, len, data ):
   type_ = decode_type( type_ )
-  return CacheRespType( type_, opaque, test, len, 0, data )
+  return CacheRespType( type_, opaque, test, len, data )
 
 # Request wrapper for testing multi-cache configureations
 # cache: transaction for that cache
 # order: decides if transaction will happen sequentially or in parallel
 def mreq( cache, order, type_, opaque, addr, len, data ):
   type_ = decode_type( type_ )
-  return (cache, order, CacheReqType( type_, opaque, addr, len, 0, data ))
+  return (cache, order, CacheReqType( type_, opaque, addr, len, data ))
 
 #-------------------------------------------------------------------------
 # CacheTestParams
