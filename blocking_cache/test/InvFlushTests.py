@@ -348,3 +348,4 @@ class InvFlushTests:
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 64, stall_prob, latency, src_delay, sink_delay, dump_vcd,
                 test_verilog, max_cycles, dump_vtb )
+

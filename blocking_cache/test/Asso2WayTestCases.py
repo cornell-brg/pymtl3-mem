@@ -214,7 +214,7 @@ class AssoTestCases:
                                stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-                64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
@@ -225,4 +225,4 @@ class AssoTestCases:
                                  stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-                4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles, dump_vtb )
