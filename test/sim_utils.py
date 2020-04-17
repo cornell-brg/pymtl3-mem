@@ -243,8 +243,11 @@ class MultiCache( Component ):
 class MultiCacheTestHarness( Component ):
   def construct( s, Cache, test_params ):
     p = s.tp = test_params
+    # Processor model that models a multicore processor
     s.proc = MulticoreModel( p )
+    # Module that integrates all the caches into one for easier translation
     s.cache = MultiCache( Cache, p )
+    # L2 cache or main memory model
     s.mem   = CiferMemoryCL( p.ncaches, [(p.MemReqType, p.MemRespType)]*p.ncaches, latency=p.latency )
     for i in range( p.ncaches ):
       connect( s.proc.mem_master_ifc[i],  s.cache.mem_minion_ifc[i] )

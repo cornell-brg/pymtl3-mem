@@ -44,15 +44,28 @@ def multicache_mem():
     0x00002074, 0x75ca1ded,
   ]
 
-def simple_2c():
+def rd_wr_2c():
+  # Read from 1 core and then writeback to mem. Read from second core -> mem should be updated
   associativities = [ 1, 1 ]
   cache_sizes = [ 32, 32 ]
   msgs = [
     #     cache ord type  opq addr        len data         type  opq test len data
-    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0          ),
-    mreq( 0,    0,  'wr', 0,  0x00000000, 0,  0x01), resp( 'wr', 0,  1,   0,  0          ),
-    mreq( 0,    0,  'rd', 0,  0x00020004, 0,  0x00), resp( 'rd', 0,  0,   0,  0xd        ),
-    mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01       ),
+    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0   ), 
+    mreq( 0,    0,  'wr', 0,  0x00000000, 0,  0x01), resp( 'wr', 0,  1,   0,  0   ),
+    mreq( 0,    0,  'rd', 0,  0x00020004, 0,  0x00), resp( 'rd', 0,  0,   0,  0xd ),
+    mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01),
+  ]
+  return associativities, cache_sizes, msgs
+
+def amo_2c():
+  # Test AMO transactions for 2 caches
+  associativities = [ 1, 1 ]
+  cache_sizes = [ 32, 32 ]
+  msgs = [
+    #     cache ord type  opq addr        len data         type  opq test len data
+    mreq( 0,    0,  'ad', 0,  0x00000000, 0,  0x01), resp( 'ad', 0,  0,   0,  0   ), 
+    mreq( 0,    1,  'rd', 1,  0x00000000, 0,  0x00), resp( 'rd', 1,  0,   0,  0x01),
+    mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01),
   ]
   return associativities, cache_sizes, msgs
 
@@ -98,11 +111,12 @@ def inv_fl_4c():
 class MultiCacheTestCases:
 
   @pytest.mark.parametrize(
-    " name,   test,          stall_prob,latency,src_delay,sink_delay", [
-    ("SIMP",  simple_2c,     0.0,       1,      0,        0   ),
-    ("SIMP",  simple_2c,     0.0,       2,      1,        1   ),
-    ("INVFL", inv_fl_2c,     0.0,       1,      0,        0   ),
-    ("INVFL", inv_fl_4c,     0.0,       1,      0,        0   ),
+    " name,   test,      stall_prob,latency,src_delay,sink_delay", [
+    ("SIMP",  rd_wr_2c,  0.0,       1,      0,        0   ),
+    ("AMO",   amo_2c,    0.0,       1,      0,        0   ),
+    ("INVFL", inv_fl_2c, 0.0,       1,      0,        0   ),
+    ("INVFL", inv_fl_4c, 0.0,       1,      0,        0   ),
+    ("SIMP",  rd_wr_2c,  0.0,       2,      1,        1   ),
     ])
   # defaults to 4 word cache line by importing from sim_utils
   def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, line_trace, 
