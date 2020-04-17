@@ -53,5 +53,5 @@ class ProcModel( Component ):
 
   def line_trace( s ):
     msg = ''
-    msg = f"{s.proc.resp.en}"
+    # msg = f"{s.proc.resp.en}"
     return msg

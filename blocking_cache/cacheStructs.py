@@ -22,11 +22,11 @@ def mk_dpath_status_struct( p ):
 
     # M1 Dpath Signals
     'cachereq_type_M1'    : p.BitsType,
-    'ctrl_bit_dty_rd_M1'  : p.BitsAssoc,
+    'ctrl_bit_dty_rd_line_M1'  : p.BitsAssoc,
+    'ctrl_bit_dty_rd_word_M1'  : p.BitsAssoc,
     'hit_M1'              : Bits1,
     'offset_M1'           : p.BitsOffset,
     'len_M1'              : p.BitsLen,
-    'line_valid_M1'       : p.BitsAssoc,
     'inval_hit_M1'        : Bits1,
 
     ## Signals for multiway associativity
@@ -80,7 +80,6 @@ def mk_ctrl_signals_struct( p ):
     'ctrl_bit_rep_en_M1'  : Bits1,
     'way_offset_M1'       : p.BitsAssoclog2,
     'is_init_M1'          : Bits1,
-    'wd_en_M1'            : Bits1,
     'flush_idx_mux_sel_M1': Bits1,
 
     # M2 Ctrl Signals

@@ -469,7 +469,6 @@ class BlockingCacheCtrlRTL ( Component ):
     s.is_evict_M1       = Wire( Bits1 )
     s.stall_M1          = Wire( Bits1 )
     s.is_dty_M1         = Wire( Bits1 )
-    s.is_line_valid_M1  = Wire( Bits1 )
     # EXTRA Logic for accounting for set associative caches
     s.repreq_en_M1      = Wire( Bits1 )
     s.repreq_is_hit_M1  = Wire( Bits1 )
@@ -514,7 +513,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.no_flush_needed_M1_bypass = b1(0)
       s.has_flush_sent_M1_bypass  = b1(0)
       if s.trans_M1.out == TRANS_TYPE_FLUSH_READ:
-        if s.status.ctrl_bit_dty_rd_M1[ s.update_tag_way_M1.out ]:
+        if s.status.ctrl_bit_dty_rd_line_M1[ s.update_tag_way_M1.out ]:
           s.no_flush_needed_M1_bypass = b1(0)
           s.has_flush_sent_M1_bypass  = b1(1)
         else:
@@ -529,25 +528,21 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def status_logic_M1():
       s.is_evict_M1       = n
-      s.is_dty_M1         = s.status.ctrl_bit_dty_rd_M1[s.status.ctrl_bit_rep_rd_M1]
+      s.is_dty_M1         = s.status.ctrl_bit_dty_rd_line_M1[s.status.ctrl_bit_rep_rd_M1]
       # Bits for set associative caches
       s.repreq_is_hit_M1  = n
       s.repreq_en_M1      = n
       s.repreq_hit_ptr_M1 = x
       s.hit_M1            = n
-      s.is_line_valid_M1  = s.status.line_valid_M1[s.status.ctrl_bit_rep_rd_M1]
-      s.ctrl.wd_en_M1     = n
       s.is_write_hit_clean_M0 = n
 
       if ( s.trans_M1.out == TRANS_TYPE_INIT_REQ or
            s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
            s.trans_M1.out == TRANS_TYPE_READ_REQ ):
         s.hit_M1 = s.status.hit_M1
-        s.ctrl.wd_en_M1 = s.hit_M1
         # if hit, dty bit will come from the way where the hit occured
         if s.hit_M1:
-          s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
-          s.is_line_valid_M1 = s.status.line_valid_M1[s.status.hit_way_M1]
+          s.is_dty_M1 = s.status.ctrl_bit_dty_rd_word_M1[s.status.hit_way_M1]
 
         if s.trans_M1.out == TRANS_TYPE_INIT_REQ:
           s.repreq_en_M1      = y
@@ -575,7 +570,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.hit_M1 = s.status.hit_M1
-        s.is_dty_M1 = s.status.ctrl_bit_dty_rd_M1[s.status.hit_way_M1]
+        s.is_dty_M1 = s.status.ctrl_bit_dty_rd_line_M1[s.status.hit_way_M1]
         s.is_evict_M1 = s.is_dty_M1 & (s.hit_M1 | s.status.inval_hit_M1)
         if s.hit_M1 | s.status.inval_hit_M1:
           s.repreq_en_M1      = y

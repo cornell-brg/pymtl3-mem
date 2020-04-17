@@ -21,7 +21,8 @@ from .constants                import *
 from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
-from .units.arithmetics        import Indexer, Comparator, CacheDataReplicator, OffsetLenSelector
+from .units.arithmetics        import (
+  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector, TagArrayRDataProcessUnit)
 from .units.registers          import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
 from .units.UpdateTagArrayUnit import UpdateTagArrayUnit
 from .units.StallEngine        import StallEngine
@@ -249,16 +250,28 @@ class BlockingCacheDpathRTL (Component):
       dealloc_out = s.MSHR_dealloc_out,
     )
 
-    s.comparator_set = Comparator( p )(
-      addr_tag = s.cachereq_M1.out.addr.tag,
-      is_init  = s.ctrl.is_init_M1,
-      hit      = s.status.hit_M1,
-      hit_way  = s.status.hit_way_M1,
-      line_val = s.status.line_valid_M1,
-      inval_hit= s.status.inval_hit_M1,
+    s.comparator_set = TagArrayRDataProcessUnit( p )(
+      addr_tag   = s.cachereq_M1.out.addr.tag,
+      is_init    = s.ctrl.is_init_M1,
+      hit        = s.status.hit_M1,
+      hit_way    = s.status.hit_way_M1,
+      inval_hit  = s.status.inval_hit_M1,
+      offset     = s.cachereq_M1.out.addr.offset,
+      line_dirty = s.status.ctrl_bit_dty_rd_line_M1,
+      word_dirty = s.status.ctrl_bit_dty_rd_word_M1,
     )
     for i in range( p.associativity ):
       s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
+
+    # s.comparator_set = Comparator( p )(
+    #   addr_tag = s.cachereq_M1.out.addr.tag,
+    #   is_init  = s.ctrl.is_init_M1,
+    #   hit      = s.status.hit_M1,
+    #   hit_way  = s.status.hit_way_M1,
+    #   inval_hit= s.status.inval_hit_M1,
+    # )
+    # for i in range( p.associativity ):
+    #   s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
@@ -270,23 +283,23 @@ class BlockingCacheDpathRTL (Component):
 
     s.hit_way_M1_bypass //= s.comparator_set.hit_way
 
-    dirty_line_detector_M1 = []
-    for i in range( p.associativity ):
-      dirty_line_detector_M1.append(
-        DirtyLineDetector( p )(
-          wd_en      = s.ctrl.wd_en_M1,
-          offset     = s.cachereq_M1.out.addr.offset,
-          dirty_bits = s.tag_array_rdata_M1[i].out.dty
-        )
-      )
-    s.dirty_line_detector_M1 = dirty_line_detector_M1
+    # dirty_line_detector_M1 = []
+    # for i in range( p.associativity ):
+    #   dirty_line_detector_M1.append(
+    #     DirtyLineDetector( p )(
+    #       wd_en      = s.ctrl.wd_en_M1,
+    #       offset     = s.cachereq_M1.out.addr.offset,
+    #       dirty_bits = s.tag_array_rdata_M1[i].out.dty
+    #     )
+    #   )
+    # s.dirty_line_detector_M1 = dirty_line_detector_M1
+
+    # for i in range( p.associativity ):
+    #   s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
+    #   s.comparator_set.dirty_line[i] //= s.dirty_line_detector_M1[i].is_dirty
 
     s.write_mask_M1 = Wire( p.BitsDirty )
     s.write_mask_M1 //= lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
-
-    for i in range( p.associativity ):
-      s.status.ctrl_bit_dty_rd_M1[i] //= s.dirty_line_detector_M1[i].is_dirty
-      s.comparator_set.dirty_line[i] //= s.dirty_line_detector_M1[i].is_dirty
 
     # Mux for choosing which way to evict
     s.evict_way_mux_M1 = PMux( p.BitsTag, p.associativity )(

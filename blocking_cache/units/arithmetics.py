@@ -95,7 +95,6 @@ class Comparator( Component ):
     s.is_init   = InPort ( Bits1 )
     s.hit       = OutPort( Bits1 )
     s.hit_way   = OutPort( p.BitsAssoclog2 )
-    s.line_val  = OutPort( p.BitsAssoc )
     
     s.dirty_line = InPort( p.BitsAssoc )
     s.inval_hit  = OutPort( Bits1 )
@@ -109,11 +108,9 @@ class Comparator( Component ):
       s.hit       = n
       s.inval_hit = n
       s.hit_way   = BitsAssoclog2(0)
-      s.line_val  = BitsAssoc(0)
       if not s.is_init:
         for i in range( associativity ):
           if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
-            s.line_val[i] = y
             if s.tag_array[i].tag == s.addr_tag:
               s.hit = y
               s.hit_way = BitsAssoclog2(i)
@@ -178,4 +175,63 @@ class WriteMaskSelector( Component ):
   def line_trace( s ):
     msg = ''
     msg += f'in_:{s.in_} out:{s.out} amo:{s.is_amo} dirty_nbits:{s.in_.nbits}'
+    return msg
+
+
+class TagArrayRDataProcessUnit( Component ):
+
+  def construct(s, p):
+
+    s.addr_tag  = InPort( p.BitsTag )
+    s.tag_array = [ InPort( p.StructTagArray ) for _ in range( p.associativity ) ]
+    s.is_init   = InPort ( Bits1 )
+    s.hit_way   = OutPort( p.BitsAssoclog2 )
+    s.hit       = OutPort( Bits1 ) # general hit
+    s.inval_hit = OutPort( Bits1 ) # hit on an invalid cache line that is dirty
+    
+    s.offset    = InPort( p.BitsOffset )
+    s.word_dirty= OutPort( p.BitsAssoc ) # If the word in cacheline is dirty
+    s.line_dirty= OutPort( p.BitsAssoc ) # If the line is dirty
+
+    BitsAssoclog2 = p.BitsAssoclog2
+    BitsAssoc     = p.BitsAssoc
+    associativity = p.associativity
+    bitwidth_offset = p.bitwidth_offset
+    bitwidth_dirty  = p.bitwidth_dirty
+
+    # word dirty logic
+    for i in range( associativity ):
+      s.word_dirty[i] //= lambda: s.tag_array[i].dty[s.offset[2:bitwidth_offset]]
+
+    @s.update
+    def line_dirty_logic():
+      s.line_dirty = BitsAssoc( 0 )
+      # OR all the wires together to see if a line is dirty
+      for i in range( associativity ):
+        for j in range( bitwidth_dirty ):
+          if s.tag_array[i].dty[j]:
+            s.line_dirty[i] = y
+
+    @s.update
+    def comparing_logic():
+      s.hit       = n
+      s.inval_hit = n
+      s.hit_way   = BitsAssoclog2(0)
+      if not s.is_init:
+        for i in range( associativity ):
+          if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
+            if s.tag_array[i].tag == s.addr_tag:
+              s.hit      = y
+              s.hit_way  = BitsAssoclog2(i)
+          elif s.line_dirty[i]:
+            # If not valid, then we check if the line is dirty at all 
+            # If its dirty, then we flag the transaction as an access to a 
+            # partially dirty line that may require special attention
+            if s.tag_array[i].tag == s.addr_tag:
+              s.inval_hit = y
+              s.hit_way   = BitsAssoclog2(i)
+    
+  def line_trace( s ):
+    msg = ''
+    msg += f'hit:{s.hit} hit_way:{s.hit_way} '
     return msg
