@@ -220,6 +220,7 @@ class AssoTestCases:
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Gen",  long_msg,      0.0,       1,      0,        0   ),
     ("Gen",  long_msg,      0.5,       2,      2,        2   ),
+    ("Hit",  rd_hit_1s,     0.0,       1,      0,        0   ),
   ])
   def test_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
                                  stall_prob, latency, src_delay, sink_delay, dump_vtb ):
