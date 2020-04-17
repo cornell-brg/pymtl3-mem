@@ -221,14 +221,14 @@ class TagArrayRDataProcessUnit( Component ):
         for i in range( associativity ):
           if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
             if s.tag_array[i].tag == s.addr_tag:
-              s.hit      = y
+              s.hit      |= y
               s.hit_way  = BitsAssoclog2(i)
-          elif s.line_dirty[i]:
+          if s.line_dirty[i] & (s.tag_array[i].val == CACHE_LINE_STATE_INVALID):
             # If not valid, then we check if the line is dirty at all 
             # If its dirty, then we flag the transaction as an access to a 
             # partially dirty line that may require special attention
             if s.tag_array[i].tag == s.addr_tag:
-              s.inval_hit = y
+              s.inval_hit |= y
               s.hit_way   = BitsAssoclog2(i)
     
   def line_trace( s ):
