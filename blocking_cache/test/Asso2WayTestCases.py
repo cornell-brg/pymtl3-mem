@@ -210,19 +210,19 @@ class AssoTestCases:
     ("Miss", wr_miss_2s,    0.5,       2,      2,        2   ),
     ("Miss", evict,         0.5,       2,      2,        2   ),
   ])
-  def test_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                               stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                64, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
 
   @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Gen",  long_msg,      0.0,       1,      0,        0   ),
     ("Gen",  long_msg,      0.5,       2,      2,        2   ),
   ])
-  def test_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                 stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = asso_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
-    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )

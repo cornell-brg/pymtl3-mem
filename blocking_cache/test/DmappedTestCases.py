@@ -328,19 +328,21 @@ class DmappedTestCases:
     ("Miss", rd_miss_2b,    0.5,       2,      2,        2   ),
     ("Miss", wr_miss_2b,    0.5,       2,      2,        2   ),
   ])
-  def test_Dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_Dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                  stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = dmapped_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                32, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
+                max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,  test,          stall_prob,latency,src_delay,sink_delay", [
     ("Gen",  long_msg,      0.0,       1,      0,        0   ),
     ("Gen",  long_msg,      0.5,       2,      2,        2   ),
   ])
-  def test_Dmapped_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles, \
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_Dmapped_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+                                    stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = dmapped_mem()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
-    4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog, max_cycles )
+                4096, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
+                max_cycles, dump_vtb )

@@ -291,12 +291,12 @@ class InvFlushTests:
     ("INVFL",  cache_inv_flush_short,         0,         5,      0,        0   ),
   ])
   def test_Cifer_2way_size256_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                      stall_prob, latency, src_delay, sink_delay ):
+                                      stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 256, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,    test,                          stall_prob,latency,src_delay,sink_delay", [
@@ -310,12 +310,12 @@ class InvFlushTests:
     ("INVFL",  cache_inv_flush_short,         0,         5,      0,        0   ),
   ])
   def test_Cifer_2way_size4096_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                      stall_prob, latency, src_delay, sink_delay ):
+                                       stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 4096, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,    test,                    stall_prob,latency,src_delay,sink_delay", [
@@ -342,9 +342,9 @@ class InvFlushTests:
     ("INV",    cache_inv_refill4,       1,         2,      1,        1   ),
     ])
   def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                      stall_prob, latency, src_delay, sink_delay ):
+                                     stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 64, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )
