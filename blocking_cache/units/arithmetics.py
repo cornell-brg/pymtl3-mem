@@ -177,7 +177,6 @@ class WriteMaskSelector( Component ):
     msg += f'in_:{s.in_} out:{s.out} amo:{s.is_amo} dirty_nbits:{s.in_.nbits}'
     return msg
 
-
 class TagArrayRDataProcessUnit( Component ):
 
   def construct(s, p):
@@ -233,5 +232,5 @@ class TagArrayRDataProcessUnit( Component ):
     
   def line_trace( s ):
     msg = ''
-    msg += f'hit:{s.hit} hit_way:{s.hit_way} '
+    msg += f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
     return msg

@@ -22,8 +22,12 @@ from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
 from .units.arithmetics        import (
-  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector, TagArrayRDataProcessUnit)
-from .units.registers          import DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
+  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector, 
+  TagArrayRDataProcessUnit
+  )
+from .units.registers          import (
+  DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
+)
 from .units.UpdateTagArrayUnit import UpdateTagArrayUnit
 from .units.StallEngine        import StallEngine
 
