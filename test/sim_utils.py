@@ -18,7 +18,8 @@ from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import (
-  TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass)
+  TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
+)
 
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -32,7 +33,7 @@ from blocking_cache.BlockingCacheFL import ModelCache
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace=2 ):
+def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, dump_vtb=False ):
   # print (" -----------starting simulation----------- ")
   if translation:
     th.cache.verilog_translate_import = True
@@ -43,6 +44,10 @@ def run_sim( th, max_cycles = 1000, dump_vcd = False, translation='zeros', trace
       )
     th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
+
+    if dump_vtb:
+      th.cache.verilog_tbgen = dump_vtb
+      th.apply( VerilogTBGenPass() )
 
   th.apply( SimulationPass() )
   th.sim_reset()
@@ -230,11 +235,11 @@ class MultiCache( Component ):
     s.mem_master_ifc = [ MemMasterIfcRTL( p.MemReqType, p.MemRespType ) for i in range( p.ncaches ) ]
 
     s.caches = [ Cache( p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType,
-                         p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]
+                        p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]
     for i in range( p.ncaches ):
       s.caches[i].mem_minion_ifc //= s.mem_minion_ifc[i]
       s.caches[i].mem_master_ifc //= s.mem_master_ifc[i]
-  
+
   def line_trace( s ):
     for i in range(s.p.ncaches):
       msg += s.caches[i].line_trace()
@@ -252,7 +257,7 @@ class MultiCacheTestHarness( Component ):
     for i in range( p.ncaches ):
       connect( s.proc.mem_master_ifc[i],  s.cache.mem_minion_ifc[i] )
       connect( s.cache.mem_master_ifc[i], s.mem.ifc[i]              )
-  
+
   def load( s ):
     addrs = s.tp.mem[::2]
     data_ints = s.tp.mem[1::2]

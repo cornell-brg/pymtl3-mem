@@ -67,7 +67,7 @@ hypothesis_max_cycles = 10000
 class HypothesisTests:
   def hypothesis_test_harness( s, associativity, clw, num_blocks, transactions,
                                req, stall_prob, latency, src_delay, sink_delay,
-                               dump_vcd, test_verilog, max_cycles ):
+                               dump_vcd, test_verilog, max_cycles, dump_vtb ):
     cacheSize = (clw * associativity * num_blocks) // 8
     addr_min = 0
     addr_max = int( cacheSize // 4 * 2 * associativity )
@@ -96,7 +96,7 @@ class HypothesisTests:
     # Prepare RTL test harness
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
-                dump_vcd, test_verilog, hypothesis_max_cycles, 1 )
+                dump_vcd, test_verilog, hypothesis_max_cycles, 1, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
@@ -111,11 +111,11 @@ class HypothesisTests:
   )
   def test_hypothesis_2way( s, clw, block_order, transactions, req, stall_prob,
                             latency, src_delay, sink_delay, dump_vcd,
-                            test_verilog, max_cycles ):
+                            test_verilog, max_cycles, dump_vtb ):
     num_blocks = 2**block_order
     s.hypothesis_test_harness( 2, clw, num_blocks, transactions, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
-                               test_verilog, max_cycles )
+                               test_verilog, max_cycles, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
@@ -130,11 +130,11 @@ class HypothesisTests:
   )
   def test_hypothesis_dmapped( s, clw, block_order, transactions, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
-                               test_verilog, max_cycles ):
+                               test_verilog, max_cycles, dump_vtb ):
     num_blocks = 2**block_order
     s.hypothesis_test_harness( 1, clw, num_blocks, transactions, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
-                               test_verilog, max_cycles )
+                               test_verilog, max_cycles, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
@@ -145,10 +145,10 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 1 )
   )
   def test_hypothesis_2way_stress( s, transactions, req, latency, src_delay,
-                                   sink_delay, dump_vcd, test_verilog, max_cycles ):
+                                   sink_delay, dump_vcd, test_verilog, max_cycles, dump_vtb ):
     s.hypothesis_test_harness( 2, 128, 2, transactions, req, 0,
                                latency, src_delay, sink_delay,
-                               dump_vcd, test_verilog, max_cycles )
+                               dump_vcd, test_verilog, max_cycles, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
@@ -160,7 +160,7 @@ class HypothesisTests:
   )
   def test_hypothesis_dmapped_stress( s, transactions, req, latency,
                                       src_delay, sink_delay, dump_vcd,
-                                      test_verilog, max_cycles ):
+                                      test_verilog, max_cycles, dump_vtb ):
     s.hypothesis_test_harness( 1, 128, 2, transactions, req, 0,
                                latency, src_delay, sink_delay, dump_vcd,
-                               test_verilog, max_cycles )
+                               test_verilog, max_cycles, dump_vtb )

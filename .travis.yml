@@ -25,15 +25,16 @@ install:
  - sudo apt-get install -y graphviz
 
  # Install verilator
- - wget https://github.com/cornell-brg/verilator-travisci-cache/raw/master/verilator-travis-4.008.tar.gz
- - tar -C ${HOME} -xzf verilator-travis-4.008.tar.gz
+ - wget https://github.com/cornell-brg/verilator-travisci-cache/raw/master/verilator-travis-4.026.tar.gz
+ - tar -C ${HOME} -xzf verilator-travis-4.026.tar.gz
  - export VERILATOR_ROOT=${HOME}/verilator
  - export PATH=${VERILATOR_ROOT}/bin:${PATH}
  - export PYMTL_VERILATOR_INCLUDE_DIR=${VERILATOR_ROOT}/share/verilator/include
  - verilator --version
 
  # Install PyMTL3
- - pip install --requirement requirements.txt --constraint constraints.txt
+ - pip install --requirement requirements.txt
+ - pip install -U git+https://github.com/cornell-brg/pymtl3.git@master --constraint constraints.txt
  - pip list
 
 #------------------------------------------------------------------------

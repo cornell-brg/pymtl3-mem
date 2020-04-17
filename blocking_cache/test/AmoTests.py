@@ -351,12 +351,12 @@ class AmoTests:
     ("AMO",  amo_ad,         0.5,       2,      2,        2   ),
   ])
   def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                       stall_prob, latency, src_delay, sink_delay ):
+                                       stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
                 16, stall_prob, latency, src_delay, sink_delay, dump_vcd, test_verilog,
-                max_cycles )
+                max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
@@ -366,11 +366,11 @@ class AmoTests:
     ("AMO",  amo_cache_line, 0.5,       2,      4,        4   ),
   ])
   def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                        stall_prob, latency, src_delay, sink_delay ):
+                                        stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
                 32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
@@ -399,11 +399,11 @@ class AmoTests:
     ("HYPO", amo_hypo6,      0,         1,      0,        0   ),
   ])
   def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                     stall_prob, latency, src_delay, sink_delay ):
+                                     stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 64, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )
 
   @pytest.mark.parametrize(
     " name,  test,           stall_prob,latency,src_delay,sink_delay", [
@@ -412,9 +412,9 @@ class AmoTests:
     ("RAND", rand_2_32_64,   0,         1,      0,        0   ),
   ])
   def test_Cifer_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
-                                    stall_prob, latency, src_delay, sink_delay ):
+                                    stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
                 32, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles )
+                test_verilog, max_cycles, dump_vtb )

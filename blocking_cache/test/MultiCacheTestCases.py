@@ -50,7 +50,7 @@ def rd_wr_2c():
   cache_sizes = [ 32, 32 ]
   msgs = [
     #     cache ord type  opq addr        len data         type  opq test len data
-    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0   ), 
+    mreq( 0,    0,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0   ),
     mreq( 0,    0,  'wr', 0,  0x00000000, 0,  0x01), resp( 'wr', 0,  1,   0,  0   ),
     mreq( 0,    0,  'rd', 0,  0x00020004, 0,  0x00), resp( 'rd', 0,  0,   0,  0xd ),
     mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01),
@@ -63,7 +63,7 @@ def amo_2c():
   cache_sizes = [ 32, 32 ]
   msgs = [
     #     cache ord type  opq addr        len data         type  opq test len data
-    mreq( 0,    0,  'ad', 0,  0x00000000, 0,  0x01), resp( 'ad', 0,  0,   0,  0   ), 
+    mreq( 0,    0,  'ad', 0,  0x00000000, 0,  0x01), resp( 'ad', 0,  0,   0,  0   ),
     mreq( 0,    1,  'rd', 1,  0x00000000, 0,  0x00), resp( 'rd', 1,  0,   0,  0x01),
     mreq( 1,    1,  'rd', 0,  0x00000000, 0,  0x00), resp( 'rd', 0,  0,   0,  0x01),
   ]
@@ -119,11 +119,11 @@ class MultiCacheTestCases:
     ("SIMP",  rd_wr_2c,  0.0,       2,      1,        1   ),
     ])
   # defaults to 4 word cache line by importing from sim_utils
-  def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, line_trace, 
-    stall_prob, latency, src_delay, sink_delay ):
+  def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, line_trace,
+                    stall_prob, latency, src_delay, sink_delay ):
     mem = multicache_mem()
     associativities, cache_sizes, msgs = test()
     tp = CacheTestParams( msgs, mem, CacheReqType, CacheRespType, MemReqType,
-    MemRespType, associativities, cache_sizes, stall_prob, latency, src_delay, 
-    sink_delay )
+                          MemRespType, associativities, cache_sizes, stall_prob,
+                          latency, src_delay, sink_delay )
     s.run_test( tp, dump_vcd, test_verilog, max_cycles, line_trace )
