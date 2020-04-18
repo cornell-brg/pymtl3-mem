@@ -447,22 +447,23 @@ class BlockingCacheCtrlRTL ( Component ):
     #=====================================================================
     # M1 Stage
     #=====================================================================
-
+    s.ctrl_pipeline_reg_en_M1 = Wire( Bits1 )
     s.trans_M1 = RegEnRst( mk_bits(TRANS_TYPE_NBITS) )(
       in_ = s.trans_M0,
-      en  = s.ctrl.reg_en_M1,
+      en  = s.ctrl_pipeline_reg_en_M1,
+      # en  = s.ctrl.reg_en_M1,
     )
 
     # Indicates which way in the cache to replace. We receive the value from
     # dealloc in the M0 stage and use it in both M0 and M1
     s.way_ptr_M1 = RegEnRst( p.BitsAssoclog2 )(
       in_ = s.status.MSHR_ptr,
-      en  = s.ctrl.reg_en_M1,
+      en  = s.ctrl_pipeline_reg_en_M1,
     )
 
     s.update_tag_way_M1 = RegEnRst( p.BitsAssoclog2 )(
       in_ = s.ctrl.update_tag_way_M0,
-      en  = s.ctrl.reg_en_M1,
+      en  = s.ctrl_pipeline_reg_en_M1,
     )
 
     s.hit_M1            = Wire( Bits1 )
@@ -505,7 +506,8 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.ctrl.way_offset_M1 = s.status.amo_hit_way_M1
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_READ:
+      elif (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) | (s.trans_M1.out == 
+        TRANS_TYPE_CACHE_INIT):
         s.ctrl.way_offset_M1 = s.update_tag_way_M1.out
 
     @s.update
@@ -644,7 +646,7 @@ class BlockingCacheCtrlRTL ( Component ):
       #                                                                wben |ty |val    |ostall|evict mux|alloc_en
       s.cs1                                                 = concat( wben0, x , n,      n,     b1(0),    n       )
       if   s.trans_M1.out == TRANS_TYPE_INVALID:      s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   s.cs1 = concat( wbend, wr, y,      n,     b1(1),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REFILL:       s.cs1 = concat( wbend, wr, y,      n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  s.cs1 = concat( wben0, rd, y,      n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: s.cs1 = concat(  wben, wr, y,      n,     b1(0),    n       )
@@ -672,14 +674,17 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ostall_M1               = s.cs1[ CS_ostall_M1          ]
       s.ctrl.evict_mux_sel_M1   = s.cs1[ CS_evict_mux_sel_M1   ]
       s.ctrl.MSHR_alloc_en      = s.cs1[ CS_MSHR_alloc_en      ] & ~s.stall_M1
-      s.ctrl.reg_en_M1 = ~s.stall_M1 & ~s.is_evict_M1
+      s.ctrl.reg_en_M1 = ~s.stall_M1 & ~s.is_evict_M1 & \
+        (s.trans_M0 != TRANS_TYPE_CACHE_INIT) 
+      s.ctrl_pipeline_reg_en_M1 = s.ctrl.reg_en_M1 | (s.trans_M0 == TRANS_TYPE_CACHE_INIT)
+      s.ctrl.flush_init_reg_en_M1 = s.ctrl_pipeline_reg_en_M1
       # Logic for the SRAM tag array as a result of a stall in cache since the
       # values from the SRAM are valid for one cycle
       s.ctrl.stall_reg_en_M1  = ~s.was_stalled.out
       s.ctrl.hit_stall_eng_en_M1 = ~s.was_stalled.out & ~s.evict_bypass
       s.ctrl.is_init_M1 = (s.trans_M1.out == TRANS_TYPE_INIT_REQ)
 
-      if s.trans_M1.out == TRANS_TYPE_FLUSH_READ:
+      if (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) | (s.trans_M1.out == TRANS_TYPE_CACHE_INIT):
         s.ctrl.flush_idx_mux_sel_M1 = b1(1)
       else:
         s.ctrl.flush_idx_mux_sel_M1 = b1(0)
@@ -688,26 +693,27 @@ class BlockingCacheCtrlRTL ( Component ):
     # M2 Stage
     #=====================================================================
 
+    s.ctrl_pipeline_reg_en_M2 = Wire( Bits1 )
     s.trans_M2 = RegEnRst( mk_bits(TRANS_TYPE_NBITS) )(
-      en  = s.ctrl.reg_en_M2,
       in_ = s.trans_M1.out,
+      en  = s.ctrl_pipeline_reg_en_M2,
     )
 
     s.is_evict_M2 = RegEnRst( Bits1 )(
       in_ = s.is_evict_M1,
-      en  = s.ctrl.reg_en_M2,
+      en  = s.ctrl_pipeline_reg_en_M2,
     )
     s.evict_bypass //= s.is_evict_M2.out
 
     s.hit_reg_M2 = RegEnRst( Bits1 )(
       in_ = s.hit_M1,
-      en  = s.ctrl.reg_en_M2,
+      en  = s.ctrl_pipeline_reg_en_M2,
       out = s.ctrl.hit_M2[0],
     )
 
     s.has_flush_sent_M2 = RegEnRst( Bits1 )(
       in_ = s.has_flush_sent_M1_bypass,
-      en  = s.ctrl.reg_en_M2
+      en  = s.ctrl_pipeline_reg_en_M2
     )
 
     s.stall_M2  = Wire( Bits1 )
@@ -729,9 +735,7 @@ class BlockingCacheCtrlRTL ( Component ):
     @s.update
     def cs_table_M2():
       s.ctrl.hit_M2[1] = b1(0) # hit output expects 2 bits but we only use one bit
-
       flush = s.has_flush_sent_M2.out
-
       #                                                               dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
       s.cs2                                                 = concat( y,       b1(0),    n,     READ,       n,     n        )
       if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 = concat( y,       b1(0),    n,     READ,       n,     n        )
@@ -769,7 +773,8 @@ class BlockingCacheCtrlRTL ( Component ):
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 
-      s.ctrl.reg_en_M2 = ~s.stall_M2
+      s.ctrl.reg_en_M2 = ( ~s.stall_M2 ) & ( s.trans_M1.out != TRANS_TYPE_CACHE_INIT ) 
+      s.ctrl_pipeline_reg_en_M2 = s.ctrl.reg_en_M2 | ( s.trans_M1.out == TRANS_TYPE_CACHE_INIT )
       s.ctrl.stall_reg_en_M2 = ~s.was_stalled.out
       s.ctrl.is_amo_M2 = (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) |
                          (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) &
@@ -796,7 +801,7 @@ class BlockingCacheCtrlRTL ( Component ):
     #   msg_M0 = "(fls#)"
     # else:
     #   assert False
-    # msg_M0 += ",cnt={} ".format(s.update_way_idx_M0)
+    msg_M0 += ",cnt={} ".format(s.update_way_idx_M0)
 
     if s.trans_M0 == TRANS_TYPE_INVALID:        msg_M0 += "xxx"
     elif s.trans_M0 == TRANS_TYPE_REFILL:       msg_M0 += " rf"

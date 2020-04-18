@@ -174,7 +174,8 @@ class BlockingCacheDpathRTL (Component):
     # Idx for flushing
     s.flush_idx_M1 = RegEnRst( p.BitsIdx )(
       in_ = s.ctrl.tag_array_init_idx_M0,
-      en  = s.ctrl.reg_en_M1,
+      en  = s.ctrl.flush_init_reg_en_M1,
+      # en  = s.ctrl.reg_en_M1,
     )
 
     s.dty_bits_mask_M1 = RegEnRst( p.BitsDirty )(
@@ -315,7 +316,6 @@ class BlockingCacheDpathRTL (Component):
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data
 
     s.index_offset_M1 = Indexer( p )(
-      # index  = s.cachereq_M1.out.addr.index,
       index  = s.cachereq_M1_2.addr.index,
       offset = s.ctrl.way_offset_M1,
     )
@@ -415,11 +415,5 @@ class BlockingCacheDpathRTL (Component):
     msg = ""
     # for i in range( len( s.tag_arrays_M1 ) ):
     #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
-    # msg += f"idx={s.tag_arrays_M1[0].port0_idx},type={s.tag_arrays_M1[0].port0_type},wben={s.tag_array_wdata_M0},wdata={s.tag_array_struct_M0}"
-    # msg += f"darray idx={s.index_offset_M1.out}"
-    # msg += f"w={s.ctrl.way_offset_M1} "
-    # msg += f"mshra={s.MSHR_alloc_in.dirty_bits} mshrd={s.MSHR_dealloc_out.dirty_bits}"
-    # msg += f"wben:{s.ctrl.data_array_wben_M1} "
-    # msg += f"w:{s.status.MSHR_ptr} ih:{s.status.inval_hit_M1} lv:{s.status.line_valid_M1} hit:{s.status.hit_M1} hw:{s.status.hit_way_M1}"
-    # msg += f"amo_hit:{s.status.amo_hit_M0} "
+    msg += f'resp:{s.cacheresp_M2}|d:{s.ctrl.data_array_wben_M1}'
     return msg

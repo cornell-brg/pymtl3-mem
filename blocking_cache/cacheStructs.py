@@ -71,6 +71,7 @@ def mk_ctrl_signals_struct( p ):
 
     # M1 Ctrl Signals
     'reg_en_M1'             : Bits1,
+    'flush_init_reg_en_M1'  : Bits1,
     'data_array_val_M1'     : Bits1,
     'data_array_type_M1'    : Bits1,
     'data_array_wben_M1'    : p.BitsDataWben,
