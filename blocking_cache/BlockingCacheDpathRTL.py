@@ -22,7 +22,7 @@ from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
 from .units.arithmetics        import (
-  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector, 
+  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector,
   TagArrayRDataProcessUnit
   )
 from .units.registers          import (
@@ -61,8 +61,8 @@ class BlockingCacheDpathRTL (Component):
     # Deallocating from MSHR
     s.MSHR_dealloc_mux_in_M0 = Wire( p.CacheReqType )
     # Set the CacheReqType by picking values from MSHR
-    s.MSHR_dealloc_mux_in_M0 //= lambda: p.CacheReqType( s.MSHR_dealloc_out.type_, 
-      s.MSHR_dealloc_out.opaque, s.MSHR_dealloc_out.addr, s.MSHR_dealloc_out.len, 
+    s.MSHR_dealloc_mux_in_M0 //= lambda: p.CacheReqType( s.MSHR_dealloc_out.type_,
+      s.MSHR_dealloc_out.opaque, s.MSHR_dealloc_out.addr, s.MSHR_dealloc_out.len,
       s.MSHR_dealloc_out.data )
     s.status.amo_hit_M0             //= s.MSHR_dealloc_out.amo_hit
 
@@ -91,7 +91,7 @@ class BlockingCacheDpathRTL (Component):
     )
     connect_bits2bitstruct( s.cachereq_M0.addr, s.addr_mux_M0.out )
 
-    # Converts a 32-bit word to 128-bit line by replicated the word multiple times 
+    # Converts a 32-bit word to 128-bit line by replicated the word multiple times
     s.replicator_M0 = CacheDataReplicator( p )(
       msg_len = s.cachereq_memresp_mux_M0.out.len,
       data    = s.cachereq_memresp_mux_M0.out.data,
@@ -99,7 +99,7 @@ class BlockingCacheDpathRTL (Component):
       offset  = s.cachereq_M0.addr.offset
     )
 
-    # Selects between data from the memory resp or from the replicator 
+    # Selects between data from the memory resp or from the replicator
     # Dependent on if we have a refill response
     s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )(
       in_ = {
@@ -244,10 +244,11 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.repl    //= s.ctrl.way_offset_M1
     s.MSHR_alloc_in_amo_hit_bypass = Wire( p.StructHit )
     s.MSHR_alloc_in.amo_hit //= s.MSHR_alloc_in_amo_hit_bypass.hit
-    s.MSHR_alloc_in.dirty_bits //=  lambda: (s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
-     & s.ctrl.dirty_evict_mask_M1 )
-    
-    s.MSHR_alloc_id = Wire(p.BitsOpaque)
+    s.MSHR_alloc_in.dirty_bits //= lambda: (
+      s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty &
+      s.ctrl.dirty_evict_mask_M1 )
+
+    s.MSHR_alloc_id = Wire( p.BitsOpaque )
 
     s.mshr = MSHR( p, 1 )(
       alloc_en    = s.ctrl.MSHR_alloc_en,
@@ -260,7 +261,7 @@ class BlockingCacheDpathRTL (Component):
       dealloc_out = s.MSHR_dealloc_out,
     )
 
-    # Combined comparator set for both dirty line detection and hit detection 
+    # Combined comparator set for both dirty line detection and hit detection
     s.comparator_set = TagArrayRDataProcessUnit( p )(
       addr_tag   = s.cachereq_M1.out.addr.tag,
       is_init    = s.ctrl.is_init_M1,
@@ -277,8 +278,8 @@ class BlockingCacheDpathRTL (Component):
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
     s.hit_stall_engine = StallEngine( StructHit )
-    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit|s.comparator_set.inval_hit,
-      s.comparator_set.hit_way )
+    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit |
+        s.comparator_set.inval_hit, s.comparator_set.hit_way )
     s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
     s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
 

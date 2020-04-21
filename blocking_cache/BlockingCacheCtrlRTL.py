@@ -163,7 +163,7 @@ class BlockingCacheCtrlRTL ( Component ):
     s.flush_refill_M1_bypass    = Wire( Bits1 )
     s.prev_flush_done_M0        = Wire( Bits1 )
 
-    s.prev_flush_done_M0 //= lambda: (s.no_flush_needed_M1_bypass | 
+    s.prev_flush_done_M0 //= lambda: (s.no_flush_needed_M1_bypass |
       s.memresp_wr_ack_M0 | s.flush_refill_M1_bypass )
 
     #---------------------------------------------------------------------
@@ -209,7 +209,7 @@ class BlockingCacheCtrlRTL ( Component ):
           if s.prev_flush_done_M0:
             s.FSM_state_M0_next = M0_FSM_STATE_READY
           else:
-            s.FSM_state_M0_next = M0_FSM_STATE_FLUSH_WAIT#M0_FSM_STATE_REPLAY
+            s.FSM_state_M0_next = M0_FSM_STATE_FLUSH_WAIT
         # MSHR will be dealloc this cycle
         else:
           s.FSM_state_M0_next = M0_FSM_STATE_READY
@@ -331,19 +331,19 @@ class BlockingCacheCtrlRTL ( Component ):
     # We will select MSHR dealloc output instead of incoming cachereq if:
     # 1. We have a valid memresp ( we prioritize handling refills/replays )
     # 2. We are in a middle of a replay
-    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: (s.FSM_state_M0.out == \
-      M0_FSM_STATE_REPLAY) | s.memresp_en_M0.out
+    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: (
+        (s.FSM_state_M0.out == M0_FSM_STATE_REPLAY) | s.memresp_en_M0.out)
 
     # We will stall for the following conditions:
     # 1. We are initializing cache as a result of a reset
-    # 2. We have a write hit to a clean cache line -> Tag array at M0 must 
+    # 2. We have a write hit to a clean cache line -> Tag array at M0 must
     # be updated with the correct dirty bit
     # 3. There is a stall in the cache due to external factors
     # 4. MSHR is not empty (for blocking cache)
     # 5. MSHR is full (for nonblocking cache)
-    s.cachereq_rdy //= lambda: ~((s.FSM_state_M0.out == M0_FSM_STATE_INIT) | 
-      s.is_write_hit_clean_M0 | s.stall_M0 | (~s.status.MSHR_empty ) |
-      s.status.MSHR_full )
+    s.cachereq_rdy //= lambda: ~( (s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
+        s.is_write_hit_clean_M0 | s.stall_M0 | (~s.status.MSHR_empty ) |
+        s.status.MSHR_full )
 
     #---------------------------------------------------------------------
     # M0 control signal table
@@ -508,11 +508,12 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.ctrl.way_offset_M1 = s.status.amo_hit_way_M1
-      elif (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) | (s.trans_M1.out == 
-        TRANS_TYPE_CACHE_INIT):
+      elif ( (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) |
+             (s.trans_M1.out == TRANS_TYPE_CACHE_INIT) ):
         s.ctrl.way_offset_M1 = s.update_tag_way_M1.out
 
     s.flush_refill_M1_bypass //= lambda: s.trans_M1.out == TRANS_TYPE_FLUSH_WRITE
+
     @s.update
     def up_flush_tag_read_logic_M1():
       s.no_flush_needed_M1_bypass = b1(0)
@@ -576,7 +577,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.hit_M1 = s.status.hit_M1
         s.is_dty_M1 = s.status.ctrl_bit_dty_rd_line_M1[s.status.hit_way_M1]
-        s.is_evict_M1 = s.is_dty_M1 & (s.hit_M1 | s.status.inval_hit_M1)
+        s.is_evict_M1 = s.is_dty_M1 & ( s.hit_M1 | s.status.inval_hit_M1 )
         if s.hit_M1 | s.status.inval_hit_M1:
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
@@ -611,7 +612,7 @@ class BlockingCacheCtrlRTL ( Component ):
     )
 
     # expand byte-enable to bit-enable
-    s.wben_M1 = Wire( BitsDataWben )
+    s.wben_M1  = Wire( BitsDataWben )
     s.wbend_M1 = Wire( BitsDataWben )
 
     @s.update
@@ -678,30 +679,30 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ostall_M1               = s.cs1[ CS_ostall_M1          ]
       s.ctrl.evict_mux_sel_M1   = s.cs1[ CS_evict_mux_sel_M1   ]
       s.ctrl.MSHR_alloc_en      = s.cs1[ CS_MSHR_alloc_en      ] & ~s.stall_M1
-      
+
     # Logic for pipelined registers for dpath
-    s.ctrl.reg_en_M1 //= lambda: ~s.stall_M1 & ~s.is_evict_M1 & (s.trans_M0 != \
-      TRANS_TYPE_CACHE_INIT)
-    
+    s.ctrl.reg_en_M1 //= lambda: (~s.stall_M1 & ~s.is_evict_M1 &
+        (s.trans_M0 != TRANS_TYPE_CACHE_INIT))
+
     # Logic for pipelined registers for ctrl
-    s.ctrl_pipeline_reg_en_M1 //= lambda: s.ctrl.reg_en_M1 | (s.trans_M0 == \
-      TRANS_TYPE_CACHE_INIT)
-      
+    s.ctrl_pipeline_reg_en_M1 //= lambda: (s.ctrl.reg_en_M1 |
+        (s.trans_M0 == TRANS_TYPE_CACHE_INIT))
+
     # Logic for the SRAM tag array as a result of a stall in cache since the
     # values from the SRAM are valid for one cycle
     s.ctrl.stall_reg_en_M1      //= lambda: ~s.was_stalled.out
     s.ctrl.hit_stall_eng_en_M1  //= lambda: ~s.was_stalled.out & ~s.evict_bypass
     s.ctrl.is_init_M1           //= lambda: s.trans_M1.out == TRANS_TYPE_INIT_REQ
-    
+
     # Flush transaction
     s.ctrl.flush_init_reg_en_M1 //= lambda: s.ctrl_pipeline_reg_en_M1
-    s.ctrl.flush_idx_mux_sel_M1 //= lambda: (s.trans_M1.out == \
-      TRANS_TYPE_FLUSH_READ) | (s.trans_M1.out == TRANS_TYPE_CACHE_INIT)
-    
-    # MSHR mask for the dirty bit; if we have an evict, then the dirty bits 
-    # stored in the MSHR is all 0 else we store the dirty bits in MSHR 
-    s.ctrl.dirty_evict_mask_M1  //= lambda: p.BitsDirty(0) if s.is_evict_M1 \
-      else maskf
+    s.ctrl.flush_idx_mux_sel_M1 //= lambda: (
+      (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) |
+      (s.trans_M1.out == TRANS_TYPE_CACHE_INIT))
+
+    # MSHR mask for the dirty bit; if we have an evict, then the dirty bits
+    # stored in the MSHR is all 0 else we store the dirty bits in MSHR
+    s.ctrl.dirty_evict_mask_M1 //= lambda: p.BitsDirty(0) if s.is_evict_M1 else maskf
 
     #=====================================================================
     # M2 Stage
@@ -787,21 +788,23 @@ class BlockingCacheCtrlRTL ( Component ):
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 
-    # dpath pipeline reg en; will only en if we have a stall in M2 and if 
+    # dpath pipeline reg en; will only en if we have a stall in M2 and if
     # we are not initing the cache since that is entirely internal
     # We can likely not need to stall for inv also
-    s.ctrl.reg_en_M2 //= lambda: ( ~s.stall_M2 ) & ( s.trans_M1.out != \
-      TRANS_TYPE_CACHE_INIT ) 
+    s.ctrl.reg_en_M2 //= lambda: ( ( ~s.stall_M2 ) &
+        ( s.trans_M1.out != TRANS_TYPE_CACHE_INIT ) )
     # ctrl pipeline reg en; We will enable ctrl during cache init even during
     # an external stall since the transaction is entirely internal
-    s.ctrl_pipeline_reg_en_M2 //= lambda: s.ctrl.reg_en_M2 | ( s.trans_M1.out\
-       == TRANS_TYPE_CACHE_INIT )
-    
+    s.ctrl_pipeline_reg_en_M2 //= lambda: ( s.ctrl.reg_en_M2 |
+        ( s.trans_M1.out == TRANS_TYPE_CACHE_INIT ) )
+
     s.ctrl.stall_reg_en_M2 //= lambda: ~s.was_stalled.out
-    
+
     # Set a flag for amo transaction
-    s.ctrl.is_amo_M2       //= lambda: (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) |
-      (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) & (~s.is_evict_M2.out))
+    s.ctrl.is_amo_M2 //= lambda: (
+      ( (s.trans_M2.out == TRANS_TYPE_AMO_REQ) |
+        (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO) ) &
+      (~s.is_evict_M2.out) )
 
   #=======================================================================
   # line_trace
