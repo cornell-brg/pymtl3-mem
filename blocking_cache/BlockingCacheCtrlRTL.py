@@ -409,11 +409,10 @@ class BlockingCacheCtrlRTL ( Component ):
       s.ctrl.update_tag_sel_M0      = s.cs0[ CS_update_tag_tag_sel_M0 ]
       s.ctrl.MSHR_dealloc_en        = s.cs0[ CS_mshr_dealloc_M0       ] & ~s.stall_M0
 
-      # Other control signals output
-      s.ctrl.reg_en_M0 = ~s.stall_M0
-      # use higher bits of the counter to select index
-      s.ctrl.tag_array_init_idx_M0 = s.update_way_idx_M0[ clog_asso : bitwidth_num_lines ]
-      s.ctrl.is_amo_M0 = (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) |
+    s.ctrl.reg_en_M0 //= lambda: ~s.stall_M0
+    # use higher bits of the counter to select index
+    s.ctrl.tag_array_init_idx_M0 //= lambda: s.update_way_idx_M0[ clog_asso : bitwidth_num_lines ]
+    s.ctrl.is_amo_M0 //= lambda: (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) |
                            ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
 
     @s.update

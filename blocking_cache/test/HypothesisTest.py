@@ -91,7 +91,7 @@ def gen_reqs( draw, addr_min, addr_max ):
 
   return (addr, type_, data, len_)
 
-max_examples = 100
+max_examples = 30
 hypothesis_max_cycles = 10000
 
 class HypothesisTests:
@@ -109,7 +109,7 @@ class HypothesisTests:
                         MemReqType, MemRespType, mem )
     # Grab list of generated transactions
     reqs_lst = req.draw(
-      st.lists( gen_reqs( addr_min, addr_max ), min_size=20, max_size=200 ),
+      st.lists( gen_reqs( addr_min, addr_max ), min_size=30, max_size=200 ),
       label= "requests"
     )
     for i in range(len(reqs_lst)):
