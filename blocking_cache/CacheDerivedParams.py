@@ -68,11 +68,9 @@ class CacheDerivedParams:
     self.bitwidth_tag_wben         = self.bitwidth_tag_array # Tag array write byte bitwidth
     self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
 
-    print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
-           self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index,
-           self.bitwidth_tag_remainder) )
-
-    # print(f"rm:{self.bitwidth_tag_remainder} ")
+    # print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
+    #        self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index,
+    #        self.bitwidth_tag_remainder) )
 
     #--------------------------------------------------------------------
     # Make Bits object
