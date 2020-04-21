@@ -329,14 +329,14 @@ def iterative_mem( start, end ):
 # random_memory = rand_mem( 0, 0xffff )
 random_memory = iterative_mem( 0, 0xffff )
 
-def rand( size, clw, associativity, num_trans = 500 ):
+def rand( size, clw, associativity, num_trans = 200 ):
   random.seed(0xdeadbeef)
   global random_memory
   max_addr = int( size // 4 * 3 * associativity )
   MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
   type_choices = [ (MemMsgType.READ,     0.40) ,
                    (MemMsgType.WRITE,    0.40),
-                   (MemMsgType.AMO_ADD,  0.01),
+                   (MemMsgType.AMO_ADD,  0.02),
                    (MemMsgType.AMO_AND,  0.01),
                    (MemMsgType.AMO_OR,   0.01),
                    (MemMsgType.AMO_SWAP, 0.01),
@@ -345,8 +345,8 @@ def rand( size, clw, associativity, num_trans = 500 ):
                    (MemMsgType.AMO_MAX,  0.01),
                    (MemMsgType.AMO_MAXU, 0.01),
                    (MemMsgType.AMO_XOR,  0.01),
-                   (MemMsgType.INV,      0.05),
-                   (MemMsgType.FLUSH,    0.05),
+                   (MemMsgType.INV,      0.04),
+                   (MemMsgType.FLUSH,    0.04),
                    ]
   types = random.choices(
       population = [ choices for choices,weights in type_choices ],
