@@ -341,7 +341,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # 3. There is a stall in the cache due to external factors
     # 4. MSHR is not empty (for blocking cache)
     # 5. MSHR is full (for nonblocking cache)
-    s.cachereq_rdy //= lambda: ~((s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
+    s.cachereq_rdy //= lambda: ~( (s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
         s.is_write_hit_clean_M0 | s.stall_M0 | (~s.status.MSHR_empty ) |
         s.status.MSHR_full )
 
@@ -509,11 +509,12 @@ class BlockingCacheCtrlRTL ( Component ):
             s.ctrl.way_offset_M1 = s.status.ctrl_bit_rep_rd_M1
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.ctrl.way_offset_M1 = s.status.amo_hit_way_M1
-      elif (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) | (s.trans_M1.out ==
-        TRANS_TYPE_CACHE_INIT):
+      elif ( (s.trans_M1.out == TRANS_TYPE_FLUSH_READ) |
+             (s.trans_M1.out == TRANS_TYPE_CACHE_INIT) ):
         s.ctrl.way_offset_M1 = s.update_tag_way_M1.out
 
     s.flush_refill_M1_bypass //= lambda: s.trans_M1.out == TRANS_TYPE_FLUSH_WRITE
+
     @s.update
     def up_flush_tag_read_logic_M1():
       s.no_flush_needed_M1_bypass = b1(0)
@@ -577,7 +578,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:
         s.hit_M1 = s.status.hit_M1
         s.is_dty_M1 = s.status.ctrl_bit_dty_rd_line_M1[s.status.hit_way_M1]
-        s.is_evict_M1 = s.is_dty_M1 & (s.hit_M1 | s.status.inval_hit_M1)
+        s.is_evict_M1 = s.is_dty_M1 & ( s.hit_M1 | s.status.inval_hit_M1 )
         if s.hit_M1 | s.status.inval_hit_M1:
           s.repreq_en_M1      = y
           s.repreq_hit_ptr_M1 = ~s.status.hit_way_M1
@@ -612,7 +613,7 @@ class BlockingCacheCtrlRTL ( Component ):
     )
 
     # expand byte-enable to bit-enable
-    s.wben_M1 = Wire( BitsDataWben )
+    s.wben_M1  = Wire( BitsDataWben )
     s.wbend_M1 = Wire( BitsDataWben )
 
     @s.update
