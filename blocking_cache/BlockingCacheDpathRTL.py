@@ -58,47 +58,49 @@ class BlockingCacheDpathRTL (Component):
 
     # Forward declaration: output from MSHR
     s.MSHR_dealloc_out = Wire( p.MSHRMsg  )
-
+    # Deallocating from MSHR
     s.MSHR_dealloc_mux_in_M0 = Wire( p.CacheReqType )
-    s.MSHR_dealloc_mux_in_M0.type_  //= s.MSHR_dealloc_out.type_
-    s.MSHR_dealloc_mux_in_M0.opaque //= s.MSHR_dealloc_out.opaque
-    s.MSHR_dealloc_mux_in_M0.len    //= s.MSHR_dealloc_out.len
-    s.MSHR_dealloc_mux_in_M0.data   //= s.MSHR_dealloc_out.data
-    s.MSHR_dealloc_mux_in_M0.addr   //= s.MSHR_dealloc_out.addr
+    # Set the CacheReqType by picking values from MSHR
+    s.MSHR_dealloc_mux_in_M0 //= lambda: p.CacheReqType( s.MSHR_dealloc_out.type_, 
+      s.MSHR_dealloc_out.opaque, s.MSHR_dealloc_out.addr, s.MSHR_dealloc_out.len, 
+      s.MSHR_dealloc_out.data )
     s.status.amo_hit_M0             //= s.MSHR_dealloc_out.amo_hit
 
-    # Chooses the cache request from proc or MSHR
-    s.MSHR_mux_M0 = Mux( p.CacheReqType, 2 )(
+    # Chooses the cache request from proc or MSHR (memresp)
+    s.cachereq_memresp_mux_M0 = Mux( p.CacheReqType, 2 )(
       in_ = {
         0: s.cachereq_Y,
         1: s.MSHR_dealloc_mux_in_M0
       },
-      sel = s.ctrl.memresp_mux_sel_M0,
+      sel = s.ctrl.cachereq_memresp_mux_sel_M0,
     )
 
     s.cachereq_M0 = Wire( p.PipelineMsg )
-    s.cachereq_M0.len    //= s.MSHR_mux_M0.out.len
-    s.cachereq_M0.type_  //= s.MSHR_mux_M0.out.type_
-    s.cachereq_M0.opaque //= s.MSHR_mux_M0.out.opaque
+    s.cachereq_M0.len    //= s.cachereq_memresp_mux_M0.out.len
+    s.cachereq_M0.type_  //= s.cachereq_memresp_mux_M0.out.type_
+    s.cachereq_M0.opaque //= s.cachereq_memresp_mux_M0.out.opaque
 
     # Chooses addr bypassed from L1 as a result of write hit clean
     s.cachereq_addr_M1_forward = Wire( p.BitsAddr )
     s.addr_mux_M0 = Mux( p.BitsAddr, 2 )(
       in_ = {
-        0: s.MSHR_mux_M0.out.addr,
+        0: s.cachereq_memresp_mux_M0.out.addr,
         1: s.cachereq_addr_M1_forward
       },
       sel = s.ctrl.addr_mux_sel_M0,
     )
     connect_bits2bitstruct( s.cachereq_M0.addr, s.addr_mux_M0.out )
 
+    # Converts a 32-bit word to 128-bit line by replicated the word multiple times 
     s.replicator_M0 = CacheDataReplicator( p )(
-      msg_len = s.MSHR_mux_M0.out.len,
-      data    = s.MSHR_mux_M0.out.data,
+      msg_len = s.cachereq_memresp_mux_M0.out.len,
+      data    = s.cachereq_memresp_mux_M0.out.data,
       is_amo  = s.ctrl.is_amo_M0,
       offset  = s.cachereq_M0.addr.offset
     )
 
+    # Selects between data from the memory resp or from the replicator 
+    # Dependent on if we have a refill response
     s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )(
       in_ = {
         0: s.replicator_M0.out,
@@ -120,6 +122,7 @@ class BlockingCacheDpathRTL (Component):
       sel = s.ctrl.update_tag_sel_M0,
     )
 
+    # Decides the bits that will be written into the sram depending on the state
     s.update_tag_unit = UpdateTagArrayUnit( p )(
       way        = s.update_tag_way_mux_M0.out,
       offset     = s.cachereq_M0.addr.offset,
@@ -129,7 +132,7 @@ class BlockingCacheDpathRTL (Component):
     for i in range( p.associativity ):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
-    # Mux for tag arrays
+    # Index select for the tag array as a result of cache initialization
     s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
       in_ = {
         0: s.cachereq_M0.addr.index,
@@ -138,6 +141,7 @@ class BlockingCacheDpathRTL (Component):
       sel = s.ctrl.tag_array_idx_sel_M0,
     )
 
+    # Select if we need to rewrite the tag from the tab unit
     s.tag_array_tag_mux_M0 = Mux( p.BitsTag, 2 )(
       in_ = {
         0: s.cachereq_M0.addr.tag,
@@ -159,7 +163,7 @@ class BlockingCacheDpathRTL (Component):
 
     # Send the M0 status signals to control
     s.status.memresp_type_M0   //= s.pipeline_reg_M0.out.type_
-    s.status.cachereq_type_M0  //= s.MSHR_mux_M0.out.type_
+    s.status.cachereq_type_M0  //= s.cachereq_memresp_mux_M0.out.type_
 
     #--------------------------------------------------------------------
     # M1 Stage
@@ -171,13 +175,13 @@ class BlockingCacheDpathRTL (Component):
       en  = s.ctrl.reg_en_M1,
     )
 
-    # Idx for flushing
+    # Data array idx
     s.flush_idx_M1 = RegEnRst( p.BitsIdx )(
       in_ = s.ctrl.tag_array_init_idx_M0,
       en  = s.ctrl.flush_init_reg_en_M1,
-      # en  = s.ctrl.reg_en_M1,
     )
 
+    # Send the dty bits to the M1 stage and use for wben mask into data array
     s.dty_bits_mask_M1 = RegEnRst( p.BitsDirty )(
       in_ = s.MSHR_dealloc_out.dirty_bits, # From M0 stage
       en  = s.ctrl.reg_en_M1,
@@ -256,6 +260,7 @@ class BlockingCacheDpathRTL (Component):
       dealloc_out = s.MSHR_dealloc_out,
     )
 
+    # Combined comparator set for both dirty line detection and hit detection 
     s.comparator_set = TagArrayRDataProcessUnit( p )(
       addr_tag   = s.cachereq_M1.out.addr.tag,
       is_init    = s.ctrl.is_init_M1,
