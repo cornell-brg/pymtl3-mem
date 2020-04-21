@@ -350,7 +350,7 @@ class AmoTests:
     ("AMO",  amo_subword,    0.5,       2,      2,        2   ),
     ("AMO",  amo_ad,         0.5,       2,      2,        2   ),
   ])
-  def test_Cifer_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
+  def test_AMO_dmapped_size16_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
                                        stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)
@@ -365,7 +365,7 @@ class AmoTests:
     ("DBPW", wr_hit_clean,   0.5,       2,      4,        4   ),
     ("AMO",  amo_cache_line, 0.5,       2,      4,        4   ),
   ])
-  def test_Cifer_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+  def test_AMO_dmapped_size32_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
                                         stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 1,
@@ -398,7 +398,7 @@ class AmoTests:
     ("HYPO", amo_hypo5,      0,         1,      0,        0   ),
     ("HYPO", amo_hypo6,      0,         1,      0,        0   ),
   ])
-  def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
+  def test_AMO_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
                                      stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     s.run_test( test(), mem, CacheReqType, CacheRespType, MemReqType, MemRespType, 2,
@@ -411,7 +411,7 @@ class AmoTests:
     ("HYPO", amo_hypo4,      0,         1,      0,        0   ),
     ("RAND", rand_2_32_64,   0,         1,      0,        0   ),
   ])
-  def test_Cifer_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
+  def test_AMO_2way_size32_clw64( s, name, test, dump_vcd, test_verilog, max_cycles,
                                     stall_prob, latency, src_delay, sink_delay, dump_vtb ):
     mem = random_memory if name == "RAND" else cifer_test_memory()
     MemReqType, MemRespType = mk_mem_msg(obw, abw, 64)

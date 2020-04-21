@@ -121,15 +121,15 @@ class BlockingCacheDpathRTL (Component):
     )
 
     s.update_tag_unit = UpdateTagArrayUnit( p )(
-      way    = s.update_tag_way_mux_M0.out,
-      offset = s.cachereq_M0.addr.offset,
-      cmd    = s.ctrl.update_tag_cmd_M0
+      way        = s.update_tag_way_mux_M0.out,
+      offset     = s.cachereq_M0.addr.offset,
+      cmd        = s.ctrl.update_tag_cmd_M0,
+      refill_dty = s.MSHR_dealloc_out.dirty_bits,
     )
     for i in range( p.associativity ):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
     # Mux for tag arrays
-
     s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
       in_ = {
         0: s.cachereq_M0.addr.index,
@@ -240,7 +240,8 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.repl    //= s.ctrl.way_offset_M1
     s.MSHR_alloc_in_amo_hit_bypass = Wire( p.StructHit )
     s.MSHR_alloc_in.amo_hit //= s.MSHR_alloc_in_amo_hit_bypass.hit
-    s.MSHR_alloc_in.dirty_bits //=  lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
+    s.MSHR_alloc_in.dirty_bits //=  lambda: (s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
+     & s.ctrl.dirty_evict_mask_M1 )
     
     s.MSHR_alloc_id = Wire(p.BitsOpaque)
 
@@ -413,7 +414,5 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # for i in range( len( s.tag_arrays_M1 ) ):
-    #   msg += f"way{i}:val={s.tag_arrays_M1[i].port0_val},rdata={s.tag_array_out_M1[i]} "
-    msg += f'resp:{s.cacheresp_M2}|d:{s.ctrl.data_array_wben_M1}'
+    # msg += f'en1:{s.ctrl.reg_en_M1}'
     return msg

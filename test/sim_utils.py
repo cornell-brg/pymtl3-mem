@@ -77,8 +77,14 @@ def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespTyp
       cache.write(request.addr, request.data, request.opaque, request.len)
     elif request.type_ == MemMsgType.WRITE_INIT:
       cache.init(request.addr, request.data, request.opaque, request.len)
-    elif request.type_ >= MemMsgType.AMO_ADD:
+    elif request.type_ >= MemMsgType.AMO_ADD and request.type_ <= MemMsgType.AMO_XOR:
       cache.amo(request.addr, request.data, request.opaque, request.type_)
+    elif request.type_ == MemMsgType.INV:
+      cache.invalidate(request.opaque)
+    elif request.type_ == MemMsgType.FLUSH:
+      cache.flush(request.opaque)
+    else:
+      assert False, "FL model: Undefined transaction type"
   return cache.get_transactions()
 
 def rand_mem(addr_min=0, addr_max=0xfff):

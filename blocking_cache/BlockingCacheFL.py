@@ -36,6 +36,8 @@ def req( CacheReqType, type_, opaque, addr, len, data ):
   elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
   elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
   elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
+  elif type_ == 'inv': type_ = MemMsgType.INV
+  elif type_ == 'fl':  type_ = MemMsgType.FLUSH
   return CacheReqType( type_, opaque, addr, len, data )
 
 def resp( CacheRespType, type_, opaque, test, len, data ):
@@ -51,6 +53,8 @@ def resp( CacheRespType, type_, opaque, test, len, data ):
   elif type_ == 'mx': type_ = MemMsgType.AMO_MAX
   elif type_ == 'xu': type_ = MemMsgType.AMO_MAXU
   elif type_ == 'xo': type_ = MemMsgType.AMO_XOR
+  elif type_ == 'inv': type_ = MemMsgType.INV
+  elif type_ == 'fl':  type_ = MemMsgType.FLUSH
   return CacheRespType( type_, opaque, test, len, data )
 
 #-------------------------------------------------------------------------
@@ -172,6 +176,12 @@ class HitMissTracker:
         self.valid[idx][way] = False
         self.lru_set( idx, way )
         break
+  
+  def invalidate(self):
+    # invalidates all the cachelines
+    for way in range(self.nways):
+      for idx in range(self.nsets):
+        self.valid[idx][way] = False
 
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
@@ -290,6 +300,17 @@ class ModelCache:
 
     self.transactions.append(req (self.CacheReqType, func, opaque, addr, 0, value))
     self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    0, ret))
+    self.opaque += 1
+
+  def invalidate(self, opaque):
+    self.tracker.invalidate()
+    self.transactions.append(req (self.CacheReqType, 'inv', opaque, 0, 0, 0))
+    self.transactions.append(resp(self.CacheRespType, 'inv', opaque, 0, 0, 0))
+    self.opaque += 1
+
+  def flush(self, opaque):
+    self.transactions.append(req (self.CacheReqType, 'fl', opaque, 0, 0, 0))
+    self.transactions.append(resp(self.CacheRespType, 'fl', opaque, 0, 0, 0))
     self.opaque += 1
 
   def get_transactions(self):

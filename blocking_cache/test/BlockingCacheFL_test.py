@@ -20,10 +20,10 @@ from ..BlockingCacheFL import ModelCache
 
 from .DmappedTestCases import DmappedTestCases
 from .Asso2WayTestCases import AssoTestCases
-from .HypothesisTest import HypothesisTests
 from .AmoTests import AmoTests
+from .InvFlushTests import InvFlushTests
 
-class CacheFL_Tests( DmappedTestCases, AssoTestCases, AmoTests ):
+class CacheFL_Tests( DmappedTestCases, AssoTestCases, InvFlushTests, AmoTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=512, stall_prob=0,
@@ -41,8 +41,12 @@ class CacheFL_Tests( DmappedTestCases, AssoTestCases, AmoTests ):
         cache.write(trans.addr, trans.data, trans.opaque, trans.len)
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque, trans.len)
-      elif trans.type_ >= MemMsgType.AMO_ADD:
+      elif trans.type_ >= MemMsgType.AMO_ADD and trans.type_ <= MemMsgType.AMO_XOR:
         cache.amo(trans.addr, trans.data, trans.opaque, trans.type_)
+      elif trans.type_ == MemMsgType.INV:
+        cache.invalidate(trans.opaque)
+      elif trans.type_ == MemMsgType.FLUSH:
+        cache.flush(trans.opaque)
     resps = cache.get_transactions()[1::2]
     print("")
     for i in range(len(sink)):

@@ -82,6 +82,7 @@ def mk_ctrl_signals_struct( p ):
     'way_offset_M1'         : p.BitsAssoclog2,
     'is_init_M1'            : Bits1,
     'flush_idx_mux_sel_M1'  : Bits1,
+    'dirty_evict_mask_M1'   : p.BitsDirty,
 
     # M2 Ctrl Signals
     'reg_en_M2'             : Bits1,

@@ -31,33 +31,63 @@ dbw  = 32  # Short name for data bitwidth
 @st.composite
 def gen_reqs( draw, addr_min, addr_max ):
   addr = draw( st.integers(addr_min, addr_max), label="addr" )
-  type_ = draw( st.sampled_from([
-    MemMsgType.READ,
-    MemMsgType.WRITE,
-    MemMsgType.AMO_ADD,
-    MemMsgType.AMO_AND,
-    MemMsgType.AMO_OR,
-    MemMsgType.AMO_SWAP,
-    MemMsgType.AMO_MIN,
-    MemMsgType.AMO_MINU,
-    MemMsgType.AMO_MAX,
-    MemMsgType.AMO_MAXU,
-    MemMsgType.AMO_XOR,
-  ]), label="type" )
-  data = draw( st.integers(0, 0xffffffff), label="data" )
-  if type_ >= AMO:
-    addr = addr & Bits32(0xfffffffc)
-    len_ = 0
+  type_ranges = draw( st.integers( 0, 2) )
+  if type_ranges == 0:
+    type_ = draw( st.sampled_from([
+      MemMsgType.READ,
+      MemMsgType.WRITE,
+      MemMsgType.AMO_ADD,
+      MemMsgType.AMO_AND,
+      MemMsgType.AMO_OR,
+      MemMsgType.AMO_SWAP,
+      MemMsgType.AMO_MIN,
+      MemMsgType.AMO_MINU,
+      MemMsgType.AMO_MAX,
+      MemMsgType.AMO_MAXU,
+      MemMsgType.AMO_XOR,
+    ]), label='type')
+  elif type_ranges == 1:
+    type_ = draw( st.sampled_from([
+      MemMsgType.READ,
+      MemMsgType.WRITE,
+      MemMsgType.INV,
+      MemMsgType.FLUSH,
+    ]), label="type" )
   else:
-    len_ = draw( st.integers(0, 2), label="len" )
-    if len_ == 0:
+    type_ = draw( st.sampled_from([
+      MemMsgType.READ,
+      MemMsgType.WRITE,
+      MemMsgType.AMO_ADD,
+      MemMsgType.AMO_AND,
+      MemMsgType.AMO_OR,
+      MemMsgType.AMO_SWAP,
+      MemMsgType.AMO_MIN,
+      MemMsgType.AMO_MINU,
+      MemMsgType.AMO_MAX,
+      MemMsgType.AMO_MAXU,
+      MemMsgType.AMO_XOR,
+      MemMsgType.INV,
+      MemMsgType.FLUSH,
+    ]), label="type" )
+  if type_ == MemMsgType.INV or type_ == MemMsgType.FLUSH:
+    addr = Bits32(0)
+    len_ = 0
+    data = 0
+  else:
+    data = draw( st.integers(0, 0xffffffff), label="data" )
+    if type_ >= MemMsgType.AMO_ADD and type_ <= MemMsgType.AMO_XOR:
       addr = addr & Bits32(0xfffffffc)
-    elif len_ == 1:
-      addr = addr & Bits32(0xffffffff)
-    elif len_ == 2:
-      addr = addr & Bits32(0xfffffffe)
+      len_ = 0
     else:
-      addr = addr & Bits32(0xfffffffc)
+      len_ = draw( st.integers(0, 2), label="len" )
+      if len_ == 0:
+        addr = addr & Bits32(0xfffffffc)
+      elif len_ == 1:
+        addr = addr & Bits32(0xffffffff)
+      elif len_ == 2:
+        addr = addr & Bits32(0xfffffffe)
+      else:
+        addr = addr & Bits32(0xfffffffc)
 
   return (addr, type_, data, len_)
 
@@ -65,7 +95,7 @@ max_examples = 100
 hypothesis_max_cycles = 10000
 
 class HypothesisTests:
-  def hypothesis_test_harness( s, associativity, clw, num_blocks, transactions,
+  def hypothesis_test_harness( s, associativity, clw, num_blocks,
                                req, stall_prob, latency, src_delay, sink_delay,
                                dump_vcd, test_verilog, max_cycles, dump_vtb ):
     cacheSize = (clw * associativity * num_blocks) // 8
@@ -79,7 +109,7 @@ class HypothesisTests:
                         MemReqType, MemRespType, mem )
     # Grab list of generated transactions
     reqs_lst = req.draw(
-      st.lists( gen_reqs( addr_min, addr_max ), min_size=1, max_size=transactions ),
+      st.lists( gen_reqs( addr_min, addr_max ), min_size=20, max_size=200 ),
       label= "requests"
     )
     for i in range(len(reqs_lst)):
@@ -87,11 +117,17 @@ class HypothesisTests:
       if type_ == MemMsgType.WRITE:
         model.write(addr, data, i, len_)
       elif type_ == MemMsgType.READ:
-        # Read something
         model.read(addr, i, len_)
-      else:
-        # if not read or write, then must be amo trans
+      elif type_ == MemMsgType.WRITE_INIT:
+        model.init(addr, data, i, len_)
+      elif type_ >= MemMsgType.AMO_ADD and type_ <= MemMsgType.AMO_XOR:
         model.amo(addr, data, i, type_)
+      elif type_ == MemMsgType.INV:
+        model.invalidate(i)
+      elif type_ == MemMsgType.FLUSH:
+        model.flush(i)
+      else:
+        assert False, "FL model: Undefined transaction type"
     msgs = model.get_transactions() # Get FL response
     # Prepare RTL test harness
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
@@ -102,18 +138,17 @@ class HypothesisTests:
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ),
-    transactions = st.integers( 20, 200 ),
     req          = st.data(),
-    stall_prob   = st.integers( 0, 1 ),
-    latency      = st.integers( 1, 4 ),
-    src_delay    = st.integers( 0, 4 ),
-    sink_delay   = st.integers( 0, 4 )
+    stall_prob   = st.integers( 0 ),
+    latency      = st.integers( 1, 5 ),
+    src_delay    = st.integers( 0, 5 ),
+    sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way( s, clw, block_order, transactions, req, stall_prob,
+  def test_hypothesis_2way( s, clw, block_order, req, stall_prob,
                             latency, src_delay, sink_delay, dump_vcd,
                             test_verilog, max_cycles, dump_vtb ):
     num_blocks = 2**block_order
-    s.hypothesis_test_harness( 2, clw, num_blocks, transactions, req, stall_prob,
+    s.hypothesis_test_harness( 2, clw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
                                test_verilog, max_cycles, dump_vtb )
 
@@ -121,46 +156,43 @@ class HypothesisTests:
   @hypothesis.given(
     clw          = st.sampled_from([64,128,256]),
     block_order  = st.integers( 1, 7 ), # order of number of blocks based 2
-    transactions = st.integers( 20, 200 ),
     req          = st.data(),
-    stall_prob   = st.integers( 0, 1 ),
-    latency      = st.integers( 1, 4 ),
-    src_delay    = st.integers( 0, 4 ),
-    sink_delay   = st.integers( 0, 4 )
+    stall_prob   = st.integers( 0 ),
+    latency      = st.integers( 1, 5 ),
+    src_delay    = st.integers( 0, 5 ),
+    sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped( s, clw, block_order, transactions, req, stall_prob,
+  def test_hypothesis_dmapped( s, clw, block_order, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
                                test_verilog, max_cycles, dump_vtb ):
     num_blocks = 2**block_order
-    s.hypothesis_test_harness( 1, clw, num_blocks, transactions, req, stall_prob,
+    s.hypothesis_test_harness( 1, clw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, dump_vcd,
                                test_verilog, max_cycles, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
-    transactions = st.integers( 30, 200 ),
     req          = st.data(),
     latency      = st.integers( 1, 2 ),
-    src_delay    = st.integers( 0, 1 ),
-    sink_delay   = st.integers( 0, 1 )
+    src_delay    = st.integers( 0, 2 ),
+    sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_2way_stress( s, transactions, req, latency, src_delay,
+  def test_hypothesis_2way_stress( s,  req, latency, src_delay,
                                    sink_delay, dump_vcd, test_verilog, max_cycles, dump_vtb ):
-    s.hypothesis_test_harness( 2, 128, 2, transactions, req, 0,
+    s.hypothesis_test_harness( 2, 128, 2,  req, 0,
                                latency, src_delay, sink_delay,
                                dump_vcd, test_verilog, max_cycles, dump_vtb )
 
   @hypothesis.settings( deadline = None, max_examples=max_examples )
   @hypothesis.given(
-    transactions = st.integers( 30, 200 ),
     req          = st.data(),
     latency      = st.integers( 1, 2 ),
-    src_delay    = st.integers( 0, 1 ),
-    sink_delay   = st.integers( 0, 1 )
+    src_delay    = st.integers( 0, 2 ),
+    sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_dmapped_stress( s, transactions, req, latency,
+  def test_hypothesis_dmapped_stress( s, req, latency,
                                       src_delay, sink_delay, dump_vcd,
                                       test_verilog, max_cycles, dump_vtb ):
-    s.hypothesis_test_harness( 1, 128, 2, transactions, req, 0,
+    s.hypothesis_test_harness( 1, 128, 2, req, 0,
                                latency, src_delay, sink_delay, dump_vcd,
                                test_verilog, max_cycles, dump_vtb )

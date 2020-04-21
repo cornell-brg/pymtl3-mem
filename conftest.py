@@ -11,7 +11,7 @@ def pytest_addoption(parser):
                     help="dump vcd for each test" )
   parser.addoption( "--line-trace", action="store", default=1, choices=[0,1,2], type=int,
                     help="verbosity of line trace" )
-  parser.addoption( "--max-cycles", action="store", type=int, default=2000,
+  parser.addoption( "--max-cycles", action="store", type=int, default=10000,
                     help="max number of cycles to be simulated" )
   parser.addoption( "--dump-vtb", action="store_true",
                     help="dump verilog test bench for each test")

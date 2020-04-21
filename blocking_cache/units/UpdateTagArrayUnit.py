@@ -19,6 +19,7 @@ class UpdateTagArrayUnit( Component ):
     s.offset      = InPort ( p.BitsOffset )
     s.old_entries = [ InPort ( p.StructTagArray ) for _ in range( p.associativity ) ]
     s.cmd         = InPort ( Bits3 )
+    s.refill_dty  = InPort ( p.BitsDirty )
     s.out         = OutPort( p.StructTagArray )
 
     bitwidth_offset = p.bitwidth_offset
@@ -36,13 +37,13 @@ class UpdateTagArrayUnit( Component ):
         # Refill on a write, mark the word being written as dirty, the
         # rest is clean
         s.out.val = CACHE_LINE_STATE_VALID
-        s.out.dty = BitsDirty(0)
+        s.out.dty = BitsDirty(0) | s.refill_dty
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
       elif s.cmd == UpdateTagArrayUnit_CMD_RD_REFILL:
         # Refill for a read, simply mark valid bit and clear the dirty
         # bits
         s.out.val = CACHE_LINE_STATE_VALID
-        s.out.dty = BitsDirty(0)
+        s.out.dty = BitsDirty(0) | s.refill_dty
       elif s.cmd == UpdateTagArrayUnit_CMD_WR_HIT:
         # Hit a clean word, mark the word as dirty
         s.out.dty[s.offset[2:bitwidth_offset]] = b1(1)
