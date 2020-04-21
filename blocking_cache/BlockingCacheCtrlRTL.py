@@ -788,12 +788,21 @@ class BlockingCacheCtrlRTL ( Component ):
       s.cacheresp_en              = s.cs2[ CS_cacheresp_en         ]
       s.memreq_en                 = s.cs2[ CS_memreq_en            ]
 
-      s.ctrl.reg_en_M2 = ( ~s.stall_M2 ) & ( s.trans_M1.out != TRANS_TYPE_CACHE_INIT ) 
-      s.ctrl_pipeline_reg_en_M2 = s.ctrl.reg_en_M2 | ( s.trans_M1.out == TRANS_TYPE_CACHE_INIT )
-      s.ctrl.stall_reg_en_M2 = ~s.was_stalled.out
-      s.ctrl.is_amo_M2 = (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) |
-                         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) &
-                          ~s.is_evict_M2.out)
+    # dpath pipeline reg en; will only en if we have a stall in M2 and if 
+    # we are not initing the cache since that is entirely internal
+    # We can likely not need to stall for inv also
+    s.ctrl.reg_en_M2 //= lambda: ( ~s.stall_M2 ) & ( s.trans_M1.out != \
+      TRANS_TYPE_CACHE_INIT ) 
+    # ctrl pipeline reg en; We will enable ctrl during cache init even during
+    # an external stall since the transaction is entirely internal
+    s.ctrl_pipeline_reg_en_M2 //= lambda: s.ctrl.reg_en_M2 | ( s.trans_M1.out\
+       == TRANS_TYPE_CACHE_INIT )
+    
+    s.ctrl.stall_reg_en_M2 //= lambda: ~s.was_stalled.out
+    
+    # Set a flag for amo transaction
+    s.ctrl.is_amo_M2       //= lambda: (((s.trans_M2.out == TRANS_TYPE_AMO_REQ ) |
+      (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) & (~s.is_evict_M2.out))
 
   #=======================================================================
   # line_trace
