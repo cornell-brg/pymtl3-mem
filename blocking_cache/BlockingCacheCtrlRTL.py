@@ -304,7 +304,6 @@ class BlockingCacheCtrlRTL ( Component ):
         s.counter_en_M0 = b1(1)
 
     s.counter_M0.count_down //= b1(1)
-    s.counter_M0.load       //= b1(0)
     s.counter_M0.en         //= lambda: s.ctrl.reg_en_M0 & s.counter_en_M0
 
     # When the flush ack come back, the counter has already been

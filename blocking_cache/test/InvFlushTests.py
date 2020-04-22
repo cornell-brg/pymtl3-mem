@@ -326,16 +326,16 @@ def iterative_mem( start, end ):
     mem.append(curr_addr)
     curr_addr += 4
   return mem
-# random_memory = rand_mem( 0, 0xffff )
-random_memory = iterative_mem( 0, 0xffff )
+random_memory = rand_mem( 0, 0xffff )
+# random_memory = iterative_mem( 0, 0xffff )
 
 def rand( size, clw, associativity, num_trans = 200 ):
   random.seed(0xdeadbeef)
   global random_memory
   max_addr = int( size // 4 * 3 * associativity )
   MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
-  type_choices = [ (MemMsgType.READ,     0.40) ,
-                   (MemMsgType.WRITE,    0.40),
+  type_choices = [ (MemMsgType.READ,     0.43) ,
+                   (MemMsgType.WRITE,    0.43),
                    (MemMsgType.AMO_ADD,  0.02),
                    (MemMsgType.AMO_AND,  0.01),
                    (MemMsgType.AMO_OR,   0.01),
@@ -345,8 +345,8 @@ def rand( size, clw, associativity, num_trans = 200 ):
                    (MemMsgType.AMO_MAX,  0.01),
                    (MemMsgType.AMO_MAXU, 0.01),
                    (MemMsgType.AMO_XOR,  0.01),
-                   (MemMsgType.INV,      0.04),
-                   (MemMsgType.FLUSH,    0.04),
+                   (MemMsgType.INV,      0.02),
+                   (MemMsgType.FLUSH,    0.02),
                    ]
   types = random.choices(
       population = [ choices for choices,weights in type_choices ],
@@ -395,19 +395,19 @@ def rand( size, clw, associativity, num_trans = 200 ):
   return trans
 
 def rand_d_16_64():
-  return rand(16, 64, 1)
+  return rand(16, 64, 1, 1000)
 
 def rand_d_32_128():
-  return rand(32, 128, 1)
+  return rand(32, 128, 1, 500)
 
 def rand_2_32_64():
-  return rand(32, 64, 2)
+  return rand(32, 64, 2, 500)
 
 def rand_2_64_128():
-  return rand(64, 128, 2)
+  return rand(64, 128, 2, 500)
 
 def rand_2_4096_128():
-  return rand(4096, 128, 2)
+  return rand(4096, 128, 2, 200)
 
 #-------------------------------------------------------------------------
 # Test driver
@@ -493,6 +493,8 @@ class InvFlushTests:
     ("INV",    cache_inv_refill3,       1,         2,      1,        2   ),
     ("INV",    cache_inv_refill4,       1,         2,      1,        2   ),
     ("HYP",    hypo_1,                  1,         2,      1,        2   ),
+    ("RAND",   rand_2_64_128,           0,         1,      0,        0   ),
+    ("RAND",   rand_2_64_128,           0,         2,      0,        2   ),
     ])
   def test_Cifer_2way_size64_clw128( s, name, test, dump_vcd, test_verilog, max_cycles,
                                      stall_prob, latency, src_delay, sink_delay, dump_vtb ):

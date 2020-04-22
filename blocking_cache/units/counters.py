@@ -26,13 +26,10 @@ class CounterEnRst( Component ):
       if s.reset:
         s.out <<= Type( reset_value )
       elif s.en:
-        if s.load:
-          s.out <<= s.load_value
+        if s.count_down:
+          s.out <<= s.out - Type(1)
         else:
-          if s.count_down:
-            s.out <<= s.out - Type(1)
-          else:
-            s.out <<= s.out + Type(1)
+          s.out <<= s.out + Type(1)
 
   def line_trace( s ):
     return f"[{'en' if s.en else '  '}|{s.out}]"
