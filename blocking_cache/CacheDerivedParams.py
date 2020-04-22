@@ -40,7 +40,7 @@ class CacheDerivedParams:
     self.bitwidth_cacheline        = MemReqType.get_field_type("data").nbits
     self.bitwidth_addr             = MemReqType.get_field_type("addr").nbits
     self.bitwidth_opaque           = MemReqType.get_field_type("opaque").nbits
-    self.bitwidth_data             = CacheReqType.get_field_type("addr").nbits
+    self.bitwidth_data             = CacheReqType.get_field_type("data").nbits
     # Convert to total number of bits and then divide
     self.total_num_cachelines      = self.num_bytes * 8 // self.bitwidth_cacheline
     self.nblocks_per_way           = self.total_num_cachelines // self.associativity # cachelines per way
