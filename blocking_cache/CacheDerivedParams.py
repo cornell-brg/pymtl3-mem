@@ -52,7 +52,7 @@ class CacheDerivedParams:
     self.bitwidth_rd_data_mux_sel  = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read data mux bitwidth
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8  )               # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )               # Read half word mux sel bitwidth
-    self.bitwidth_rd_word_mux_sel  = clog2( self.bitwidth_data // 32 )               # Read word mux bitwidth
+#    self.bitwidth_rd_word_mux_sel  = clog2( bitwidth_rd_word_mux_sel )               # Read word mux bitwidth
     self.bitwidth_len              = clog2( self.bitwidth_data // 8  )
     if self.associativity == 1:
       self.bitwidth_clog_asso      = 1
@@ -91,7 +91,7 @@ class CacheDerivedParams:
     self.BitsTagWben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write bit enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write bit enable
     self.BitsRdDataMuxSel  = mk_bits( self.bitwidth_rd_data_mux_sel ) 
-    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_word_mux_sel ) 
+#    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_word_mux_sel ) 
     self.BitsRd2ByteMuxSel = mk_bits( self.bitwidth_rd_2byte_mux_sel )
     self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
     self.BitsAssoc         = mk_bits( self.associativity )

@@ -27,7 +27,7 @@ class DataSizeMux( Component ):
     s.is_amo = InPort( Bits1 )
 
     s.read_data_mux_sel      = Wire(p.BitsRdDataMuxSel)
-    s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel)
+#    s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel)
     s.read_2byte_mux_sel     = Wire(p.BitsRd2ByteMuxSel)
     s.read_byte_mux_sel      = Wire(p.BitsRdByteMuxSel)
     s.subword_access_mux_sel = Wire(Bits2)
@@ -46,17 +46,17 @@ class DataSizeMux( Component ):
     for i in range(1, p.bitwidth_cacheline//p.bitwidth_data+1):
       s.read_data_mux.in_[i] //= s.data[(i - 1) * p.bitwidth_data:i * p.bitwidth_data]
 
-    # Word byte select mux
-    s.read_word_mux = Mux(Bits32, p.bitwidth_data//32)(
-      sel = s.read_word_mux_sel
-    )
-    for i in range(p.bitwidth_data//32):
-      s.read_word_mux.in_[i] //= s.read_data_mux.out[i * 32:(i + 1) * 32]
-
-    s.read_word_zero_extended = Wire(p.BitsData)
-    if p.bitwidth_data > 32:
-      s.read_word_zero_extended[32:p.bitwidth_data] //= 0
-    s.read_word_zero_extended[0:32] //= s.read_word_mux.out
+    # Word byte select mux NOT USED YET
+#    s.read_word_mux = Mux(Bits32, p.bitwidth_data//32)(
+#      sel = s.read_word_mux_sel
+#    )
+#    for i in range(p.bitwidth_data//32):
+#      s.read_word_mux.in_[i] //= s.read_data_mux.out[i * 32:(i + 1) * 32]
+#
+#    s.read_word_zero_extended = Wire(p.BitsData)
+#    if p.bitwidth_data > 32:
+#      s.read_word_zero_extended[32:p.bitwidth_data] //= 0
+#    s.read_word_zero_extended[0:32] //= s.read_word_mux.out
 
     # Two byte select mux
     s.read_2byte_mux = Mux(Bits16, p.bitwidth_data//16)(
@@ -94,7 +94,7 @@ class DataSizeMux( Component ):
     BitsRdDataMuxSel = p.BitsRdDataMuxSel
     btmx0   = p.BitsRdByteMuxSel(0)
     bbmx0   = p.BitsRd2ByteMuxSel(0)
-    wwmx0   = p.BitsRdWordMuxSel(0)
+#    wwmx0   = p.BitsRdWordMuxSel(0)
     wdmx0   = p.BitsRdDataMuxSel(0)
     acmx0   = Bits2(0)
     offset  = p.bitwidth_offset
@@ -104,7 +104,7 @@ class DataSizeMux( Component ):
     def subword_access_mux_sel_logic():
       s.read_byte_mux_sel      = btmx0
       s.read_2byte_mux_sel     = bbmx0
-      s.read_word_mux_sel      = wwmx0
+#      s.read_word_mux_sel      = wwmx0
       s.read_data_mux_sel      = wdmx0
       s.subword_access_mux_sel = acmx0
       if s.en:
@@ -128,7 +128,7 @@ class PMux( Component ):
   '''
 
   def construct( s, Type, ninputs ):
-    BitsSel = Bits1 if ninputs == 1 else mk_bits( clog2(ninputs) )
+    BitsSel = Bits1 if ninputs <= 1 else mk_bits( clog2(ninputs) )
     s.in_ = [ InPort( Type ) for _ in range(ninputs) ]
     s.out = OutPort( Type )
     s.sel = InPort( BitsSel )
