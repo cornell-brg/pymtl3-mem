@@ -26,25 +26,44 @@ class DataSizeMux( Component ):
     s.out    = OutPort( p.BitsData )
     s.is_amo = InPort( Bits1 )
 
+    s.read_data_mux_sel      = Wire(p.BitsRdDataMuxSel)
     s.read_word_mux_sel      = Wire(p.BitsRdWordMuxSel)
     s.read_2byte_mux_sel     = Wire(p.BitsRd2ByteMuxSel)
     s.read_byte_mux_sel      = Wire(p.BitsRdByteMuxSel)
     s.subword_access_mux_sel = Wire(Bits2)
-    # Word select mux
-    s.read_word_mux = Mux(p.BitsData, p.bitwidth_cacheline // p.bitwidth_data \
+
+    s.read_amo = Wire(p.BitsData)
+    if p.bitwidth_data > 32:
+      s.read_amo[32:p.bitwidth_data] //= 0
+    s.read_amo[0:32] //= s.data[0:32]
+    
+    # Data select mux
+    s.read_data_mux = Mux(p.BitsData, p.bitwidth_cacheline // p.bitwidth_data \
       + 1)(
+      sel = s.read_data_mux_sel
+    )
+    s.read_data_mux.in_[0] //= p.BitsData(0)
+    for i in range(1, p.bitwidth_cacheline//p.bitwidth_data+1):
+      s.read_data_mux.in_[i] //= s.data[(i - 1) * p.bitwidth_data:i * p.bitwidth_data]
+
+    # Word byte select mux
+    s.read_word_mux = Mux(Bits32, p.bitwidth_data//32)(
       sel = s.read_word_mux_sel
     )
-    s.read_word_mux.in_[0] //= p.BitsData(0)
-    for i in range(1, p.bitwidth_cacheline//p.bitwidth_data+1):
-      s.read_word_mux.in_[i] //= s.data[(i - 1) * p.bitwidth_data:i * p.bitwidth_data]
+    for i in range(p.bitwidth_data//32):
+      s.read_word_mux.in_[i] //= s.read_data_mux.out[i * 32:(i + 1) * 32]
+
+    s.read_word_zero_extended = Wire(p.BitsData)
+    if p.bitwidth_data > 32:
+      s.read_word_zero_extended[32:p.bitwidth_data] //= 0
+    s.read_word_zero_extended[0:32] //= s.read_word_mux.out
 
     # Two byte select mux
     s.read_2byte_mux = Mux(Bits16, p.bitwidth_data//16)(
       sel = s.read_2byte_mux_sel
     )
     for i in range(p.bitwidth_data//16):
-      s.read_2byte_mux.in_[i] //= s.read_word_mux.out[i * 16:(i + 1) * 16]
+      s.read_2byte_mux.in_[i] //= s.read_data_mux.out[i * 16:(i + 1) * 16]
 
     s.read_2byte_zero_extended = Wire(p.BitsData)
     s.read_2byte_zero_extended[16:p.bitwidth_data] //= 0
@@ -55,7 +74,7 @@ class DataSizeMux( Component ):
       sel = s.read_byte_mux_sel
     )
     for i in range(p.bitwidth_data//8):
-      s.read_byte_mux.in_[i] //= s.read_word_mux.out[i * 8:(i + 1) * 8]
+      s.read_byte_mux.in_[i] //= s.read_data_mux.out[i * 8:(i + 1) * 8]
 
     s.read_byte_zero_extended = Wire(p.BitsData)
     s.read_byte_zero_extended[8:p.bitwidth_data] //= 0
@@ -64,7 +83,7 @@ class DataSizeMux( Component ):
     # Datasize Mux
     s.subword_access_mux = Mux(p.BitsData, 3)(
       in_ = {
-        0: s.read_word_mux.out,
+        0: s.read_data_mux.out,
         1: s.read_byte_zero_extended,
         2: s.read_2byte_zero_extended
       },
@@ -72,11 +91,12 @@ class DataSizeMux( Component ):
     )
 
     ## Ctrl logic
-    BitsRdWordMuxSel = p.BitsRdWordMuxSel
+    BitsRdDataMuxSel = p.BitsRdDataMuxSel
     btmx0   = p.BitsRdByteMuxSel(0)
     bbmx0   = p.BitsRd2ByteMuxSel(0)
+    wwmx0   = p.BitsRdWordMuxSel(0)
+    wdmx0   = p.BitsRdDataMuxSel(0)
     acmx0   = Bits2(0)
-    wdmx0   = p.BitsRdWordMuxSel(0)
     offset  = p.bitwidth_offset
     BitsLen = p.BitsLen
     bitwidth_data = p.bitwidth_data
@@ -84,10 +104,11 @@ class DataSizeMux( Component ):
     def subword_access_mux_sel_logic():
       s.read_byte_mux_sel      = btmx0
       s.read_2byte_mux_sel     = bbmx0
+      s.read_word_mux_sel      = wwmx0
+      s.read_data_mux_sel      = wdmx0
       s.subword_access_mux_sel = acmx0
-      s.read_word_mux_sel      = wdmx0
       if s.en:
-        s.read_word_mux_sel = BitsRdWordMuxSel(s.offset[2:offset]) + BitsRdWordMuxSel(1)
+        s.read_data_mux_sel = BitsRdDataMuxSel(s.offset[2:offset]) + BitsRdDataMuxSel(1)
         if s.len_ == BitsLen(1):
           s.read_byte_mux_sel      = s.offset[0:2]
           s.subword_access_mux_sel = Bits2(1)
@@ -96,7 +117,7 @@ class DataSizeMux( Component ):
           s.subword_access_mux_sel = Bits2(2)
       
       if s.is_amo:
-        s.out = s.data[0:bitwidth_data]
+        s.out = s.read_amo
       else:
         s.out = s.subword_access_mux.out
 

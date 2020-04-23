@@ -49,10 +49,11 @@ class CacheDerivedParams:
     self.bitwidth_offset           = clog2( self.bitwidth_cacheline // 8 )           # offset bitwidth
     self.bitwidth_tag              = self.bitwidth_addr - self.bitwidth_offset - self.bitwidth_index # tag bitwidth
     self.bitwidth_data_wben        = int( self.bitwidth_cacheline + 7 ) // 8 * 8     # Data array write mask bitwidth
-    self.bitwidth_rd_wd_mux_sel    = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read word mux bitwidth
-    self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8 )                # Read byte mux sel bitwidth
+    self.bitwidth_rd_data_mux_sel  = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read data mux bitwidth
+    self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8  )               # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )               # Read half word mux sel bitwidth
-    self.bitwidth_len              = clog2( self.bitwidth_data // 8 )
+    self.bitwidth_rd_word_mux_sel  = clog2( self.bitwidth_data // 32 )               # Read word mux bitwidth
+    self.bitwidth_len              = clog2( self.bitwidth_data // 8  )
     if self.associativity == 1:
       self.bitwidth_clog_asso      = 1
     else:
@@ -89,7 +90,8 @@ class CacheDerivedParams:
     self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_remainder ) # number of bits free in tag array
     self.BitsTagWben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write bit enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write bit enable
-    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_wd_mux_sel ) # Read data mux M2
+    self.BitsRdDataMuxSel  = mk_bits( self.bitwidth_rd_data_mux_sel ) 
+    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_word_mux_sel ) 
     self.BitsRd2ByteMuxSel = mk_bits( self.bitwidth_rd_2byte_mux_sel )
     self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
     self.BitsAssoc         = mk_bits( self.associativity )
@@ -135,7 +137,7 @@ class CacheDerivedParams:
     # Default Values
     #--------------------------------------------------------------------
     # TEMP NAMES: Will come up with something
-    self.wdmx0 = self.BitsRdWordMuxSel(0)
+    self.wdmx0 = self.BitsRdDataMuxSel(0)
     self.btmx0 = self.BitsRdByteMuxSel(0)
     self.bbmx0 = self.BitsRd2ByteMuxSel(0)
     self.acmx0 = Bits2(0) # access select 0
