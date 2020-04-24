@@ -30,15 +30,17 @@ def test_DataSelectMux_dbw32_clw128( dump_vcd, test_verilog ):
   test_vectors = [ (
       'in_',                              'out*',     'en', 'amo', 'len_', 'offset' ),
     [  1,                                  0,          0,    0,     0,      0  ], 
-    [  1,                                  1,          1,    0,     0,      0  ], 
-    [  0x0123456789abcdeffedcba9876543210, 0x76543210, 1,    0,     0,      0b0000 ], 
+    [  0x0123456789abcdeffedcba9876543210, 0x76543210, 1,    0,     0,      0b0000  ], 
     [  0x0123456789abcdeffedcba9876543210, 0xfedcba98, 1,    0,     0,      0b0100  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x89abcdef, 1,    0,     0,      0b1000  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x01234567, 1,    0,     0,      0b1100  ], 
+    [  0x0123456789abcdeffedcba9876543210, 0x0000cdef, 1,    0,     2,      0b1000  ], 
+    [  0x0123456789abcdeffedcba9876543210, 0x000089ab, 1,    0,     2,      0b1010  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x00000067, 1,    0,     1,      0b1100  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x00000045, 1,    0,     1,      0b1101  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x00000023, 1,    0,     1,      0b1110  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x00000001, 1,    0,     1,      0b1111  ], 
+    [  0x0123456789abcdeffedcba9876543210, 0x76543210, 1,    1,     1,      0b1111  ], 
   ]
   run_test_vector_sim( DataSelectMux(cache_params), test_vectors, dump_vcd, test_verilog )
 

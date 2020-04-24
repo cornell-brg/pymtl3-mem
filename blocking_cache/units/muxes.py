@@ -209,8 +209,8 @@ class DataSelectMux( Component ):
       s.output_mux.sel = BitsSel(0)
       if ~s.en:
         s.output_mux.sel = BitsSel(0)
-      elif s.len_ == BitsLen(0):
-        s.output_mux.sel = BitsSel( ninputs - 1 )
+      elif s.amo:
+        s.output_mux.sel = BitsSel(1)
       else:
         for i in range( ninputs - 2 ):
           if s.len_ == BitsLen(2**i):
