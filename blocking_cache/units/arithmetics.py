@@ -32,11 +32,11 @@ class CacheDataReplicator( Component ):
 
   def construct( s , p ):
 
-    s.msg_len = InPort ( p.BitsLen )
-    s.data    = InPort ( p.BitsData )
-    s.offset  = InPort ( p.BitsOffset )
-    s.is_amo  = InPort ( Bits1 )
-    s.out     = OutPort( p.BitsCacheline )
+    s.in_    = InPort ( p.BitsData )
+    s.len_   = InPort ( p.BitsLen )
+    s.offset = InPort ( p.BitsOffset )
+    s.amo    = InPort ( Bits1 )
+    s.out    = OutPort( p.BitsCacheline )
 
     BitsLen            = p.BitsLen
     bitwidth_cacheline = p.bitwidth_cacheline
@@ -46,19 +46,19 @@ class CacheDataReplicator( Component ):
     bitwidth_offset    = p.bitwidth_offset
     @s.update
     def replicator_logic(): 
-      if s.is_amo:
+      if s.amo:
         s.out = BitsCacheline(0)
-        s.out[0:bitwidth_data] = s.data
+        s.out[0:bitwidth_data] = s.in_
       else:
-        if s.msg_len == BitsLen(1): 
+        if s.len_ == BitsLen(1): 
           for i in range( 0, bitwidth_cacheline, 8 ): # byte
-            s.out[i:i+8] = s.data[0:8]
-        elif s.msg_len == BitsLen(2):
+            s.out[i:i+8] = s.in_[0:8]
+        elif s.len_ == BitsLen(2):
           for i in range( 0, bitwidth_cacheline, 16 ): # half word
-            s.out[i:i+16] = s.data[0:16]
+            s.out[i:i+16] = s.in_[0:16]
         else:
           for i in range( 0, bitwidth_cacheline, bitwidth_data ):
-            s.out[i:i+bitwidth_data] = s.data
+            s.out[i:i+bitwidth_data] = s.in_
 
   def line_trace( s ):
     msg = ''

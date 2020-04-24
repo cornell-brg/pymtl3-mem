@@ -93,10 +93,10 @@ class BlockingCacheDpathRTL (Component):
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
     s.replicator_M0 = CacheDataReplicator( p )(
-      msg_len = s.cachereq_memresp_mux_M0.out.len,
-      data    = s.cachereq_memresp_mux_M0.out.data,
-      is_amo  = s.ctrl.is_amo_M0,
-      offset  = s.cachereq_M0.addr.offset
+      len_   = s.cachereq_memresp_mux_M0.out.len,
+      in_    = s.cachereq_memresp_mux_M0.out.data,
+      amo    = s.ctrl.is_amo_M0,
+      offset = s.cachereq_M0.addr.offset
     )
 
     # Selects between data from the memory resp or from the replicator
@@ -378,12 +378,12 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Data size select mux for subword accesses
-    s.data_size_mux_M2 = DataSizeMux( p )(
-      data   = s.read_data_mux_M2.out,
+    s.data_size_mux_M2 = DataSelectMux( p )(
+      in_    = s.read_data_mux_M2.out,
       en     = s.ctrl.data_size_mux_en_M2,
+      amo    = s.ctrl.is_amo_M2,
       len_   = s.cachereq_M2.out.len,
       offset = s.cachereq_M2.out.addr.offset,
-      is_amo = s.ctrl.is_amo_M2,
     )
 
     # selects the appropriate offset and len for memreq based on the type

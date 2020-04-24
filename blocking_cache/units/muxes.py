@@ -207,10 +207,10 @@ class DataSelectMux( Component ):
     @s.update
     def output_mux_selection_logic():
       s.output_mux.sel = BitsSel(0)
-      if ~s.en:
-        s.output_mux.sel = BitsSel(0)
-      elif s.amo:
+      if s.amo:
         s.output_mux.sel = BitsSel(1)
+      elif ~s.en:
+        s.output_mux.sel = BitsSel(0)
       else:
         for i in range( ninputs - 2 ):
           if s.len_ == BitsLen(2**i):
