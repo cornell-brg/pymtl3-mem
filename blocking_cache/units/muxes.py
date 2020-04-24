@@ -175,6 +175,7 @@ class DataSelectMux( Component ):
     s.in_    = InPort( p.BitsCacheline )
     s.out    = OutPort( p.BitsData )
     s.en     = InPort( Bits1 )
+    s.amo    = InPort( Bits1 )
     s.len_   = InPort( p.BitsLen )
     s.offset = InPort( p.BitsOffset )
     
@@ -191,15 +192,17 @@ class DataSelectMux( Component ):
     for i in range( nmuxes ):
       s.sub[i].sel //= lambda : s.en & s.offset[i]
 
-    ninputs = clog2( p.bitwidth_data ) - 1
+    ninputs = clog2( p.bitwidth_data ) 
     s.output_mux = Mux( p.BitsData, ninputs )
-    s.output_mux.in_[0]         //= p.BitsData(0)
-    s.output_mux.in_[ninputs-1] //= s.in_[ 0 : p.bitwidth_data ]
+    s.output_mux.in_[0] //= p.BitsData(0)
+    s.output_mux.in_[1] //= s.in_[ 0 : p.bitwidth_data ] # AMO operations
     for i in range( ninputs - 2 ):
       if i < nmuxes:
-        s.output_mux.in_[i+1] //= s.sub[i].out[ 0 : p.bitwidth_data ]
+        s.output_mux.in_[i+2] //= s.sub[i].out[ 0 : p.bitwidth_data ]
+      else:
+        s.output_mux.in_[i+2] //= s.in_[ 0 : p.bitwidth_data ]
 
-    BitsSel = mk_bits( ninputs )
+    BitsSel = mk_bits( clog2(ninputs) )
     BitsLen = p.BitsLen
     @s.update
     def output_mux_selection_logic():
@@ -207,14 +210,15 @@ class DataSelectMux( Component ):
       if ~s.en:
         s.output_mux.sel = BitsSel(0)
       elif s.len_ == BitsLen(0):
-        s.output_mux.sel = BitsSel( nmuxes + 1 )
+        s.output_mux.sel = BitsSel( ninputs - 1 )
       else:
-        for i in range( nmuxes + 1 ):
+        for i in range( ninputs - 2 ):
           if s.len_ == BitsLen(2**i):
-            s.output_mux.sel = BitsSel(i+1)
+            s.output_mux.sel = BitsSel(i+2)
     s.out //= s.output_mux.out
 
   def line_trace( s ):
     msg = f'i[{s.in_}] o[{s.out}] s[{s.output_mux.sel}] '
-    msg += s.sub[2].line_trace()
+    # msg += f'{s.output_mux.in_} '
+    # msg += f's2o[{s.sub[2].out}]'
     return msg
