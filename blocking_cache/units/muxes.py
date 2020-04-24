@@ -142,3 +142,79 @@ class PMux( Component ):
     for i in range(len(s.in_)):
       msg += f'i{i}:{s.in_[i]} '
     return msg + f'o:{s.out} '
+
+
+class SubInputMux( Component ):
+  '''
+  Selects the correct way and zero extends 
+  '''
+  def construct( s, bitwidth_mux, bitwidth_data ):
+    BitsMux   = mk_bits( bitwidth_mux )
+    BitsData  = mk_bits( bitwidth_data )
+    
+    s.in_    = InPort( BitsData )
+    s.out    = OutPort( BitsData )
+    s.sel    = InPort( Bits1 )
+
+    s.mux = Mux( BitsMux, 2 )
+    s.mux.sel //= s.sel
+    s.mux.in_[0] //= s.in_[ 0 : bitwidth_mux ]
+    s.mux.in_[1] //= s.in_[ bitwidth_mux : bitwidth_mux * 2 ]
+
+    if bitwidth_mux < bitwidth_data:
+      s.out[ bitwidth_mux : bitwidth_data ] //= 0
+    s.out[ 0 : bitwidth_mux ] //= s.mux.out
+  
+  def line_trace( s ):
+    msg = f'o[{s.out}] i1[{s.mux.in_[0]}] i2[{s.mux.in_[1]}]'
+    return msg
+
+class DataSelectMux( Component ):
+
+  def construct( s, p ):
+    s.in_    = InPort( p.BitsCacheline )
+    s.out    = OutPort( p.BitsData )
+    s.en     = InPort( Bits1 )
+    s.len_   = InPort( p.BitsLen )
+    s.offset = InPort( p.BitsOffset )
+    
+    nmuxes = clog2( p.bitwidth_cacheline // 8 )
+
+    sub = []
+    for i in range( 3, clog2( p.bitwidth_cacheline ) ):
+      sub.append( SubInputMux( 2**i, p.bitwidth_cacheline ) )
+    s.sub = sub
+    for i in range( 1, nmuxes ):
+      s.sub[i-1].in_ //= s.sub[i].out
+    s.sub[nmuxes-1].in_ //= s.in_
+
+    for i in range( nmuxes ):
+      s.sub[i].sel //= lambda : s.en & s.offset[i]
+
+    ninputs = clog2( p.bitwidth_data ) - 1
+    s.output_mux = Mux( p.BitsData, ninputs )
+    s.output_mux.in_[0]         //= p.BitsData(0)
+    s.output_mux.in_[ninputs-1] //= s.in_[ 0 : p.bitwidth_data ]
+    for i in range( ninputs - 2 ):
+      if i < nmuxes:
+        s.output_mux.in_[i+1] //= s.sub[i].out[ 0 : p.bitwidth_data ]
+
+    BitsSel = mk_bits( ninputs )
+    BitsLen = p.BitsLen
+    @s.update
+    def output_mux_selection_logic():
+      s.output_mux.sel = BitsSel(0)
+      if ~s.en:
+        s.output_mux.sel = BitsSel(0)
+      elif s.len_ == BitsLen(0):
+        s.output_mux.sel = BitsSel( nmuxes + 1 )
+      else:
+        for i in range( nmuxes + 1 ):
+          if s.len_ == BitsLen(2**i):
+            s.output_mux.sel = BitsSel(i+1)
+    s.out //= s.output_mux.out
+
+  def line_trace( s ):
+    msg = f'i[{s.in_}] o[{s.out}] s[{s.output_mux.sel}] '
+    msg += s.sub[2].line_trace()
+    return msg
