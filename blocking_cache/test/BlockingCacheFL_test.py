@@ -17,14 +17,11 @@ from pymtl3 import *
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
 from ..BlockingCacheFL import ModelCache
+from .GenericTestCases import GenericTestCases
+from .AmoTests         import AmoTests
+from .InvFlushTests    import InvFlushTests
 
-from .DmappedTestCases import DmappedTestCases
-from .Asso2WayTestCases import AssoTestCases
-from .AmoTests import AmoTests
-from .InvFlushTests import InvFlushTests
-
-class CacheFL_Tests( DmappedTestCases, AssoTestCases, InvFlushTests, AmoTests ):
-
+class CacheFL_Tests( GenericTestCases, InvFlushTests, AmoTests ):
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=512, stall_prob=0,
                 latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
@@ -42,7 +39,7 @@ class CacheFL_Tests( DmappedTestCases, AssoTestCases, InvFlushTests, AmoTests ):
       elif trans.type_ == MemMsgType.WRITE_INIT:
         cache.init(trans.addr, trans.data, trans.opaque, trans.len)
       elif trans.type_ >= MemMsgType.AMO_ADD and trans.type_ <= MemMsgType.AMO_XOR:
-        cache.amo(trans.addr, trans.data, trans.opaque, trans.type_)
+        cache.amo(trans.addr, trans.data, trans.opaque, trans.len, trans.type_)
       elif trans.type_ == MemMsgType.INV:
         cache.invalidate(trans.opaque)
       elif trans.type_ == MemMsgType.FLUSH:

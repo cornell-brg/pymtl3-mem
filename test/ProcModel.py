@@ -17,7 +17,7 @@ from constants.constants import *
 class ProcModel( Component ):
 
   def construct( s, CacheReqType, CacheRespType ):
-    # src -> |    |  -> cache
+    # src -> |  ProcModel  |  -> cache
     # requests and responses
     s.proc  = MemMinionIfcRTL( CacheReqType, CacheRespType )
     s.cache = MemMasterIfcRTL( CacheReqType, CacheRespType )

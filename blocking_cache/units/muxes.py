@@ -11,6 +11,22 @@ Date:   27 February 2020
 from pymtl3 import *
 from pymtl3.stdlib.rtl.arithmetics import Mux
 
+class OptimizedMux( Component ):
+  '''Optimized 2 input muxes'''
+  def construct( s, Type, ninputs ):
+    s.in_ = [ InPort( Type ) for _ in range(ninputs) ]
+    s.sel = InPort( mk_bits( clog2(ninputs) ) )
+    s.out = OutPort( Type )
+
+    if ninputs == 2:
+      s.out //= lambda: s.in_[1] if s.sel else s.in_[0]
+    else:
+      s.mux = Mux( Type, ninputs )
+      for i in range( ninputs ):
+        s.mux.in_[i] //= s.in_[i]
+      s.mux.sel //= s.sel
+      s.mux.out //= s.out
+
 class DataSizeMux( Component ):
   '''
   This mux allows for byte, 2 byte or word data access (4 bytes)
@@ -220,5 +236,87 @@ class DataSelectMux( Component ):
   def line_trace( s ):
     msg = f'i[{s.in_}] o[{s.out}] s[{s.output_mux.sel}] '
     # msg += f'{s.output_mux.in_} '
+    # msg += f's2o[{s.sub[2].out}]'
+    return msg
+
+class SubInputMux2( Component ):
+  def construct( s, bitwidth_mux, p ):
+    BitsMux = mk_bits( bitwidth_mux )
+    
+    s.in_ = InPort( p.BitsCacheline )
+    s.out = OutPort( p.BitsData )
+    s.sel = InPort( p.BitsOffset )
+
+    ninputs = p.bitwidth_cacheline // bitwidth_mux
+    s.mux = Mux( BitsMux, ninputs )
+    for i in range( ninputs ):
+      s.mux.in_[i] //= s.in_[ i * bitwidth_mux : (i + 1) * bitwidth_mux ]
+    
+    s.out[0:bitwidth_mux] //= s.mux.out[0:bitwidth_mux]
+    if bitwidth_mux < p.bitwidth_data:
+      s.out[bitwidth_mux:p.bitwidth_data] //= 0
+
+    BitsSel = clog2( ninputs )
+    s.mux.sel //= s.sel[ clog2(bitwidth_mux) - 3 : p.bitwidth_offset ]
+
+class FastDataSelectMux( Component ):
+  """faster version in case the other DataSelectMux doesn't meet timing"""
+  def construct( s, p ):
+    s.in_    = InPort( p.BitsCacheline )
+    s.out    = OutPort( p.BitsData )
+    s.en     = InPort( Bits1 )
+    s.amo    = InPort( Bits1 )
+    s.len_   = InPort( p.BitsLen )
+    s.offset = InPort( p.BitsOffset )
+
+    if p.bitwidth_cacheline > p.bitwidth_data:
+      # need mux for data bitwidth as well but don't need any higher
+      nmuxes = clog2( p.bitwidth_data ) - 2
+    elif p.bitwidth_cacheline == p.bitwidth_data:
+      # don't count the mux for when data = cacheline bitwidth
+      nmuxes = clog2( p.bitwidth_data ) - 3 
+
+    mux_blocks = []
+    # instanitate the mux blocks that will select the subwords
+    for i in range( 3, 3 + nmuxes ):
+      mux_blocks.append( SubInputMux2( 2**i, p ) )
+    s.mux_blocks = mux_blocks
+
+    for i in range( nmuxes ):
+      # connect the input and sel of the blocks; they're all the same
+      s.mux_blocks[i].in_ //= s.in_
+      s.mux_blocks[i].sel //= s.offset
+
+    ninputs = clog2( p.bitwidth_data ) 
+    s.output_mux = Mux( p.BitsData, ninputs )
+    s.output_mux.in_[0] //= 0
+    s.output_mux.in_[1][0:32] //= s.in_[0:32] #AMO always 32 bit access?
+    if p.bitwidth_data > 32:
+      s.output_mux.in_[1][32:p.bitwidth_data] //= 0 
+    for i in range( ninputs - 2 ):
+      if i < nmuxes:
+        s.output_mux.in_[i+2] //= s.mux_blocks[i].out[0:p.bitwidth_data]
+      else:
+        s.output_mux.in_[i+2] //= s.in_[ 0 : p.bitwidth_data ]
+    
+    BitsSel = mk_bits( clog2(ninputs) )
+    BitsLen = p.BitsLen
+    @s.update
+    def output_mux_selection_logic():
+      s.output_mux.sel = BitsSel(0)
+      if s.amo:
+        s.output_mux.sel = BitsSel(1)
+      elif ~s.en:
+        s.output_mux.sel = BitsSel(0)
+      else:
+        for i in range( ninputs - 2 ):
+          if s.len_ == BitsLen(2**i):
+            s.output_mux.sel = BitsSel(i+2)
+    s.out //= s.output_mux.out
+
+  def line_trace( s ):
+    msg = ''
+    msg = f'i[{s.in_}] o[{s.out}] s[{s.output_mux.sel}] '
+    msg += f'{s.output_mux.in_} '
     # msg += f's2o[{s.sub[2].out}]'
     return msg

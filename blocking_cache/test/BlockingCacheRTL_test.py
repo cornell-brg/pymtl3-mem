@@ -16,14 +16,14 @@ from test.sim_utils import run_sim, TestHarness
 
 from ..BlockingCacheRTL import BlockingCacheRTL
 
-from .DmappedTestCases import DmappedTestCases
-from .Asso2WayTestCases import AssoTestCases
-from .HypothesisTest import HypothesisTests
+from .GenericTestCases import GenericTestCases
 from .AmoTests import AmoTests
 from .InvFlushTests import InvFlushTests
+from .RandomTestCases import RandomTests
+from .HypothesisTest import HypothesisTests
 
-class BlockingCacheRTL_Tests( DmappedTestCases, AssoTestCases, InvFlushTests, AmoTests,
-                              HypothesisTests ):
+class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
+                              HypothesisTests, RandomTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
                 MemRespType, associativity=1, cacheSize=64, stall_prob=0,

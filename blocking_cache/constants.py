@@ -38,4 +38,3 @@ UpdateTagArrayUnit_CMD_WR_REFILL = b3(3) # Refill on a write
 UpdateTagArrayUnit_CMD_RD_REFILL = b3(4) # Refill on a read
 UpdateTagArrayUnit_CMD_INV       = b3(5) # Invalidate this cache line
 UpdateTagArrayUnit_CMD_FLUSH     = b3(6) # Flush this cache line
-

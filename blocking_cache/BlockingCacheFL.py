@@ -186,21 +186,12 @@ class HitMissTracker:
 class ModelCache:
   def __init__(self, size, nways, nbanks, CacheReqType, CacheRespType, MemReqType, MemRespType, mem=None):
     # The hit/miss tracker
-    mem_bitwidth_data = MemReqType.get_field_type("data").nbits
+    self.mem_bitwidth_data = MemReqType.get_field_type("data").nbits
+    self.cache_bitwidth_data = CacheReqType.get_field_type("data").nbits
+    self.BitsData = mk_bits(self.cache_bitwidth_data)
     size = size*8
-    self.tracker = HitMissTracker(size, nways, nbanks, mem_bitwidth_data)
-
-    self.mem = {}
-
-    # Unpack any initial values of memory into a dict (has easier lookup)
-    #
-    # zip is used here to convert the mem array into an array of
-    # (addr, value) pairs (which it really should be in the first
-    # place)
-    if mem:
-      for addr, value in zip(mem[::2], mem[1::2]):
-        self.mem[addr] = Bits(32, value)
-
+    self.tracker = HitMissTracker(size, nways, nbanks, self.mem_bitwidth_data)
+  
     # The transactions list contains the requests and responses for
     # the stream of read/write calls on this model
     self.transactions = []
@@ -209,16 +200,30 @@ class ModelCache:
     self.CacheRespType = CacheRespType
     self.MemReqType = MemReqType
     self.MemRespType = MemRespType
-    self.nlines = int(size // mem_bitwidth_data)
+    self.nlines = int(size // self.mem_bitwidth_data)
     self.nsets = int(self.nlines // nways)
     # Compute how the address is sliced
     self.offset_start = 0
-    self.offset_end = self.offset_start + int(math.log(mem_bitwidth_data//8, 2))
+    self.offset_end = self.offset_start + int(math.log(self.mem_bitwidth_data//8, 2))
     self.idx_start = self.offset_end
     self.idx_end = self.idx_start + int(math.log(self.nsets, 2))
     self.tag_start = self.idx_end
     self.tag_end = 32
-
+    
+    # Unpack any initial values of memory into a dict (has easier lookup)
+    #
+    # zip is used here to convert the mem array into an array of
+    # (addr, value) pairs (which it really should be in the first
+    # place)
+    self.mem = {}
+    if mem:
+      for addr, value in zip(mem[::2], mem[1::2]):
+        offset = int(Bits32(addr)[ self.offset_start : self.offset_end ])
+        addr   = int(Bits32(addr)[ self.offset_end : 32 ])
+        if addr not in self.mem:
+          self.mem[addr] = Bits(self.mem_bitwidth_data, 0)
+        # assume word mem declarations
+        self.mem[addr][ offset*8 : (offset+4)*8 ] = value
 
   def check_hit(self, addr):
     # Tracker returns boolean, need to convert to 1 or 0 to use
@@ -229,77 +234,63 @@ class ModelCache:
       return 0
 
   def read(self, addr, opaque, len_):
-    offset = addr[self.offset_start:self.offset_end]
-    new_addr = addr & Bits32(0xfffffffc)
-    hit = self.check_hit(new_addr)
-
-    if new_addr.int() in self.mem:
-      if len_ == 1: # byte access
-        offset = offset[0:2].uint()
-        value = self.mem[new_addr.int()][(offset*8):((offset+1)*8)]
-      elif len_ == 2: # half word access
-        offset = offset[1:2].uint()
-        value = self.mem[new_addr.int()][offset*16:(offset+1)*16]
-      else:
-        value = self.mem[new_addr.int()]
+    hit = self.check_hit(addr)
+    new_addr = int(addr[self.offset_end:32])
+    offset = int(addr[self.offset_start:self.offset_end])
+    if new_addr not in self.mem:
+      self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
+    if len_ == 0:
+      value = self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8]
     else:
-      value = Bits(32, 0)
+      value = self.mem[new_addr][offset*8 : (offset + int(len_))*8 ]
 
     self.transactions.append(req (self.CacheReqType, 'rd', opaque, addr, len_, 0))
     self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit,  len_, value))
     self.opaque += 1
 
   def write(self, addr, value, opaque, len_):
-    value = Bits(32, value)
-
-    offset = addr[self.offset_start:self.offset_end]
-    new_addr = addr & Bits32(0xfffffffc)
-    hit = self.check_hit(new_addr)
-
-    if len_ == 1: # byte access
-      offset = offset[0:2].uint()
-      self.mem[new_addr.int()][(offset*8):((offset+1)*8)] = Bits8(value)
-    elif len_ == 2: # half word access
-      offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
+    hit = self.check_hit(addr)
+    new_addr = int(addr[self.offset_end:32])
+    offset = int(addr[self.offset_start:self.offset_end])
+    value = Bits(self.cache_bitwidth_data, value)
+    if new_addr not in self.mem:
+      self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
+    if len_ == 0:
+      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value
     else:
-      self.mem[new_addr.int()] = value
+      self.mem[new_addr][offset*8 : (offset + int(len_))*8 ] = value
 
     self.transactions.append(req (self.CacheReqType, 'wr', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit,  len_, 0))
     self.opaque += 1
 
   def init(self, addr, value, opaque, len_):
-    value = Bits(32, value)
-
-    offset = addr[self.offset_start:self.offset_end]
-    new_addr = addr & Bits32(0xfffffffc)
-    hit = self.check_hit(new_addr)
-
-    if len_ == 1: # byte access
-      offset = offset[0:2].uint()
-      self.mem[new_addr.int()][offset*8:(offset+1)*8] = Bits8(value)
-    elif len_ == 2: # half word access
-      offset = offset[1:2].uint()
-      self.mem[new_addr.int()][offset*16:(offset+1)*16] = Bits16(value)
+    hit = self.check_hit(addr)
+    new_addr = int(addr[self.offset_end:32])
+    offset = int(addr[self.offset_start:self.offset_end])
+    value = Bits(self.cache_bitwidth_data, value)
+    if new_addr not in self.mem:
+      self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
+    if len_ == 0:
+      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value
     else:
-      self.mem[new_addr.int()] = value
-
+      self.mem[new_addr][offset*8 : (offset + int(len_))*8 ] = value
     self.transactions.append(req(self.CacheReqType,'in', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,'in', opaque, 0, len_, 0))
     self.opaque += 1
 
-  def amo(self, addr, value, opaque, func):
+  def amo(self, addr, value, opaque, len_, func):
     # AMO operations are on the word level only
+    self.tracker.amo_req(addr)
+    new_addr = addr[self.offset_end:32]
+    offset = int(addr[self.offset_start:self.offset_end])
     value = Bits(32, value)
-    new_addr = addr & Bits32(0xfffffffc)
-    self.tracker.amo_req(new_addr)
-    # hit = self.check_hit(new_addr)
-    ret = self.mem[new_addr.int()]
-    self.mem[new_addr.int()] = AMO_FUNS[ int(func) ]( ret, value )
-
-    self.transactions.append(req (self.CacheReqType, func, opaque, addr, 0, value))
-    self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    0, ret))
+    if new_addr not in self.mem:
+      self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
+    ret = self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8]
+    self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = AMO_FUNS[ int(func) ]( ret, value )
+    self.transactions.append(req (self.CacheReqType, func, opaque, addr, len_, value))
+    self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    len_, ret))
     self.opaque += 1
 
   def invalidate(self, opaque):

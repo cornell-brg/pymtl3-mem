@@ -10,14 +10,12 @@ Date   : 10 February 2020
 from colorama                      import Fore, Back, Style
 
 from pymtl3                        import *
-from pymtl3.stdlib.rtl.arithmetics import LeftLogicalShifter
 from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
-
 from constants.constants import *
-
 from .ReplacementPolicy            import ReplacementPolicy
 from .constants                    import *
 from .units.counters               import CounterEnRst
+from .units.arithmetics            import WriteBitEnGen
 
 #=========================================================================
 # Constants
@@ -584,41 +582,22 @@ class BlockingCacheCtrlRTL ( Component ):
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
 
-    # Generate byte-enable for SRAM write
-    # 0 -> 0x000f, 1 -> 0x00f0, 2 -> 0x0f00, 3 -> 0xf000
-    nbyte        = p.bitwidth_data_wben / 8
-    BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
-    BitsLen      = p.BitsLen
+
     BitsDataWben = p.BitsDataWben
+    BitsLen      = p.BitsLen
     bitwidth_data_wben = p.bitwidth_data_wben
-
-    s.wben_in = Wire( BitsNByte )
-
-    @s.update
-    def mask_select_M1():
-      if s.status.len_M1 == BitsLen(0):
-        s.wben_in = BitsNByte( data_array_word_mask )
-      elif s.status.len_M1 == BitsLen(1):
-        s.wben_in = BitsNByte( data_array_byte_mask )
-      elif s.status.len_M1 == BitsLen(2):
-        s.wben_in = BitsNByte( data_array_2byte_mask )
-      else:
-        s.wben_in = BitsNByte( data_array_word_mask )
-
-    s.WbenGen = LeftLogicalShifter( BitsNByte, clog2(nbyte) )(
-      in_ = s.wben_in,
-      shamt = s.status.offset_M1,
-    )
+    s.wben_M1  = Wire( BitsDataWben )
+    s.WbenGen = WriteBitEnGen( p )
+    s.WbenGen.offset //= s.status.offset_M1
+    s.WbenGen.len_   //= s.status.len_M1
+    s.WbenGen.out    //= s.wben_M1
 
     # expand byte-enable to bit-enable
-    s.wben_M1  = Wire( BitsDataWben )
     s.wbend_M1 = Wire( BitsDataWben )
 
     @s.update
     def expand_wben_M1():
-      s.wben_M1 = BitsDataWben( 0 )
       for i in range( bitwidth_data_wben ):
-        s.wben_M1[i] = s.WbenGen.out[ i / 8 ]
         s.wbend_M1[i] = ~(s.status.dty_bits_mask_M1[ i / 32 ])
 
     s.was_stalled = RegRst( Bits1 )
@@ -639,7 +618,6 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_MSHR_alloc_en      = slice( 0, 1 )
 
     wben0 = p.BitsDataWben( 0 )
-    wbenf = p.BitsDataWben( -1 )
     maskf = p.BitsDirty( -1 ) # need this for translation
 
     @s.update

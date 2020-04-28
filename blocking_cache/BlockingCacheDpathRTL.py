@@ -22,8 +22,8 @@ from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
 from .units.arithmetics        import (
-  Indexer, Comparator, CacheDataReplicator, OffsetLenSelector,
-  TagArrayRDataProcessUnit
+  Indexer, Comparator, DataReplicator, OffsetLenSelector,
+  TagArrayRDataProcessUnit, DataReplicatorv2
   )
 from .units.registers          import (
   DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
@@ -67,7 +67,7 @@ class BlockingCacheDpathRTL (Component):
     s.status.amo_hit_M0             //= s.MSHR_dealloc_out.amo_hit
 
     # Chooses the cache request from proc or MSHR (memresp)
-    s.cachereq_memresp_mux_M0 = Mux( p.CacheReqType, 2 )(
+    s.cachereq_memresp_mux_M0 = OptimizedMux( p.CacheReqType, 2 )(
       in_ = {
         0: s.cachereq_Y,
         1: s.MSHR_dealloc_mux_in_M0
@@ -82,7 +82,7 @@ class BlockingCacheDpathRTL (Component):
 
     # Chooses addr bypassed from L1 as a result of write hit clean
     s.cachereq_addr_M1_forward = Wire( p.BitsAddr )
-    s.addr_mux_M0 = Mux( p.BitsAddr, 2 )(
+    s.addr_mux_M0 = OptimizedMux( p.BitsAddr, 2 )(
       in_ = {
         0: s.cachereq_memresp_mux_M0.out.addr,
         1: s.cachereq_addr_M1_forward
@@ -92,16 +92,15 @@ class BlockingCacheDpathRTL (Component):
     connect_bits2bitstruct( s.cachereq_M0.addr, s.addr_mux_M0.out )
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
-    s.replicator_M0 = CacheDataReplicator( p )(
+    s.replicator_M0 = DataReplicatorv2( p )(
       len_   = s.cachereq_memresp_mux_M0.out.len,
       in_    = s.cachereq_memresp_mux_M0.out.data,
       amo    = s.ctrl.is_amo_M0,
-      offset = s.cachereq_M0.addr.offset
     )
 
     # Selects between data from the memory resp or from the replicator
     # Dependent on if we have a refill response
-    s.write_data_mux_M0 = Mux( p.BitsCacheline, 2 )(
+    s.write_data_mux_M0 = OptimizedMux( p.BitsCacheline, 2 )(
       in_ = {
         0: s.replicator_M0.out,
         1: s.pipeline_reg_M0.out.data
@@ -114,7 +113,7 @@ class BlockingCacheDpathRTL (Component):
     s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
 
     # Update tag-array entry
-    s.update_tag_way_mux_M0 = Mux( p.BitsAssoclog2, 2 )(
+    s.update_tag_way_mux_M0 = OptimizedMux( p.BitsAssoclog2, 2 )(
       in_ = {
         0: s.hit_way_M1_bypass,
         1: s.ctrl.update_tag_way_M0,
@@ -133,7 +132,11 @@ class BlockingCacheDpathRTL (Component):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
     # Index select for the tag array as a result of cache initialization
-    s.tag_array_idx_mux_M0 = Mux( p.BitsIdx, 2 )(
+    # s.tag_array_idx_mux_M0 = Wire(p.BitsIdx)
+    # s.tag_array_idx_mux_M0 //= lambda: s.ctrl.tag_array_init_idx_M0 if \
+    #   s.ctrl.tag_array_idx_sel_M0 else s.cachereq_M0.addr.index
+      
+    s.tag_array_idx_mux_M0 = OptimizedMux( p.BitsIdx, 2 )(
       in_ = {
         0: s.cachereq_M0.addr.index,
         1: s.ctrl.tag_array_init_idx_M0,
@@ -142,7 +145,7 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Select if we need to rewrite the tag from the tab unit
-    s.tag_array_tag_mux_M0 = Mux( p.BitsTag, 2 )(
+    s.tag_array_tag_mux_M0 = OptimizedMux( p.BitsTag, 2 )(
       in_ = {
         0: s.cachereq_M0.addr.tag,
         1: s.update_tag_unit.out.tag,
@@ -262,7 +265,7 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Combined comparator set for both dirty line detection and hit detection
-    s.comparator_set = TagArrayRDataProcessUnit( p )(
+    s.tag_array_PU = TagArrayRDataProcessUnit( p )(
       addr_tag   = s.cachereq_M1.out.addr.tag,
       is_init    = s.ctrl.is_init_M1,
       hit        = s.status.hit_M1,
@@ -273,17 +276,17 @@ class BlockingCacheDpathRTL (Component):
       word_dirty = s.status.ctrl_bit_dty_rd_word_M1,
     )
     for i in range( p.associativity ):
-      s.comparator_set.tag_array[i] //= s.tag_array_rdata_M1[i].out
+      s.tag_array_PU.tag_array[i] //= s.tag_array_rdata_M1[i].out
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
     s.hit_stall_engine = StallEngine( StructHit )
-    s.hit_stall_engine.in_ //= lambda: StructHit( s.comparator_set.hit |
-        s.comparator_set.inval_hit, s.comparator_set.hit_way )
+    s.hit_stall_engine.in_ //= lambda: StructHit( s.tag_array_PU.hit |
+        s.tag_array_PU.inval_hit, s.tag_array_PU.hit_way )
     s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
     s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
 
-    s.hit_way_M1_bypass //= s.comparator_set.hit_way
+    s.hit_way_M1_bypass //= s.tag_array_PU.hit_way
     s.write_mask_M1 = Wire( p.BitsDirty )
     s.write_mask_M1 //= lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
 
@@ -378,7 +381,7 @@ class BlockingCacheDpathRTL (Component):
     )
 
     # Data size select mux for subword accesses
-    s.data_size_mux_M2 = DataSelectMux( p )(
+    s.data_size_mux_M2 = FastDataSelectMux( p )(
       in_    = s.read_data_mux_M2.out,
       en     = s.ctrl.data_size_mux_en_M2,
       amo    = s.ctrl.is_amo_M2,
@@ -388,6 +391,7 @@ class BlockingCacheDpathRTL (Component):
 
     # selects the appropriate offset and len for memreq based on the type
     s.mem_req_off_len_M2 = OffsetLenSelector( p )(
+      len_i    = s.cachereq_M2.out.len,
       offset_i = s.cachereq_M2.out.addr.offset,
       is_amo   = s.ctrl.is_amo_M2,
     )
@@ -407,7 +411,7 @@ class BlockingCacheDpathRTL (Component):
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type
     s.memreq_M2.data    //= s.read_data_mux_M2.out
-    s.memreq_M2.len     //= s.mem_req_off_len_M2.len
+    s.memreq_M2.len     //= s.mem_req_off_len_M2.len_o
     s.memreq_M2.wr_mask //= s.write_mask_M2.out
     s.memreq_M2.addr    //= s.memreq_addr_bits
 
@@ -420,5 +424,5 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg += f'en1:{s.ctrl.reg_en_M1}'
+    # msg+= s.data_size_mux_M2.line_trace()
     return msg

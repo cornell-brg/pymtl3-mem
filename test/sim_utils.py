@@ -78,7 +78,7 @@ def gen_req_resp( reqs, mem, CacheReqType, CacheRespType, MemReqType, MemRespTyp
     elif request.type_ == MemMsgType.WRITE_INIT:
       cache.init(request.addr, request.data, request.opaque, request.len)
     elif request.type_ >= MemMsgType.AMO_ADD and request.type_ <= MemMsgType.AMO_XOR:
-      cache.amo(request.addr, request.data, request.opaque, request.type_)
+      cache.amo(request.addr, request.data, request.opaque, request.len, request.type_)
     elif request.type_ == MemMsgType.INV:
       cache.invalidate(request.opaque)
     elif request.type_ == MemMsgType.FLUSH:
@@ -156,7 +156,7 @@ dbw  = 32  # Short name for data bitwidth
 clw  = 128 # cacheline bitwidth
 
 CacheReqType, CacheRespType = mk_mem_msg(obw, abw, dbw, has_wr_mask=False)
-MemReqType, MemRespType = mk_mem_msg(obw, abw, clw)
+MemReqType, MemRespType = mk_mem_msg(obw, abw, clw, has_wr_mask=True)
 
 def decode_type( type_ ):
   # type_ as string
@@ -184,6 +184,41 @@ def resp( type_, opaque, test, len, data ):
   type_ = decode_type( type_ )
   return CacheRespType( type_, opaque, test, len, data )
 
+def mk_req( ReqType, msg ):
+  out = [0]*len(msg)
+  for i in range( 0, len(msg)):
+    type_, opaque, addr, len_, data = msg[i]
+    type_ = decode_type( type_ )
+    out[i] = ReqType( type_, opaque, addr, len_, data )
+  return out
+
+def mk_req_resp( ReqRespType, msg ):
+  out = [0]*len(msg)
+  ReqType, RespType = ReqRespType
+  for i in range( 0, len(msg), 2):
+    type_, opaque, addr, len_, data = msg[i]
+    type_ = decode_type( type_ )
+    out[i] = ReqType( type_, opaque, addr, len_, data )
+    type_, opaque, test, len_, data = msg[i+1]
+    type_ = decode_type( type_ )
+    out[i+1] = RespType( type_, opaque, test, len_, data )
+  return out
+
+class SingleCacheTestParams:
+  def __init__( self, msg, mem, associativity, bitwidth_mem_data, bitwidth_cache_data, 
+                cache_size=None):
+    self.CacheReqType, self.CacheRespType = mk_mem_msg( obw, abw, bitwidth_cache_data, False )
+    self.MemReqType, self.MemRespType = mk_mem_msg( obw, abw, bitwidth_mem_data, True )
+    self.msg = mk_req_resp( (self.CacheReqType, self.CacheRespType), msg ) if msg else None 
+    if cache_size == None:
+      self.size = bitwidth_mem_data * 2 // 8 * associativity
+    else:
+      assert cache_size >= (bitwidth_mem_data * 2 // 8 * associativity), \
+              "Cache size too small for param line size"
+      self.size = cache_size
+    self.associativity = associativity
+    self.mem = mem
+
 # Request wrapper for testing multi-cache configureations
 # cache: transaction for that cache
 # order: decides if transaction will happen sequentially or in parallel
@@ -192,7 +227,7 @@ def mreq( cache, order, type_, opaque, addr, len, data ):
   return (cache, order, CacheReqType( type_, opaque, addr, len, data ))
 
 #-------------------------------------------------------------------------
-# CacheTestParams
+# CacheTestParams - Multicache
 #-------------------------------------------------------------------------
 # Test parameters for the cache
 
