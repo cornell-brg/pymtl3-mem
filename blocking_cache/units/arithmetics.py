@@ -217,15 +217,28 @@ class WriteBitEnGen( Component ):
     s.len_   = InPort( p.BitsLen )
     s.out    = OutPort( p.BitsDataWben )    
 
-    HIGH_BITS = mk_bits(1024)
+    # HIGH_BITS = mk_bits(1024)
+    # @s.update
+    # def output_logic():
+    #   s.out = BitsDataWben(0)
+    #   for i in range( nlens ): 
+    #     if s.len_ == BitsLen( 2**i ):
+    #       mask  = HIGH_BITS( 2**( 2**(i+3) ) - 1 )
+    #       s.out = BitsDataWben(mask) << ( BitsDataWben(s.offset) << 3 )
+    
     @s.update
-    def output_logic():
-      s.out = BitsDataWben(0)
-      for i in range( nlens ): 
-        if s.len_ == BitsLen( 2**i ):
-          mask  = HIGH_BITS( 2**( 2**(i+3) ) - 1 )
-          s.out = BitsDataWben(mask) << ( BitsDataWben(s.offset) << 3 )
-      
+    def output_logic(): # smaller area
+      if s.len_ == BitsLen(1):
+        s.out = BitsDataWben(0xff) << ( BitsDataWben(s.offset) << 3 )
+      elif s.len_ == BitsLen(2):
+        s.out = BitsDataWben(0xffff) << ( BitsDataWben(s.offset) << 3 )
+      elif s.len_ == BitsLen(4):
+        s.out = BitsDataWben(0xffffffff) << ( BitsDataWben(s.offset) << 3 )
+      elif s.len_ == BitsLen(8):
+        s.out = BitsDataWben(0xffffffffffffffff) << ( BitsDataWben(s.offset) << 3 )
+      elif s.len_ == BitsLen(16):
+        s.out = BitsDataWben(0xffffffffffffffffffffffffffffffff) << ( BitsDataWben(s.offset) << 3 )
+
   def line_trace( s ):
     msg = f'o[{s.out}] '
     return msg

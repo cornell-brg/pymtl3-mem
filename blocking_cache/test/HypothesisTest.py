@@ -9,20 +9,13 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 25 December 2019  Merry Christmas!! UWU
 """
 
-import random
 import hypothesis
-from hypothesis import strategies as st
-
+from hypothesis         import strategies as st
 from pymtl3 import *
-
-# cifer specific memory req/resp msg
-from mem_ifcs.MemMsg import MemMsgType
-from mem_ifcs.MemMsg import mk_mem_msg as mk_cache_msg
-from mem_ifcs.MemMsg import mk_mem_msg
-
+from mem_ifcs.MemMsg     import MemMsgType, mk_mem_msg
 from constants.constants import *
-from test.sim_utils    import rand_mem
-from ..BlockingCacheFL import ModelCache
+from test.sim_utils      import rand_mem
+from ..BlockingCacheFL   import ModelCache
 
 @st.composite
 def gen_reqs( draw, addr_min, addr_max, clw, dbw ):

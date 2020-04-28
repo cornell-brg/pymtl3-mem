@@ -7,20 +7,13 @@ Tests for Pipelined Blocking Cache RTL model
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 23 December 2019
 """
-
-import pytest
-
-from pymtl3 import *
-
-from test.sim_utils import run_sim, TestHarness
-
+from test.sim_utils     import run_sim, TestHarness
 from ..BlockingCacheRTL import BlockingCacheRTL
-
-from .GenericTestCases import GenericTestCases
-from .AmoTests import AmoTests
-from .InvFlushTests import InvFlushTests
-from .RandomTestCases import RandomTests
-from .HypothesisTest import HypothesisTests
+from .GenericTestCases  import GenericTestCases
+from .AmoTests          import AmoTests
+from .InvFlushTests     import InvFlushTests
+from .RandomTestCases   import RandomTests
+from .HypothesisTest    import HypothesisTests
 
 class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
                               HypothesisTests, RandomTests ):
@@ -37,4 +30,6 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
     harness.elaborate()
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
-    run_sim( harness, max_cycles, dump_vcd, test_verilog, trace, dump_vtb )
+    replace_sram = True if cacheSize == 4096 else False
+    run_sim( harness, max_cycles, dump_vcd, test_verilog, trace, dump_vtb, 
+             replace_sram )

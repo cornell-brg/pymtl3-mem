@@ -12,15 +12,14 @@ import struct
 import random
 from pymtl3 import *
 
-from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.ifcs.mem_ifcs     import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
-from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
+# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 from pymtl3.passes.backends.verilog  import (
   TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
 )
-
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
@@ -28,26 +27,40 @@ from .ProcModel import ProcModel
 from .MemoryCL  import MemoryCL as CiferMemoryCL
 from .MulticoreModel import MulticoreModel
 from blocking_cache.BlockingCacheFL import ModelCache
+from blocking_cache.translate import replace_sram, sram_wrapper_file
+import subprocess
 
 #----------------------------------------------------------------------
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, dump_vtb=False ):
+def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, 
+             dump_vtb=False, replace_sram=False ):
   # print (" -----------starting simulation----------- ")
   if translation:
     th.cache.verilog_translate_import = True
+    th.cache.config_verilog_translate = TranslationConfigs(
+      explicit_module_name = str(th.cache.param),
+    )
     th.cache.config_verilog_import = VerilatorImportConfigs(
           vl_xinit = translation, # init all bits as zeros, ones, or rand
           vl_trace = True if dump_vcd else False, # view vcd using gtkwave
           vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
       )
+    
     th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
-
     if dump_vtb:
       th.cache.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )
+    
+    # Replace sram with wrapper
+    if replace_sram: 
+      file_name = str(th.cache.param) + ".v"
+      replace_sram( file_name )
+      bashCommand = f"cat {sram_wrapper_file} >> {file_name}"
+      process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
 
   th.apply( SimulationPass() )
   th.sim_reset()
@@ -259,7 +272,6 @@ class CacheTestParams:
     # self.src_init_delay = [0] * self.ncaches
     # self.sink_init_delay = [0] * self.ncaches
 
-
 #-------------------------------------------------------------------------
 # MultiCacheTestHarness
 #-------------------------------------------------------------------------
@@ -269,9 +281,7 @@ class MultiCache( Component ):
 
   def construct( s, Cache, p ):
     s.p = p
-    s.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = f'MultiCache_{p.ncaches}'
-    )
+    s.param = f'MultiCache_{p.ncaches}'
     s.mem_minion_ifc = [ MemMinionIfcRTL( p.CacheReqType, p.CacheRespType ) for i in range( p.ncaches ) ]
     s.mem_master_ifc = [ MemMasterIfcRTL( p.MemReqType, p.MemRespType ) for i in range( p.ncaches ) ]
 
@@ -281,7 +291,7 @@ class MultiCache( Component ):
       s.caches[i].mem_minion_ifc //= s.mem_minion_ifc[i]
       s.caches[i].mem_master_ifc //= s.mem_master_ifc[i]
 
-  def line_trace( s ):
+  def line_trace( s, trace ):
     for i in range(s.p.ncaches):
       msg += s.caches[i].line_trace()
 

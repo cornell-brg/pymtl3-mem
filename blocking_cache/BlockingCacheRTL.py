@@ -43,11 +43,6 @@ class BlockingCacheRTL ( Component ):
     s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType,
     MemRespType, num_bytes, associativity )
 
-    # For translation
-    s.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = f'BlockingCache_{num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_{p.bitwidth_data}_{associativity}'
-    )
-
     #---------------------------------------------------------------------
     # Interface
     #---------------------------------------------------------------------

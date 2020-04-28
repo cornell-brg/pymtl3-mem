@@ -100,19 +100,19 @@ def random_test_generator( mem, associativity, bitwidth_mem_data, bitwidth_cache
   return tp
 
 def dmap_size16_lineb64_datab32():
-  return random_test_generator(random_memory, 1, 64, 32, 16, 100)
+  return random_test_generator(random_memory, 1, 64, 32, 16, 500)
 
 def dmap_size32_lineb128_datab64():
-  return random_test_generator(random_memory, 1, 128, 64, 32, 100)
+  return random_test_generator(random_memory, 1, 128, 64, 32, 500)
 
 def dmap_size32_lineb128_datab128():
-  return random_test_generator(random_memory, 1, 128, 128, 32, 100)
+  return random_test_generator(random_memory, 1, 128, 128, 32, 500)
 
 def asso2_size32_lineb64_datab32():
-  return random_test_generator(random_memory, 2, 64, 32, 32, 100)
+  return random_test_generator(random_memory, 2, 64, 32, 32, 500)
 
 def asso2_size64_lineb128_datab128():
-  return random_test_generator(random_memory, 2, 128, 128, 64, 100)
+  return random_test_generator(random_memory, 2, 128, 128, 64, 500)
 
 def asso2_size4096_lineb128_datab128():
   return random_test_generator(random_memory, 2, 128, 128, 4096, 100)

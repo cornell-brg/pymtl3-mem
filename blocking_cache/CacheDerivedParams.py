@@ -17,6 +17,10 @@ class CacheDerivedParams:
     return f"{self.CacheReqType}_{self.CacheRespType}_"\
            f"{self.MemReqType}_{self.MemRespType}_{self.num_bytes}_{self.associativity}"
 
+  def __str__( self ):
+    return f"BlockingCache_{self.num_bytes}_{self.bitwidth_cacheline}_{self.bitwidth_addr}_"\
+           f"{self.bitwidth_data}_{self.associativity}"
+
   def __init__( self, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 num_bytes, associativity ):
 

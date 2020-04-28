@@ -8,14 +8,6 @@ Author : Xiaoyu Yan, Eric Tang
 Date   : 17 November 2019
 """
 
-import pytest
-import struct
-import random
-
-from pymtl3 import *
-
-from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
-
 from ..BlockingCacheFL import ModelCache
 from .GenericTestCases import GenericTestCases
 from .AmoTests         import AmoTests
