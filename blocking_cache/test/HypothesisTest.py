@@ -10,8 +10,8 @@ Date   : 25 December 2019  Merry Christmas!! UWU
 """
 
 import hypothesis
-from hypothesis         import strategies as st
-from pymtl3 import *
+from hypothesis          import strategies as st
+from pymtl3              import *
 from mem_ifcs.MemMsg     import MemMsgType, mk_mem_msg
 from constants.constants import *
 from test.sim_utils      import rand_mem
@@ -99,7 +99,7 @@ class HypothesisTests:
     addr_min = 0
     addr_max = int( cacheSize // 4 * 2 * associativity )
     mem = rand_mem(addr_min, addr_max)
-    CacheReqType, CacheRespType = mk_cache_msg(8, 32, dbw, has_wr_mask=False)
+    CacheReqType, CacheRespType = mk_mem_msg(8, 32, dbw, has_wr_mask=False)
     MemReqType, MemRespType = mk_mem_msg(8, 32, clw)
     # FL Model to generate expected transactions
     model = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,
