@@ -7,7 +7,7 @@ Test for Pipelined Blocking Cache FL model
 Author : Xiaoyu Yan, Eric Tang
 Date   : 17 November 2019
 """
-from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
+from mem_ifcs.MemMsg   import MemMsgType, mk_mem_msg
 from ..BlockingCacheFL import ModelCache
 from .GenericTestCases import GenericTestCases
 from .AmoTests         import AmoTests
