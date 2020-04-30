@@ -206,17 +206,12 @@ class WriteBitEnGen( Component ):
   Decodes the write bit enable for data array
   """
   def construct(s, p):
-    BitsLen      = p.BitsLen
-    BitsDataWben = p.BitsDataWben
-    BitsData     = p.BitsData
-    bitwidth_data_wben = p.bitwidth_data_wben
-    bitwidth_data = p.bitwidth_data
-    nlens = clog2( bitwidth_data ) - 2 
-
     s.offset = InPort( p.BitsOffset )     
     s.len_   = InPort( p.BitsLen )
     s.out    = OutPort( p.BitsDataWben )    
 
+    # Not used due to large area overhead
+    # nlens = clog2( p.bitwidth_data ) - 2 
     # @s.update
     # def output_logic():
     #   s.out = BitsDataWben(0)
@@ -224,24 +219,31 @@ class WriteBitEnGen( Component ):
     #     if s.len_ == BitsLen( 2**i ):
     #       mask  = BitsDataWben( 2**( 2**(i+3) ) - 1 )
     #       s.out = mask << ( BitsDataWben(s.offset) << 3 )
-    
-    s.mask = Wire(BitsDataWben)
+    BitsDataWben = p.BitsDataWben
+    BitsLen      = p.BitsLen
+    BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
+    s.word_mask  = Wire( BitsNByte )
     @s.update
     def output_logic(): # smaller area
       if s.len_ == BitsLen(1):
-        s.mask = BitsDataWben(0xff) 
+        s.word_mask = BitsNByte(0b1) 
       elif s.len_ == BitsLen(2):
-        s.mask = BitsDataWben(0xffff) 
+        s.word_mask = BitsNByte(0b11) 
       elif s.len_ == BitsLen(4):
-        s.mask = BitsDataWben(0xffffffff) 
+        s.word_mask = BitsNByte(0b1111) 
       elif s.len_ == BitsLen(8):
-        s.mask = BitsDataWben(0xffffffffffffffff) 
+        s.word_mask = BitsNByte(0b11111111) 
       elif s.len_ == BitsLen(16):
-        s.mask = BitsDataWben(0xffffffffffffffffffffffffffffffff) 
+        s.word_mask = BitsNByte(0xffff) 
       else:
-        s.mask = BitsDataWben(0)
+        s.word_mask = BitsNByte(0)
+    
+    s.shifted = Wire( BitsNByte )
+    s.shifted //= lambda: s.word_mask << BitsNByte(s.offset) 
 
-    s.out //= lambda: s.mask << ( BitsDataWben(s.offset) << 3 )
+    for i in range( p.bitwidth_data_wben ):
+      s.out[i] //= lambda: s.shifted[ i / 8 ]
+    
     
   def line_trace( s ):
     msg = f'o[{s.out}] '

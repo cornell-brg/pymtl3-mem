@@ -30,6 +30,6 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
     harness.elaborate()
     if mem != None:
       harness.load( mem[::2], mem[1::2] )
-    replace_sram = True if cacheSize == 4096 else False
+    sram_wrapper = True if cacheSize == 4096 else False
     run_sim( harness, max_cycles, dump_vcd, test_verilog, trace, dump_vtb, 
-             replace_sram )
+             sram_wrapper )

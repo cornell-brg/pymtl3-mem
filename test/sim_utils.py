@@ -35,8 +35,9 @@ import subprocess
 #---------------------------------------------------------------------
 
 def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, 
-             dump_vtb=False, replace_sram=False ):
+             dump_vtb=False, sram_wrapper=False ):
   # print (" -----------starting simulation----------- ")
+  file_name = str(th.cache.param) + ".v"
   if translation:
     th.cache.verilog_translate_import = True
     th.cache.config_verilog_translate = TranslationConfigs(
@@ -55,8 +56,7 @@ def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2,
       th.apply( VerilogTBGenPass() )
     
     # Replace sram with wrapper
-    if replace_sram: 
-      file_name = str(th.cache.param) + ".v"
+    if sram_wrapper: 
       replace_sram( file_name )
       bashCommand = f"cat {sram_wrapper_file} >> {file_name}"
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
