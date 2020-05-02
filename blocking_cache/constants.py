@@ -38,3 +38,11 @@ UpdateTagArrayUnit_CMD_WR_REFILL = b3(3) # Refill on a write
 UpdateTagArrayUnit_CMD_RD_REFILL = b3(4) # Refill on a read
 UpdateTagArrayUnit_CMD_INV       = b3(5) # Invalidate this cache line
 UpdateTagArrayUnit_CMD_FLUSH     = b3(6) # Flush this cache line
+
+#-------------------------------------------------------------------------
+# WriteBitEnGen
+#-------------------------------------------------------------------------
+# Command for write bit enable generator
+WriteBitEnGen_CMD_NONE  = b2(0) # All bits zero - no action
+WriteBitEnGen_CMD_REQ   = b2(1) # Gen bits based on current request
+WriteBitEnGen_CMD_DIRTY = b2(2) # Gen bits based on inverted dirty bits

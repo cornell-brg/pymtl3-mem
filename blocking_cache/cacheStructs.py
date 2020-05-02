@@ -22,18 +22,15 @@ def mk_dpath_status_struct( p ):
 
     # M1 Dpath Signals
     'cachereq_type_M1'        : p.BitsType,
+    # Tag PU outputs
     'ctrl_bit_dty_rd_line_M1' : p.BitsAssoc,
     'ctrl_bit_dty_rd_word_M1' : p.BitsAssoc,
     'hit_M1'                  : Bits1,
-    'offset_M1'               : p.BitsOffset,
-    'len_M1'                  : p.BitsLen,
     'inval_hit_M1'            : Bits1,
-
-    ## Signals for multiway associativity
     'hit_way_M1'              : p.BitsAssoclog2,
+    ## Signals for multiway associativity
     'ctrl_bit_rep_rd_M1'      : p.BitsAssoclog2,
     'amo_hit_way_M1'          : p.BitsAssoclog2,
-    'dty_bits_mask_M1'        : p.BitsDirty,
 
     # M2 Dpath Signals
     'cachereq_type_M2'        : p.BitsType,
@@ -74,7 +71,6 @@ def mk_ctrl_signals_struct( p ):
     'flush_init_reg_en_M1'  : Bits1,
     'data_array_val_M1'     : Bits1,
     'data_array_type_M1'    : Bits1,
-    'data_array_wben_M1'    : p.BitsDataWben,
     'evict_mux_sel_M1'      : Bits1,
     'stall_reg_en_M1'       : Bits1,
     'hit_stall_eng_en_M1'   : Bits1,
@@ -83,6 +79,7 @@ def mk_ctrl_signals_struct( p ):
     'is_init_M1'            : Bits1,
     'flush_idx_mux_sel_M1'  : Bits1,
     'dirty_evict_mask_M1'   : p.BitsDirty,
+    'wben_cmd_M1'           : Bits2,
 
     # M2 Ctrl Signals
     'reg_en_M2'             : Bits1,
@@ -201,19 +198,19 @@ def mk_addr_struct( p ):
   return struct
 
 def mk_tag_array_struct( p ):
-  if p.full_sram:
-    struct = mk_bitstruct( "StructTagArray", {
-      'val': p.BitsVal,
-      'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
-      'tag': p.BitsTag,
-    } )
-  else:
-    struct = mk_bitstruct( "StructTagArray", {
-      'val': p.BitsVal,
-      'dty': p.BitsDirty,
-      'tag': p.BitsTag,
-      'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
-    } )
+  # if p.full_sram:
+  struct = mk_bitstruct( "StructTagArray", {
+    'val': p.BitsVal,
+    'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
+    'tag': p.BitsTag,
+  } )
+  # else:
+    # struct = mk_bitstruct( "StructTagArray", {
+    #   'val': p.BitsVal,
+    #   'dty': p.BitsDirty,
+    #   'tag': p.BitsTag,
+    #   'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
+    # } )
   return struct
 
 def mk_short_tag_array_struct( p ):

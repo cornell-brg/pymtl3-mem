@@ -56,7 +56,6 @@ class CacheDerivedParams:
     self.bitwidth_rd_data_mux_sel  = clog2( self.bitwidth_cacheline // self.bitwidth_data + 1 ) # Read data mux bitwidth
     self.bitwidth_rd_byte_mux_sel  = clog2( self.bitwidth_data // 8  )               # Read byte mux sel bitwidth
     self.bitwidth_rd_2byte_mux_sel = clog2( self.bitwidth_data // 16 )               # Read half word mux sel bitwidth
-#    self.bitwidth_rd_word_mux_sel  = clog2( bitwidth_rd_word_mux_sel )               # Read word mux bitwidth
     self.bitwidth_len              = clog2( self.bitwidth_data // 8  )
     if self.associativity == 1:
       self.bitwidth_clog_asso      = 1
@@ -67,15 +66,12 @@ class CacheDerivedParams:
     self.bitwidth_dirty            = self.bitwidth_cacheline // 32  # 1 dirty bit per 32-bit word
     self.bitwidth_val              = 1                              # Valid bit
 
-    # sum of the tag bitwidth, valid, and dirty bit per word and rounded
-    # up to multiple of 8
-    self.bitwidth_tag_array        = int( self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty + 7 ) // 8 * 8
+    # sum of the tag bitwidth, valid, and dirty bit per word 
+    self.bitwidth_tag_array        = self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty
     self.bitwidth_tag_wben         = self.bitwidth_tag_array # Tag array write byte bitwidth
-    self.bitwidth_tag_remainder    = self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val
-
-    # print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}], rem[{}]".format(num_bytes, associativity,
-    #        self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index,
-    #        self.bitwidth_tag_remainder) )
+    
+    # print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}]".format(num_bytes, associativity,
+    #        self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index )
 
     #--------------------------------------------------------------------
     # Make Bits object
@@ -91,11 +87,9 @@ class CacheDerivedParams:
     self.BitsTag           = mk_bits( self.bitwidth_tag )           # tag
     self.BitsOffset        = mk_bits( self.bitwidth_offset )        # offset
     self.BitsTagArray      = mk_bits( self.bitwidth_tag_array )     # Tag array write byte enable
-    self.BitsTagArrayTmp   = mk_bits( self.bitwidth_tag_remainder ) # number of bits free in tag array
     self.BitsTagWben       = mk_bits( self.bitwidth_tag_wben )      # Tag array write bit enable
     self.BitsDataWben      = mk_bits( self.bitwidth_data_wben )     # Data array write bit enable
     self.BitsRdDataMuxSel  = mk_bits( self.bitwidth_rd_data_mux_sel ) 
-#    self.BitsRdWordMuxSel  = mk_bits( self.bitwidth_rd_word_mux_sel ) 
     self.BitsRd2ByteMuxSel = mk_bits( self.bitwidth_rd_2byte_mux_sel )
     self.BitsRdByteMuxSel  = mk_bits( self.bitwidth_rd_byte_mux_sel )
     self.BitsAssoc         = mk_bits( self.associativity )
@@ -118,7 +112,7 @@ class CacheDerivedParams:
     # Msgs for Dpath
     #--------------------------------------------------------------------
     # sram is "full" if each bit is used for either tag, valid, or dirty
-    self.full_sram = False if (self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val) > 0 else True
+    # self.full_sram = False if (self.bitwidth_tag_array - self.bitwidth_tag - self.bitwidth_dirty - self.bitwidth_val) > 0 else True
     self.StructStatus = mk_dpath_status_struct( self )
 
     # Structs used within dpath module

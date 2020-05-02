@@ -15,7 +15,6 @@ from constants.constants import *
 from .ReplacementPolicy            import ReplacementPolicy
 from .constants                    import *
 from .units.counters               import CounterEnRst
-from .units.arithmetics            import WriteBitEnGen
 
 #=========================================================================
 # Constants
@@ -357,25 +356,20 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_update_tag_tag_sel_M0 = slice( 1, 2 )
     CS_mshr_dealloc_M0       = slice( 0, 1 )
 
-    wben_none = BitsTagWben( 0 )  # not enable
-    wben_all  = BitsTagWben( -1 ) # all-enable
-    if p.full_sram:               # enable val only
-      wben_val = concat( p.BitsVal(-1), p.BitsDirty(0), p.BitsTag(0) )
-      wben_dty = concat( p.BitsVal(0), p.BitsDirty(-1), p.BitsTag(0) )
-    else:
-      wben_val = concat( p.BitsVal(-1), p.BitsDirty(0), p.BitsTag(0), p.BitsTagArrayTmp(0) )
-      wben_dty = concat( p.BitsVal(0), p.BitsDirty(-1), p.BitsTag(0), p.BitsTagArrayTmp(0) )
-
-    none      = UpdateTagArrayUnit_CMD_NONE
-    clear     = UpdateTagArrayUnit_CMD_CLEAR
-    wr_hit    = UpdateTagArrayUnit_CMD_WR_HIT
-    wr_refill = UpdateTagArrayUnit_CMD_WR_REFILL
-    rd_refill = UpdateTagArrayUnit_CMD_RD_REFILL
-    inv       = UpdateTagArrayUnit_CMD_INV
-    flush     = UpdateTagArrayUnit_CMD_FLUSH
+    wben_val = concat( p.BitsVal(-1), p.BitsDirty(0), p.BitsTag(0) )
+    wben_dty = concat( p.BitsVal(0), p.BitsDirty(-1), p.BitsTag(0) )
 
     @s.update
     def cs_table_M0():
+      wben_none = BitsTagWben( 0 )  # not enable
+      wben_all  = BitsTagWben( -1 ) # all-enable
+      none      = UpdateTagArrayUnit_CMD_NONE
+      clear     = UpdateTagArrayUnit_CMD_CLEAR
+      wr_hit    = UpdateTagArrayUnit_CMD_WR_HIT
+      wr_refill = UpdateTagArrayUnit_CMD_WR_REFILL
+      rd_refill = UpdateTagArrayUnit_CMD_RD_REFILL
+      inv       = UpdateTagArrayUnit_CMD_INV
+      flush     = UpdateTagArrayUnit_CMD_FLUSH
       #                                                             tag_wben|wdat_mux|addr_mux|tg_ty|tag_update|tidx_sel|up_tag_sel|mshr_de
       s.cs0 =                                             concat( wben_none, b1(0),   b1(0),   rd,   none,      b1(0),   b1(0),     n )
       if   s.trans_M0 == TRANS_TYPE_CACHE_INIT:   s.cs0 = concat( wben_all,  b1(0),   b1(0),   wr,   clear,     b1(1),   b1(0),     n )
@@ -410,7 +404,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # use higher bits of the counter to select index
     s.ctrl.tag_array_init_idx_M0 //= lambda: s.update_way_idx_M0[ clog_asso : bitwidth_num_lines ]
     s.ctrl.is_amo_M0 //= lambda: (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) |
-                           ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
+                                  ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
 
     @s.update
     def tag_array_val_logic_M0():
@@ -582,24 +576,6 @@ class BlockingCacheCtrlRTL ( Component ):
 
       s.ctrl.ctrl_bit_rep_en_M1 = s.repreq_en_M1 & ~s.stall_M2
 
-
-    BitsDataWben = p.BitsDataWben
-    BitsLen      = p.BitsLen
-    bitwidth_data_wben = p.bitwidth_data_wben
-    s.wben_M1  = Wire( BitsDataWben )
-    s.WbenGen = WriteBitEnGen( p )
-    s.WbenGen.offset //= s.status.offset_M1
-    s.WbenGen.len_   //= s.status.len_M1
-    s.WbenGen.out    //= s.wben_M1
-
-    # expand byte-enable to bit-enable
-    s.wbend_M1 = Wire( BitsDataWben )
-
-    @s.update
-    def expand_wben_M1():
-      for i in range( bitwidth_data_wben ):
-        s.wbend_M1[i] = ~(s.status.dty_bits_mask_M1[ i / 32 ])
-
     s.was_stalled = RegRst( Bits1 )
     s.was_stalled.in_ //= s.ostall_M2
     s.evict_bypass = Wire( Bits1 )
@@ -608,49 +584,45 @@ class BlockingCacheCtrlRTL ( Component ):
     # M1 control signal table
     #---------------------------------------------------------------------
 
-    s.cs1 = Wire( mk_bits( 5 + p.bitwidth_data_wben ) )
-
-    CS_data_array_wben_M1 = slice( 5, 5 + p.bitwidth_data_wben )
+    s.cs1 = Wire( mk_bits( 7 ) )
+    CS_data_array_wben_M1 = slice( 5, 7 )
     CS_data_array_type_M1 = slice( 4, 5 )
     CS_data_array_val_M1  = slice( 3, 4 )
     CS_ostall_M1          = slice( 2, 3 )
     CS_evict_mux_sel_M1   = slice( 1, 2 )
     CS_MSHR_alloc_en      = slice( 0, 1 )
-
-    wben0 = p.BitsDataWben( 0 )
-    maskf = p.BitsDirty( -1 ) # need this for translation
-
     @s.update
     def cs_table_M1():
-      wben  = s.wben_M1
-      wbend = s.wbend_M1
+      none = WriteBitEnGen_CMD_NONE
+      req  = WriteBitEnGen_CMD_REQ
+      dty  = WriteBitEnGen_CMD_DIRTY
       flush = s.has_flush_sent_M1_bypass
-      #                                                                wben |ty |val    |ostall|evict mux|alloc_en
-      s.cs1                                                 = concat( wben0, x , n,      n,     b1(0),    n       )
-      if   s.trans_M1.out == TRANS_TYPE_INVALID:      s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   s.cs1 = concat( wbend, wr, y,      n,     b1(1),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REFILL:       s.cs1 = concat( wbend, wr, y,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  s.cs1 = concat( wben0, rd, y,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: s.cs1 = concat(  wben, wr, y,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REPLAY_INV:   s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_CLEAN_HIT:    s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.is_evict_M1:                             s.cs1 = concat( wben0, rd, y,      y,     b1(1),    y       )
-      elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     s.cs1 = concat(  wben, wr, y,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      s.cs1 = concat( wben0, x , n,      n,     b1(0),    y       )
-      elif s.trans_M1.out == TRANS_TYPE_INV_START:    s.cs1 = concat( wben0, x , n,      n,     b1(0),    y       )
-      elif s.trans_M1.out == TRANS_TYPE_INV_WRITE:    s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_START:  s.cs1 = concat( wben0, x , n,      n,     b1(0),    y       )
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_READ:   s.cs1 = concat( wben0, x , flush,  n,     b1(1),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_WAIT:   s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_WRITE:  s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif s.trans_M1.out == TRANS_TYPE_REPLAY_FLUSH: s.cs1 = concat( wben0, x , n,      n,     b1(0),    n       )
-      elif ~s.hit_M1:                                 s.cs1 = concat( wben0, x , n,      n,     b1(0),    y       )
+      #                                                               wben |ty |val    |ostall|evict mux|alloc_en
+      s.cs1                                                 = concat( none, x , n,      n,     b1(0),    n       )
+      if   s.trans_M1.out == TRANS_TYPE_INVALID:      s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   s.cs1 = concat(  dty, wr, y,      n,     b1(1),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REFILL:       s.cs1 = concat(  dty, wr, y,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  s.cs1 = concat( none, rd, y,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: s.cs1 = concat(  req, wr, y,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_AMO:   s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_INV:   s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_CLEAN_HIT:    s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.is_evict_M1:                             s.cs1 = concat( none, rd, y,      y,     b1(1),    y       )
+      elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     s.cs1 = concat(  req, wr, y,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      s.cs1 = concat( none, x , n,      n,     b1(0),    y       )
+      elif s.trans_M1.out == TRANS_TYPE_INV_START:    s.cs1 = concat( none, x , n,      n,     b1(0),    y       )
+      elif s.trans_M1.out == TRANS_TYPE_INV_WRITE:    s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_FLUSH_START:  s.cs1 = concat( none, x , n,      n,     b1(0),    y       )
+      elif s.trans_M1.out == TRANS_TYPE_FLUSH_READ:   s.cs1 = concat( none, x , flush,  n,     b1(1),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_FLUSH_WAIT:   s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_FLUSH_WRITE:  s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_REPLAY_FLUSH: s.cs1 = concat( none, x , n,      n,     b1(0),    n       )
+      elif ~s.hit_M1:                                 s.cs1 = concat( none, x , n,      n,     b1(0),    y       )
       elif s.hit_M1:
-        if   s.trans_M1.out == TRANS_TYPE_READ_REQ:   s.cs1 = concat( wben0, rd, y,      n,     b1(0),    n       )
-        elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:  s.cs1 = concat(  wben, wr, y,      n,     b1(0),    n       )
+        if   s.trans_M1.out == TRANS_TYPE_READ_REQ:   s.cs1 = concat( none, rd, y,      n,     b1(0),    n       )
+        elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:  s.cs1 = concat(  req, wr, y,      n,     b1(0),    n       )
 
-      s.ctrl.data_array_wben_M1 = s.cs1[ CS_data_array_wben_M1 ]
+      s.ctrl.wben_cmd_M1        = s.cs1[ CS_data_array_wben_M1 ]
       s.ctrl.data_array_type_M1 = s.cs1[ CS_data_array_type_M1 ]
       s.ctrl.data_array_val_M1  = s.cs1[ CS_data_array_val_M1  ]
       s.ostall_M1               = s.cs1[ CS_ostall_M1          ]
@@ -679,6 +651,7 @@ class BlockingCacheCtrlRTL ( Component ):
 
     # MSHR mask for the dirty bit; if we have an evict, then the dirty bits
     # stored in the MSHR is all 0 else we store the dirty bits in MSHR
+    maskf = p.BitsDirty( -1 ) # need this for translation
     s.ctrl.dirty_evict_mask_M1 //= lambda: p.BitsDirty(0) if s.is_evict_M1 else maskf
 
     #=====================================================================
@@ -726,7 +699,6 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @s.update
     def cs_table_M2():
-      s.ctrl.hit_M2[1] = b1(0) # hit output expects 2 bits but we only use one bit
       flush = s.has_flush_sent_M2.out
       #                                                               dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
       s.cs2                                                 = concat( n,       b1(0),    n,     READ,       n,     n        )
@@ -782,6 +754,8 @@ class BlockingCacheCtrlRTL ( Component ):
       ( (s.trans_M2.out == TRANS_TYPE_AMO_REQ) |
         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO) ) &
       (~s.is_evict_M2.out) )
+
+    s.ctrl.hit_M2[1] //= b1(0) # hit output expects 2 bits but we only use one bit
 
   #=======================================================================
   # line_trace

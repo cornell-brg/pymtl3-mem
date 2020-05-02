@@ -118,7 +118,7 @@ def asso2_size4096_lineb128_datab128():
   return random_test_generator(random_memory, 2, 128, 128, 4096, 100)
 
 def asso2_size4096_lineb128_datab32():
-  return random_test_generator(random_memory, 2, 128, 128, 4096, 100)
+  return random_test_generator(random_memory, 2, 128, 32, 4096, 100)
 
 #-------------------------------------------------------------------------
 # Test driver

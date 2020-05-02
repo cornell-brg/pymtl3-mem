@@ -206,9 +206,11 @@ class WriteBitEnGen( Component ):
   Decodes the write bit enable for data array
   """
   def construct(s, p):
-    s.offset = InPort( p.BitsOffset )     
-    s.len_   = InPort( p.BitsLen )
-    s.out    = OutPort( p.BitsDataWben )    
+    s.cmd      = InPort( Bits2 ) # commmand based on what to generate
+    s.dty_mask = InPort( p.BitsDirty )
+    s.offset   = InPort( p.BitsOffset )     
+    s.len_     = InPort( p.BitsLen )
+    s.out      = OutPort( p.BitsDataWben )    
 
     # Not used due to large area overhead
     # nlens = clog2( p.bitwidth_data ) - 2 
@@ -219,12 +221,11 @@ class WriteBitEnGen( Component ):
     #     if s.len_ == BitsLen( 2**i ):
     #       mask  = BitsDataWben( 2**( 2**(i+3) ) - 1 )
     #       s.out = mask << ( BitsDataWben(s.offset) << 3 )
-    BitsDataWben = p.BitsDataWben
     BitsLen      = p.BitsLen
     BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
     s.word_mask  = Wire( BitsNByte )
     @s.update
-    def output_logic(): # smaller area
+    def req_word_mask_logic(): # smaller area
       if s.len_ == BitsLen(1):
         s.word_mask = BitsNByte(0b1) 
       elif s.len_ == BitsLen(2):
@@ -240,10 +241,22 @@ class WriteBitEnGen( Component ):
     
     s.shifted = Wire( BitsNByte )
     s.shifted //= lambda: s.word_mask << BitsNByte(s.offset) 
-
-    for i in range( p.bitwidth_data_wben ):
-      s.out[i] //= lambda: s.shifted[ i / 8 ]
     
+    s.wben_req   = Wire( p.BitsDataWben )
+    s.wben_dirty = Wire( p.BitsDataWben )
+    for i in range( p.bitwidth_data_wben ):
+      s.wben_req[i]   //= lambda: s.shifted[ i / 8 ]
+      s.wben_dirty[i] //= lambda: ~(s.dty_mask[ i / 32 ])
+    
+    BitsDataWben = p.BitsDataWben
+    @s.update
+    def output_logic():
+      if s.cmd == WriteBitEnGen_CMD_REQ:
+        s.out = s.wben_req
+      elif s.cmd == WriteBitEnGen_CMD_DIRTY:
+        s.out = s.wben_dirty
+      else: # s.cmd == WriteBitEnGen_CMD_NONE
+        s.out = BitsDataWben(0)
     
   def line_trace( s ):
     msg = f'o[{s.out}] '
