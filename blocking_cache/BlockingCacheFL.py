@@ -243,7 +243,8 @@ class ModelCache:
       value = self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8]
     else:
       value = self.mem[new_addr][offset*8 : (offset + int(len_))*8 ]
-
+    
+    value = zext(value, self.cache_bitwidth_data)
     self.transactions.append(req (self.CacheReqType, 'rd', opaque, addr, len_, 0))
     self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit,  len_, value))
     self.opaque += 1
@@ -256,9 +257,9 @@ class ModelCache:
     if new_addr not in self.mem:
       self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
     if len_ == 0:
-      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value
+      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value[0 : self.cache_bitwidth_data ]
     else:
-      self.mem[new_addr][offset*8 : (offset + int(len_))*8 ] = value
+      self.mem[new_addr][offset*8 : (offset + int(len_))*8] = value[0 : int(len_)*8 ]
 
     self.transactions.append(req (self.CacheReqType, 'wr', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit,  len_, 0))

@@ -32,24 +32,24 @@ class ProcModel( Component ):
 
     s.trans_in_flight = RegRst(Bits2) # keeps track of transactions in flight
 
-    @s.update
+    @update
     def signal_model():
       # If the cache request is not ready, then the processor's response rdy is
       # low.
       if s.trans_in_flight.out == b2(0):
-        s.cache.resp.rdy = s.proc.resp.rdy & s.cache.req.rdy
+        s.cache.resp.rdy @= s.proc.resp.rdy & s.cache.req.rdy
       else:
-        s.cache.resp.rdy = s.proc.resp.rdy
+        s.cache.resp.rdy @= s.proc.resp.rdy
 
       # s.proc.req.rdy  = s.cache.req.rdy & s.proc.resp.rdy
 
-    @s.update
+    @update
     def update_trans_in_flight():
-      s.trans_in_flight.in_ = s.trans_in_flight.out
+      s.trans_in_flight.in_ @= s.trans_in_flight.out
       if s.cache.req.en and ~s.cache.resp.en:
-        s.trans_in_flight.in_ = s.trans_in_flight.out + b2(1)
+        s.trans_in_flight.in_ @= s.trans_in_flight.out + b2(1)
       elif ~s.cache.req.en and s.cache.resp.en:
-        s.trans_in_flight.in_ = s.trans_in_flight.out - b2(1)
+        s.trans_in_flight.in_ @= s.trans_in_flight.out - b2(1)
 
   def line_trace( s ):
     msg = ''

@@ -198,19 +198,11 @@ def mk_addr_struct( p ):
   return struct
 
 def mk_tag_array_struct( p ):
-  # if p.full_sram:
   struct = mk_bitstruct( "StructTagArray", {
     'val': p.BitsVal,
     'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
     'tag': p.BitsTag,
   } )
-  # else:
-    # struct = mk_bitstruct( "StructTagArray", {
-    #   'val': p.BitsVal,
-    #   'dty': p.BitsDirty,
-    #   'tag': p.BitsTag,
-    #   'tmp': p.BitsTagArrayTmp # extra space in the SRAM #TODO fix this?
-    # } )
   return struct
 
 def mk_short_tag_array_struct( p ):

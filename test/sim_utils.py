@@ -15,10 +15,12 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.mem_ifcs     import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
-# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
+# from pymtl3.passes.backends.verilog  import (
+#   TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
+# )
 from pymtl3.passes.backends.verilog  import (
-  TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
+  VerilatorImportPass, VerilogTBGenPass
 )
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -26,6 +28,7 @@ from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 from .ProcModel import ProcModel
 from .MemoryCL  import MemoryCL as CiferMemoryCL
 from .MulticoreModel import MulticoreModel
+
 from blocking_cache.BlockingCacheFL import ModelCache
 from blocking_cache.translate import replace_sram, sram_wrapper_file
 import subprocess
@@ -34,23 +37,29 @@ import subprocess
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, 
-             dump_vtb=False, sram_wrapper=False ):
-  # print (" -----------starting simulation----------- ")
-  file_name = str(th.cache.param) + ".v"
+def run_sim( th, cmdline_opts, max_cycles, trace, dump_vtb, sram_wrapper ):
+  translation = bool(cmdline_opts['test_verilog'])
+  vl_trace    = bool(cmdline_opts['dump_vcd'])
+  xinit       = cmdline_opts['test_verilog']
+  file_name   = str(th.cache.param) + ".v"
   if translation:
-    th.cache.verilog_translate_import = True
-    th.cache.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = str(th.cache.param),
-    )
-    th.cache.config_verilog_import = VerilatorImportConfigs(
-          vl_xinit = translation, # init all bits as zeros, ones, or rand
-          vl_trace = True if dump_vcd else False, # view vcd using gtkwave
-          vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
-      )
+    th.cache.set_metadata( TranslationImportPass.enable, True )
+    th.cache.set_metadata( VerilatorImportPass.vl_xinit, xinit )
+    th.cache.set_metadata( VerilatorImportPass.vl_trace, vl_trace )
+    th.cache.set_metadata( explicit_module_name, str(th.cache.param) )
+    # th.cache.verilog_translate_import = True
+    # th.cache.config_verilog_translate = TranslationConfigs(
+    #   explicit_module_name = str(th.cache.param),
+    # )
+    # th.cache.config_verilog_import = VerilatorImportConfigs(
+    #       vl_xinit = translation, # init all bits as zeros, ones, or rand
+    #       vl_trace = True if dump_vcd else False, # view vcd using gtkwave
+    #       vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
+    #   )
     
-    th.apply( VerilogPlaceholderPass() )
+    # th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
+
     if dump_vtb:
       th.cache.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )

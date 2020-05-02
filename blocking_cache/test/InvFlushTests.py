@@ -363,9 +363,9 @@ class InvFlushTests:
     ("32B-1",  hypo_1,              0,         1,      0,        0   ),
     ("32B-1",  hypo_2,              0,         1,      0,        0   ),
   ])
-  def test_InvFlush( s, name, test, dump_vcd, test_verilog, max_cycles, stall_prob, 
-                latency, src_delay, sink_delay, dump_vtb ):
+  def test_InvFlush( s, name, test, stall_prob, latency, src_delay, sink_delay,
+                     cmdline_opts, max_cycles, dump_vtb, line_trace ):
     p = test()            
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
-            p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
-            dump_vcd, test_verilog, max_cycles, dump_vtb )
+                p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
+                cmdline_opts, max_cycles, dump_vtb, line_trace )
