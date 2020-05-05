@@ -129,7 +129,7 @@ def mk_ctrl_pipeline_struct( ):
 from mem_ifcs.MemMsg import MemMsgType
 
 def mk_pipeline_msg( p ):
-  cls_name    = f"StructDpathPipeline"
+  cls_name    = f"StructDpathPipeline_{p.BitsCacheline.nbits}_{p.BitsLen.nbits}"
 
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}".format(
@@ -137,7 +137,7 @@ def mk_pipeline_msg( p ):
       p.BitsOpaque( self.opaque ),
       self.addr,
       p.BitsLen( self.len ),
-      p.BitsData( self.data ),
+      p.BitsCacheline( self.data ),
     )
 
   req_cls = mk_bitstruct( cls_name, {
@@ -154,7 +154,7 @@ def mk_pipeline_msg( p ):
   return req_cls
 
 def mk_MSHR_msg( p ):
-  cls_name    = f"StructMSHR"
+  cls_name    = f"StructMSHR_{p.BitsData.nbits}_{p.BitsLen.nbits}"
 
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}:{}".format(
