@@ -746,7 +746,7 @@ class BlockingCacheCtrlRTL ( Component ):
         (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO) ) &
       (~s.is_evict_M2.out) )
 
-    s.ctrl.hit_M2[1] //= b1(0) # hit output expects 2 bits but we only use one bit
+    s.ctrl.hit_M2[1] //= 0 # hit output expects 2 bits but we only use one bit
 
   #=======================================================================
   # line_trace

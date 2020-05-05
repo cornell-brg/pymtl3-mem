@@ -51,10 +51,9 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
 
     # Pipeline Registers
-    s.pipeline_reg_M0 = DpathPipelineRegM0( p )(
-      in_ = s.memresp_Y,
-      en  = s.ctrl.reg_en_M0,
-    )
+    s.pipeline_reg_M0 = m = DpathPipelineRegM0( p )
+    m.in_ = s.memresp_Y
+    m.en  = s.ctrl.reg_en_M0
 
     # Forward declaration: output from MSHR
     s.MSHR_dealloc_out = Wire( p.MSHRMsg  )
@@ -64,16 +63,13 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_dealloc_mux_in_M0 //= lambda: p.CacheReqType( s.MSHR_dealloc_out.type_,
       s.MSHR_dealloc_out.opaque, s.MSHR_dealloc_out.addr, s.MSHR_dealloc_out.len,
       s.MSHR_dealloc_out.data )
-    s.status.amo_hit_M0             //= s.MSHR_dealloc_out.amo_hit
+    s.status.amo_hit_M0 //= s.MSHR_dealloc_out.amo_hit
 
     # Chooses the cache request from proc or MSHR (memresp)
-    s.cachereq_memresp_mux_M0 = OptimizedMux( p.CacheReqType, 2 )(
-      in_ = {
-        0: s.cachereq_Y,
-        1: s.MSHR_dealloc_mux_in_M0
-      },
-      sel = s.ctrl.cachereq_memresp_mux_sel_M0,
-    )
+    s.cachereq_memresp_mux_M0 = m = OptimizedMux( p.CacheReqType, 2 )
+    m.in_[0] //= s.cachereq_Y
+    m.in_[1] //= s.MSHR_dealloc_mux_in_M0
+    m.sel    //= s.ctrl.cachereq_memresp_mux_sel_M0 
 
     s.cachereq_M0 = Wire( p.PipelineMsg )
     s.cachereq_M0.len    //= s.cachereq_memresp_mux_M0.out.len
@@ -82,72 +78,56 @@ class BlockingCacheDpathRTL (Component):
 
     # Chooses addr bypassed from L1 as a result of write hit clean
     s.cachereq_addr_M1_forward = Wire( p.BitsAddr )
-    s.addr_mux_M0 = OptimizedMux( p.BitsAddr, 2 )(
-      in_ = {
-        0: s.cachereq_memresp_mux_M0.out.addr,
-        1: s.cachereq_addr_M1_forward
-      },
-      sel = s.ctrl.addr_mux_sel_M0,
-    )
-    connect_bits2bitstruct( s.cachereq_M0.addr, s.addr_mux_M0.out )
+    s.addr_mux_M0 = m = OptimizedMux( p.BitsAddr, 2 )
+    m.in_[0] //= s.cachereq_memresp_mux_M0.out.addr
+    m.in_[1] //= s.cachereq_addr_M1_forward
+    m.sel    //= s.ctrl.addr_mux_sel_M0,
+    connect_bits2bitstruct( s.cachereq_M0.addr, m.out )
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
-    s.replicator_M0 = DataReplicatorv2( p )(
-      len_   = s.cachereq_memresp_mux_M0.out.len,
-      in_    = s.cachereq_memresp_mux_M0.out.data,
-      amo    = s.ctrl.is_amo_M0,
-    )
-
+    s.replicator_M0 = m = DataReplicatorv2( p )
+    m.len_ //= s.cachereq_memresp_mux_M0.out.len
+    m.in_  //= s.cachereq_memresp_mux_M0.out.data
+    m.amo  //= s.ctrl.is_amo_M0
+    
     # Selects between data from the memory resp or from the replicator
     # Dependent on if we have a refill response
-    s.write_data_mux_M0 = OptimizedMux( p.BitsCacheline, 2 )(
-      in_ = {
-        0: s.replicator_M0.out,
-        1: s.pipeline_reg_M0.out.data
-      },
-      sel = s.ctrl.wdata_mux_sel_M0,
-      out = s.cachereq_M0.data,
-    )
+    s.write_data_mux_M0 = m = OptimizedMux( p.BitsCacheline, 2 )
+    m.in_[0] //= s.replicator_M0.out
+    m.in_[1] //= s.pipeline_reg_M0.out.data
+    m.sel    //= s.ctrl.wdata_mux_sel_M0
+    m.out    //= s.cachereq_M0.data
 
     s.tag_entries_M1_bypass = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
 
     # Update tag-array entry
-    s.update_tag_way_mux_M0 = OptimizedMux( p.BitsAssoclog2, 2 )(
-      in_ = {
-        0: s.hit_way_M1_bypass,
-        1: s.ctrl.update_tag_way_M0,
-      },
-      sel = s.ctrl.update_tag_sel_M0,
-    )
+    s.update_tag_way_mux_M0 = m = OptimizedMux( p.BitsAssoclog2, 2 )
+    m.in_[0] //= s.hit_way_M1_bypass
+    m.in_[1] //= s.ctrl.update_tag_way_M0
+    m.sel    //= s.ctrl.update_tag_sel_M0
 
     # Decides the bits that will be written into the sram depending on the state
-    s.update_tag_unit = UpdateTagArrayUnit( p )(
-      way        = s.update_tag_way_mux_M0.out,
-      offset     = s.cachereq_M0.addr.offset,
-      cmd        = s.ctrl.update_tag_cmd_M0,
-      refill_dty = s.MSHR_dealloc_out.dirty_bits,
-    )
+    s.update_tag_unit = m = UpdateTagArrayUnit( p )
+    m.way        //= s.update_tag_way_mux_M0.out
+    m.offset     //= s.cachereq_M0.addr.offset
+    m.cmd        //= s.ctrl.update_tag_cmd_M0
+    m.refill_dty //= s.MSHR_dealloc_out.dirty_bits
+    
     for i in range( p.associativity ):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
     # Index select for the tag array as a result of cache initialization
-    s.tag_array_idx_mux_M0 = OptimizedMux( p.BitsIdx, 2 )(
-      in_ = {
-        0: s.cachereq_M0.addr.index,
-        1: s.ctrl.tag_array_init_idx_M0,
-      },
-      sel = s.ctrl.tag_array_idx_sel_M0,
-    )
+    s.tag_array_idx_mux_M0 = m = OptimizedMux( p.BitsIdx, 2 )
+    m.in_[0] //= s.cachereq_M0.addr.index
+    m.in_[1] //= s.ctrl.tag_array_init_idx_M0
+    m.sel    //= s.ctrl.tag_array_idx_sel_M0
 
     # Select if we need to rewrite the tag from the tab unit
-    s.tag_array_tag_mux_M0 = OptimizedMux( p.BitsTag, 2 )(
-      in_ = {
-        0: s.cachereq_M0.addr.tag,
-        1: s.update_tag_unit.out.tag,
-      },
-      sel = s.ctrl.update_tag_sel_M0,
-    )
+    s.tag_array_tag_mux_M0 = OptimizedMux( p.BitsTag, 2 )
+    m.in_[0] //= s.cachereq_M0.addr.tag
+    m.in_[1] //= s.update_tag_unit.out.tag
+    m.sel = s.ctrl.update_tag_sel_M0
 
     # Tag array inputs
     s.tag_array_struct_M0 = Wire( p.StructTagArray )
@@ -166,34 +146,30 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
 
     # Pipeline registers
-    s.cachereq_M1 = DpathPipelineReg( p )(
-      in_ = s.cachereq_M0,
-      en  = s.ctrl.reg_en_M1,
-    )
+    s.cachereq_M1 = m = DpathPipelineReg( p )
+    m.in_ //= s.cachereq_M0
+    m.en  //= s.ctrl.reg_en_M1
 
     # Data array idx
-    s.flush_idx_M1 = RegEnRst( p.BitsIdx )(
-      in_ = s.ctrl.tag_array_init_idx_M0,
-      en  = s.ctrl.flush_init_reg_en_M1,
-    )
+    s.flush_idx_M1 = m = RegEnRst( p.BitsIdx )
+    m.in_ //= s.ctrl.tag_array_init_idx_M0,
+    m.en  //= s.ctrl.flush_init_reg_en_M1,
 
     # Send the dty bits to the M1 stage and use for wben mask into data array
-    s.dty_bits_mask_M1 = RegEnRst( p.BitsDirty )(
-      in_ = s.MSHR_dealloc_out.dirty_bits, # From M0 stage
-      en  = s.ctrl.reg_en_M1,
-    )
+    s.dty_bits_mask_M1 = m = RegEnRst( p.BitsDirty )
+    m.in_ //= s.MSHR_dealloc_out.dirty_bits, # From M0 stage
+    m.en  //= s.ctrl.reg_en_M1,
 
     # Foward the M1 addr to M0
     connect_bits2bitstruct( s.cachereq_addr_M1_forward, s.cachereq_M1.out.addr )
 
     # Register file to store the replacement info
-    s.replacement_bits_M1 = ReplacementBitsReg( p )(
-      raddr = s.cachereq_M1.out.addr.index,
-      waddr = s.cachereq_M1.out.addr.index,
-      wdata = s.ctrl.ctrl_bit_rep_wr_M0,
-      wen   = s.ctrl.ctrl_bit_rep_en_M1
-    )
-
+    s.replacement_bits_M1 = m = ReplacementBitsReg( p )
+    m.raddr //= s.cachereq_M1.out.addr.index,
+    m.waddr //= s.cachereq_M1.out.addr.index,
+    m.wdata //= s.ctrl.ctrl_bit_rep_wr_M0,
+    m.wen   //= s.ctrl.ctrl_bit_rep_en_M1
+  
     # Tag arrays
     tag_arrays_M1 = []
     for i in range( p.associativity ):
