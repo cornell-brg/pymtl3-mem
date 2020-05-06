@@ -140,8 +140,8 @@ class TestHarness( Component ):
                          cacheSize, associativity)
     s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)],
                              stall_prob=stall_prob, latency=latency) # Use our own modified mem
-    s.cache2mem = RecvRTL2SendCL(MemReqType)
-    s.mem2cache = RecvCL2SendRTL(MemRespType)
+    # s.cache2mem = RecvRTL2SendCL(MemReqType)
+    # s.mem2cache = RecvCL2SendRTL(MemRespType)
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, src_delay, sink_delay)
 
     # Set the test signals to better model the processor
@@ -153,10 +153,11 @@ class TestHarness( Component ):
     s.proc_model.cache //= s.cache.mem_minion_ifc
 
     # Connect the cache req and resp ports to test memory
-    connect( s.mem.ifc[0].resp, s.mem2cache.recv )
-    connect( s.cache.mem_master_ifc.resp, s.mem2cache.send )
-    connect( s.cache.mem_master_ifc.req, s.cache2mem.recv )
-    connect( s.mem.ifc[0].req, s.cache2mem.send )
+    s.mem.ifc[0] //= s.cache.mem_master_ifc 
+    # connect( s.mem.ifc[0].resp, s.mem2cache.recv )
+    # connect( s.cache.mem_master_ifc.resp, s.mem2cache.send )
+    # connect( s.cache.mem_master_ifc.req, s.cache2mem.recv )
+    # connect( s.mem.ifc[0].req, s.cache2mem.send )
 
   def load( s, addrs, data_ints ):
     for addr, data_int in zip( addrs, data_ints ):
