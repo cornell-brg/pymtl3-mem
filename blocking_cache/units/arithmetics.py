@@ -23,11 +23,11 @@ class EComp ( Component ):
 
     s.in0 = InPort( Type )
     s.in1 = InPort( Type )
-    s.out = OutPort( bool if Type is int else Bits1 )
+    s.out = OutPort()
 
-    @s.update
+    @update
     def up_ecomp():
-      s.out = Bits1(s.in0 == s.in1)
+      s.out @= Bits1(s.in0 == s.in1)
 
 class DataReplicator( Component ):
 
@@ -36,7 +36,7 @@ class DataReplicator( Component ):
     s.in_    = InPort ( p.BitsData )
     s.len_   = InPort ( p.BitsLen )
     s.offset = InPort ( p.BitsOffset )
-    s.amo    = InPort ( Bits1 )
+    s.amo    = InPort ()
     s.out    = OutPort( p.BitsCacheline )
 
     BitsLen            = p.BitsLen
@@ -45,21 +45,21 @@ class DataReplicator( Component ):
     BitsCacheline      = p.BitsCacheline
     BitsData           = p.BitsData
     bitwidth_offset    = p.bitwidth_offset
-    @s.update
+    @update
     def replicator_logic(): 
       if s.amo:
-        s.out = BitsCacheline(0)
-        s.out[0:bitwidth_data] = s.in_
+        s.out @= BitsCacheline(0)
+        s.out[0:bitwidth_data] @= s.in_
       else:
         if s.len_ == BitsLen(1): 
           for i in range( 0, bitwidth_cacheline, 8 ): # byte
-            s.out[i:i+8] = s.in_[0:8]
+            s.out[i:i+8] @= s.in_[0:8]
         elif s.len_ == BitsLen(2):
           for i in range( 0, bitwidth_cacheline, 16 ): # half word
-            s.out[i:i+16] = s.in_[0:16]
+            s.out[i:i+16] @= s.in_[0:16]
         else:
           for i in range( 0, bitwidth_cacheline, bitwidth_data ):
-            s.out[i:i+bitwidth_data] = s.in_
+            s.out[i:i+bitwidth_data] @= s.in_
 
   def line_trace( s ):
     msg = ''
@@ -70,10 +70,10 @@ class DataReplicatorv2( Component ):
 
   def construct( s , p ):
 
-    s.in_    = InPort ( p.BitsData )
-    s.len_   = InPort ( p.BitsLen )
-    s.amo    = InPort ( Bits1 )
-    s.out    = OutPort( p.BitsCacheline )
+    s.in_  = InPort ( p.BitsData )
+    s.len_ = InPort ( p.BitsLen )
+    s.amo  = InPort ()
+    s.out  = OutPort( p.BitsCacheline )
 
     BitsLen            = p.BitsLen
     bitwidth_cacheline = p.bitwidth_cacheline
@@ -98,13 +98,13 @@ class DataReplicatorv2( Component ):
       s.output_mux.in_[0][ p.bitwidth_data : p.bitwidth_cacheline ] //= 0
     
     BitsSel = mk_bits( clog2(ninputs) )
-    @s.update
+    @update
     def output_mux_selection_logic():
-      s.output_mux.sel = BitsSel(0)
+      s.output_mux.sel @= BitsSel(0)
       if ~s.amo:
         for i in range( ninputs - 1 ):
-          if s.len_ == BitsLen(2**i):
-            s.output_mux.sel = BitsSel(i+1)
+          if s.len_ == BitsLen(2**i, trunc_int=True):
+            s.output_mux.sel @= BitsSel(i+1)
     s.out //= s.output_mux.out
 
   def line_trace( s ):
@@ -123,10 +123,10 @@ class Indexer ( Component ):
     BitsClogNlines  = p.BitsClogNlines
     nblocks_per_way = p.nblocks_per_way
 
-    @s.update
+    @update
     def index_logic():
-      s.out = BitsClogNlines( s.index ) + BitsClogNlines( s.offset ) * \
-        BitsClogNlines( nblocks_per_way )
+      s.out @= zext( s.index, BitsClogNlines ) + zext( s.offset, BitsClogNlines ) * \
+        BitsClogNlines(nblocks_per_way, trunc_int=True) 
   
   def line_trace( s ):
     msg = ""
@@ -179,7 +179,7 @@ class OffsetLenSelector( Component ):
   def construct(s, p):
     s.len_i    = InPort( p.BitsLen )
     s.offset_i = InPort( p.BitsOffset )
-    s.is_amo   = InPort ( Bits1 )
+    s.is_amo   = InPort ()
     s.offset_o = OutPort( p.BitsOffset )
     s.len_o    = OutPort( p.BitsMemLen )
 
@@ -190,16 +190,16 @@ class OffsetLenSelector( Component ):
     if p.bitwidth_data == 32:
       s.amo_len //= 4
     else:
-      s.amo_len //= lambda: p.BitsMemLen(s.len_i)
+      s.amo_len //= lambda: zext( s.len_i, p.BitsMemLen )
 
-    @s.update
+    @update
     def offset_selection_logic():
       if s.is_amo:
-        s.offset_o = s.offset_i
-        s.len_o = s.amo_len # one word read always for len
+        s.offset_o @= s.offset_i
+        s.len_o    @= s.amo_len # one word read always for len
       else:
-        s.offset_o = BitsOffset(0)
-        s.len_o = BitsMemLen(0)
+        s.offset_o @= BitsOffset(0)
+        s.len_o    @= BitsMemLen(0)
 
 class WriteBitEnGen( Component ):
   """
@@ -212,35 +212,35 @@ class WriteBitEnGen( Component ):
     s.len_     = InPort( p.BitsLen )
     s.out      = OutPort( p.BitsDataWben )    
 
-    # Not used due to large area overhead
-    # nlens = clog2( p.bitwidth_data ) - 2 
-    # @s.update
-    # def output_logic():
-    #   s.out = BitsDataWben(0)
-    #   for i in range( nlens ): 
-    #     if s.len_ == BitsLen( 2**i ):
-    #       mask  = BitsDataWben( 2**( 2**(i+3) ) - 1 )
-    #       s.out = mask << ( BitsDataWben(s.offset) << 3 )
     BitsLen      = p.BitsLen
     BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
     s.word_mask  = Wire( BitsNByte )
-    @s.update
+    # Not used due to large area overhead
+    nlens = clog2( p.bitwidth_data ) - 2 
+    # @update
+    # def req_word_mask_logic():
+    #   s.word_mask @= 0
+    #   for i in range( nlens ): 
+    #     if s.len_ == BitsLen( 2**i ):
+    #       s.word_mask  @= 2**( 2**(i+3) ) - 1 
+          # s.out = mask << ( BitsDataWben(s.offset) << 3 )
+    @update
     def req_word_mask_logic(): # smaller area
       if s.len_ == BitsLen(1):
-        s.word_mask = BitsNByte(0b1) 
+        s.word_mask @= BitsNByte(0b1) 
       elif s.len_ == BitsLen(2):
-        s.word_mask = BitsNByte(0b11) 
-      elif s.len_ == BitsLen(4):
-        s.word_mask = BitsNByte(0b1111) 
-      elif s.len_ == BitsLen(8):
-        s.word_mask = BitsNByte(0b11111111) 
-      elif s.len_ == BitsLen(16):
-        s.word_mask = BitsNByte(0xffff) 
+        s.word_mask @= BitsNByte(0b11) 
+      elif s.len_ == BitsLen(4, trunc_int=True):
+        s.word_mask @= BitsNByte(0b1111) 
+      elif s.len_ == BitsLen(8, trunc_int=True):
+        s.word_mask @= BitsNByte(0b11111111) 
+      elif s.len_ == BitsLen(16, trunc_int=True):
+        s.word_mask @= BitsNByte(0xffff) 
       else:
-        s.word_mask = BitsNByte(0)
+        s.word_mask @= BitsNByte(0)
     
     s.shifted = Wire( BitsNByte )
-    s.shifted //= lambda: s.word_mask << BitsNByte(s.offset) 
+    s.shifted //= lambda: s.word_mask << zext(s.offset, BitsNByte) 
     
     s.wben_req   = Wire( p.BitsDataWben )
     s.wben_dirty = Wire( p.BitsDataWben )
@@ -249,14 +249,14 @@ class WriteBitEnGen( Component ):
       s.wben_dirty[i] //= lambda: ~(s.dty_mask[ i / 32 ])
     
     BitsDataWben = p.BitsDataWben
-    @s.update
+    @update
     def output_logic():
       if s.cmd == WriteBitEnGen_CMD_REQ:
-        s.out = s.wben_req
+        s.out @= s.wben_req
       elif s.cmd == WriteBitEnGen_CMD_DIRTY:
-        s.out = s.wben_dirty
+        s.out @= s.wben_dirty
       else: # s.cmd == WriteBitEnGen_CMD_NONE
-        s.out = BitsDataWben(0)
+        s.out @= BitsDataWben(0)
     
   def line_trace( s ):
     msg = f'o[{s.out}] '
@@ -268,10 +268,10 @@ class TagArrayRDataProcessUnit( Component ):
 
     s.addr_tag  = InPort( p.BitsTag )
     s.tag_array = [ InPort( p.StructTagArray ) for _ in range( p.associativity ) ]
-    s.is_init   = InPort ( Bits1 )
+    s.is_init   = InPort ()
     s.hit_way   = OutPort( p.BitsAssoclog2 )
-    s.hit       = OutPort( Bits1 ) # general hit
-    s.inval_hit = OutPort( Bits1 ) # hit on an invalid cache line that is dirty
+    s.hit       = OutPort() # general hit
+    s.inval_hit = OutPort() # hit on an invalid cache line that is dirty
     
     s.offset    = InPort( p.BitsOffset )
     s.word_dirty= OutPort( p.BitsAssoc ) # If the word in cacheline is dirty
@@ -287,35 +287,36 @@ class TagArrayRDataProcessUnit( Component ):
     for i in range( associativity ):
       s.word_dirty[i] //= lambda: s.tag_array[i].dty[s.offset[2:bitwidth_offset]]
 
-    @s.update
+    @update
     def line_dirty_logic():
-      s.line_dirty = BitsAssoc( 0 )
+      s.line_dirty @= BitsAssoc( 0 )
       # OR all the wires together to see if a line is dirty
       for i in range( associativity ):
         for j in range( bitwidth_dirty ):
           if s.tag_array[i].dty[j]:
-            s.line_dirty[i] = y
+            s.line_dirty[i] @= y
 
-    @s.update
+    @update
     def comparing_logic():
-      s.hit       = n
-      s.inval_hit = n
-      s.hit_way   = BitsAssoclog2(0)
+      s.hit       @= n
+      s.inval_hit @= n
+      s.hit_way   @= BitsAssoclog2(0)
       if ~s.is_init:
         for i in range( associativity ):
           if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
             if s.tag_array[i].tag == s.addr_tag:
-              s.hit      = s.hit | y
-              s.hit_way  = BitsAssoclog2(i)
+              s.hit      @= s.hit | y
+              s.hit_way  @= BitsAssoclog2(i)
           if s.line_dirty[i] & (s.tag_array[i].val == CACHE_LINE_STATE_INVALID):
             # If not valid, then we check if the line is dirty at all 
             # If its dirty, then we flag the transaction as an access to a 
             # partially dirty line that may require special attention
             if s.tag_array[i].tag == s.addr_tag:
-              s.inval_hit = s.inval_hit | y
-              s.hit_way   = BitsAssoclog2(i)
+              s.inval_hit @= s.inval_hit | y
+              s.hit_way   @= BitsAssoclog2(i)
     
   def line_trace( s ):
     msg = ''
-    msg += f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
+    msg += f't[{s.tag_array[0].tag}]'
+    # msg += f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
     return msg

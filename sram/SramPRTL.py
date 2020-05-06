@@ -31,8 +31,8 @@ class SramPRTL( Component ):
 
     idx_nbits = clog2( num_words )       # address width
 
-    s.port0_val   = InPort ( Bits1 )
-    s.port0_type  = InPort ( Bits1 )
+    s.port0_val   = InPort ()
+    s.port0_type  = InPort ()
     s.port0_idx   = InPort ( mk_bits(idx_nbits) )
     s.port0_wdata = InPort ( mk_bits(num_bits) )
     s.port0_wben  = InPort ( mk_bits(num_bits) )
@@ -40,18 +40,18 @@ class SramPRTL( Component ):
 
     # Inverters
 
-    s.port0_val_bar  = Wire( Bits1 )
-    s.port0_type_bar = Wire( Bits1 )
+    s.port0_val_bar  = Wire()
+    s.port0_type_bar = Wire()
 
-    @s.update
+    @update
     def inverters():
-      s.port0_val_bar  = ~s.port0_val
-      s.port0_type_bar = ~s.port0_type
+      s.port0_val_bar  @= ~s.port0_val
+      s.port0_type_bar @= ~s.port0_type
 
     s.sram = m = SramGenericPRTL( num_bits, num_words )
-    connect( m.CE1,  s.clk           )
+    connect( m.CE1,  s.clk            )
     connect( m.CSB1, s.port0_val_bar  ) # CSB1 low-active
-    connect( m.OEB1, b1(0)            )
+    connect( m.OEB1, 0                )
     connect( m.WBM1, s.port0_wben     )
     connect( m.WEB1, s.port0_type_bar ) # WEB1 low-active
     connect( m.A1,   s.port0_idx      )

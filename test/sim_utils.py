@@ -47,6 +47,7 @@ def run_sim( th, cmdline_opts, max_cycles, trace, dump_vtb, sram_wrapper ):
     th.cache.set_metadata( VerilatorImportPass.vl_xinit, xinit )
     th.cache.set_metadata( VerilatorImportPass.vl_trace, vl_trace )
     th.cache.set_metadata( explicit_module_name, str(th.cache.param) )
+    # TODO
     # th.cache.verilog_translate_import = True
     # th.cache.config_verilog_translate = TranslationConfigs(
     #   explicit_module_name = str(th.cache.param),
@@ -71,18 +72,19 @@ def run_sim( th, cmdline_opts, max_cycles, trace, dump_vtb, sram_wrapper ):
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
 
-  th.apply( SimulationPass() )
+  th.apply( SimulationPass(print_line_trace=True) )
   th.sim_reset()
-  ncycles  = 0
-  print("")
-  while not th.done() and ncycles < max_cycles:
-    th.tick()
-    print ("{:3d}: {}".format(ncycles, th.line_trace(trace)))
-    ncycles += 1
-  # check timeout
-  assert ncycles < max_cycles
-  th.tick()
-  th.tick()
+  # ncycles  = 0
+  # print("")
+  while not th.done() and th.sim_cycle_count() < max_cycles:
+    th.sim_tick()
+    # print ("{:3d}: {}".format(ncycles, th.line_trace(trace)))
+    # ncycles += 1
+ # Check timeout
+  assert th.sim_cycle_count() < max_cycles
+  th.sim_tick()
+  th.sim_tick()
+  th.sim_tick()
 
 #----------------------------------------------------------------------
 # Generate req/response pair from the requests using ref model
@@ -136,7 +138,8 @@ class TestHarness( Component ):
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
-    s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
+    s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)],
+                             stall_prob=stall_prob, latency=latency) # Use our own modified mem
     s.cache2mem = RecvRTL2SendCL(MemReqType)
     s.mem2cache = RecvCL2SendRTL(MemRespType)
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, src_delay, sink_delay)
@@ -164,7 +167,7 @@ class TestHarness( Component ):
   def done( s ):
     return s.src.done() and s.sink.done()
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
         + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
 

@@ -137,7 +137,7 @@ def mk_pipeline_msg( p ):
       p.BitsOpaque( self.opaque ),
       self.addr,
       p.BitsLen( self.len ),
-      p.BitsData( self.data ),
+       self.data ,
     )
 
   req_cls = mk_bitstruct( cls_name, {

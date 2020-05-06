@@ -56,34 +56,29 @@ class BlockingCacheRTL ( Component ):
     # Structural Composition
     #---------------------------------------------------------------------
 
-    s.ctrl_bypass = Wire(p.StructCtrl) # pass the ctrl signals back to dpath
+    s.cacheDpath = m = BlockingCacheDpathRTL( p )
+    m.cachereq_Y   //= s.mem_minion_ifc.req.msg
+    m.cacheresp_M2 //= s.mem_minion_ifc.resp.msg
+    m.memresp_Y    //= s.mem_master_ifc.resp.msg
+    m.memreq_M2    //= s.mem_master_ifc.req.msg
 
-    s.cacheDpath = BlockingCacheDpathRTL( p )(
-      cachereq_Y   = s.mem_minion_ifc.req.msg,
-      cacheresp_M2 = s.mem_minion_ifc.resp.msg,
-      memresp_Y    = s.mem_master_ifc.resp.msg,
-      memreq_M2    = s.mem_master_ifc.req.msg,
-      ctrl         = s.ctrl_bypass
-    )
-
-    s.cacheCtrl = BlockingCacheCtrlRTL( p )(
-      cachereq_en   = s.mem_minion_ifc.req.en,
-      cachereq_rdy  = s.mem_minion_ifc.req.rdy,
-      memresp_en    = s.mem_master_ifc.resp.en,
-      memresp_rdy   = s.mem_master_ifc.resp.rdy,
-      cacheresp_en  = s.mem_minion_ifc.resp.en,
-      cacheresp_rdy = s.mem_minion_ifc.resp.rdy,
-      memreq_en     = s.mem_master_ifc.req.en,
-      memreq_rdy    = s.mem_master_ifc.req.rdy,
-      status        = s.cacheDpath.status,
-      ctrl          = s.ctrl_bypass
-    )
+    s.cacheCtrl = m = BlockingCacheCtrlRTL( p )
+    m.cachereq_en   //= s.mem_minion_ifc.req.en
+    m.cachereq_rdy  //= s.mem_minion_ifc.req.rdy
+    m.memresp_en    //= s.mem_master_ifc.resp.en
+    m.memresp_rdy   //= s.mem_master_ifc.resp.rdy
+    m.cacheresp_en  //= s.mem_minion_ifc.resp.en
+    m.cacheresp_rdy //= s.mem_minion_ifc.resp.rdy
+    m.memreq_en     //= s.mem_master_ifc.req.en
+    m.memreq_rdy    //= s.mem_master_ifc.req.rdy
+    m.status        //= s.cacheDpath.status
+    m.ctrl          //= s.cacheDpath.ctrl
 
   # Line tracing
-  def line_trace( s, verbosity=2 ):
-    if verbosity==1:
+  def line_trace( s, level=2 ):
+    if level==1:
       msg = s.cacheCtrl.line_trace()
-    elif verbosity==2:
+    elif level==2:
       memreq_msg = f"{' '*(19 + s.param.bitwidth_cacheline//4)}"
       memresp_msg = f"{' '*(12 + s.param.bitwidth_cacheline//4)}"
 

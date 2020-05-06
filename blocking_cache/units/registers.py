@@ -7,7 +7,6 @@ Our own version of registers that handles bitstructs better
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
-
 from pymtl3                      import *
 from pymtl3.stdlib.rtl.registers import RegEnRst, RegEn, RegRst
 
@@ -17,18 +16,13 @@ class DpathPipelineRegM0 ( Component ):
 
     s.out = OutPort( p.MemRespType )
     s.in_ = InPort( p.MemRespType )
-    s.en  = InPort( Bits1 )
+    s.en  = InPort()
 
-    BitsLen = mk_bits( clog2( p.bitwidth_cacheline >> 3 ) )
-    s.reset_value = Wire( p.MemRespType )
-    s.reset_value //= p.MemRespType(
-      p.BitsType(0), p.BitsOpaque(0), b2(0), BitsLen(0),
-      p.BitsCacheline(0)
-    )
+    reset_value = p.MemRespType()
 
-    @s.update_ff
+    @update_ff
     def up_regenrst():
-      if s.reset: s.out <<= s.reset_value
+      if s.reset: s.out <<= reset_value
       elif s.en:  s.out <<= s.in_
 
   def line_trace( s ):
@@ -49,7 +43,7 @@ class DpathPipelineReg( Component ):
       p.BitsLen(0), p.BitsCacheline(0)
     )
 
-    @s.update_ff
+    @update_ff
     def up_regenrst():
       if s.reset: s.out <<= s.reset_value
       elif s.en:  s.out <<= s.in_
@@ -68,7 +62,7 @@ class CtrlPipelineReg( Component ):
     s.reset_value = Wire( p.CtrlMsg )
     s.reset_value //= p.CtrlMsg( b1(0), b1(0), b1(0), b1(0) )
 
-    @s.update_ff
+    @update_ff
     def up_regenrst():
       if s.reset: s.out <<= s.reset_value
       elif s.en:  s.out <<= s.in_
@@ -82,17 +76,13 @@ class MSHRReg( Component ):
 
     s.out = OutPort( p.MSHRMsg )
     s.in_ = InPort( p.MSHRMsg )
-    s.en  = InPort( Bits1 )
+    s.en  = InPort()
 
-    s.reset_value = Wire(p.MSHRMsg)
-    s.reset_value //= p.MSHRMsg(
-      p.BitsType(0), p.BitsOpaque(0), p.BitsAddr(0), p.BitsLen(0),
-      p.BitsCacheline(0), p.BitsAssoclog2(0)
-    )
+    reset_value = p.MSHRMsg()
 
-    @s.update_ff
+    @update_ff
     def up_regenrst():
-      if s.reset: s.out <<= s.reset_value
+      if s.reset: s.out <<= reset_value
       elif s.en:  s.out <<= s.in_
 
   def line_trace( s ):
@@ -121,7 +111,7 @@ class ValReg( Component ):
     BitsIdx = p.BitsIdx
     nblocks_per_way = p.nblocks_per_way
 
-    @s.update
+    @update
     def reg_logic():
       for i in range( nblocks_per_way ):
         if s.waddr == BitsIdx(i):
@@ -130,9 +120,9 @@ class ValReg( Component ):
           s.storage_reg.in_[i] = s.storage_reg.out[i]
       s.storage_reg.en  = s.en & s.wen
       if s.en_req.out:
-        s.out = s.storage_reg.out[s.raddr]
+        s.out @= s.storage_reg.out[s.raddr]
       else:
-        s.out = b1(0)
+        s.out @= b1(0)
 
   def line_trace( s ):
     msg = ""
@@ -148,28 +138,26 @@ class ReplacementBitsReg( Component ):
   """
   def construct( s, p ):
 
-    s.wdata = InPort( Bits1 )
-    s.wen   = InPort( Bits1 )
+    s.wdata = InPort()
+    s.wen   = InPort()
     s.waddr = InPort( p.BitsIdx )
     s.raddr = InPort( p.BitsIdx )
-    s.rdata = OutPort( Bits1 )
+    s.rdata = OutPort()
 
-    s.replacement_register = RegEnRst( p.BitsNlinesPerWay )(
-      en  = s.wen,
-    )
+    s.replacement_register = m = RegEnRst( p.BitsNlinesPerWay )
+    m.en //= s.wen
 
     nblocks_per_way  = p.nblocks_per_way
-    BitsIdx = p.BitsIdx
 
-    @s.update
+    @update
     def update_register_bits():
       for i in range( nblocks_per_way ):
-        if s.waddr == BitsIdx(i):
-          s.replacement_register.in_[i] = s.wdata
+        if s.waddr == i:
+          s.replacement_register.in_[i] @= s.wdata
         else:
-          s.replacement_register.in_[i] = s.replacement_register.out[i]
+          s.replacement_register.in_[i] @= s.replacement_register.out[i]
 
-      s.rdata = s.replacement_register.out[s.raddr]
+      s.rdata @= s.replacement_register.out[s.raddr]
 
   def line_trace( s ):
     msg = ""

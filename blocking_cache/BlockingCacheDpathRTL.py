@@ -12,13 +12,11 @@ from pymtl3                         import *
 from pymtl3.stdlib.rtl.arithmetics  import Mux
 from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
 from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
-from pymtl3.stdlib.connects.connect_bits2bitstruct import *
 
 from constants.constants  import *
 from sram.SramPRTL        import SramPRTL
 
 from .constants                import *
-from .units.DirtyLineDetector  import DirtyLineDetector
 from .units.MSHR_v1            import MSHR
 from .units.muxes              import *
 from .units.arithmetics        import (
@@ -52,8 +50,8 @@ class BlockingCacheDpathRTL (Component):
 
     # Pipeline Registers
     s.pipeline_reg_M0 = m = DpathPipelineRegM0( p )
-    m.in_ = s.memresp_Y
-    m.en  = s.ctrl.reg_en_M0
+    m.in_ //= s.memresp_Y
+    m.en  //= s.ctrl.reg_en_M0
 
     # Forward declaration: output from MSHR
     s.MSHR_dealloc_out = Wire( p.MSHRMsg  )
@@ -81,8 +79,10 @@ class BlockingCacheDpathRTL (Component):
     s.addr_mux_M0 = m = OptimizedMux( p.BitsAddr, 2 )
     m.in_[0] //= s.cachereq_memresp_mux_M0.out.addr
     m.in_[1] //= s.cachereq_addr_M1_forward
-    m.sel    //= s.ctrl.addr_mux_sel_M0,
-    connect_bits2bitstruct( s.cachereq_M0.addr, m.out )
+    m.sel    //= s.ctrl.addr_mux_sel_M0
+    @update
+    def cachereq_M0_addr_logic():
+      s.cachereq_M0.addr @= s.addr_mux_M0.out
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
     s.replicator_M0 = m = DataReplicatorv2( p )
@@ -124,10 +124,10 @@ class BlockingCacheDpathRTL (Component):
     m.sel    //= s.ctrl.tag_array_idx_sel_M0
 
     # Select if we need to rewrite the tag from the tab unit
-    s.tag_array_tag_mux_M0 = OptimizedMux( p.BitsTag, 2 )
+    s.tag_array_tag_mux_M0 = m = OptimizedMux( p.BitsTag, 2 )
     m.in_[0] //= s.cachereq_M0.addr.tag
     m.in_[1] //= s.update_tag_unit.out.tag
-    m.sel = s.ctrl.update_tag_sel_M0
+    m.sel    //= s.ctrl.update_tag_sel_M0
 
     # Tag array inputs
     s.tag_array_struct_M0 = Wire( p.StructTagArray )
@@ -135,7 +135,9 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_struct_M0.val //= s.update_tag_unit.out.val
     s.tag_array_struct_M0.dty //= s.update_tag_unit.out.dty
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
-    connect_bits2bitstruct( s.tag_array_wdata_M0, s.tag_array_struct_M0 )
+    @update
+    def tag_array_struct_M0():
+      s.tag_array_wdata_M0 @= s.tag_array_struct_M0
 
     # Send the M0 status signals to control
     s.status.memresp_type_M0   //= s.pipeline_reg_M0.out.type_
@@ -152,62 +154,48 @@ class BlockingCacheDpathRTL (Component):
 
     # Data array idx
     s.flush_idx_M1 = m = RegEnRst( p.BitsIdx )
-    m.in_ //= s.ctrl.tag_array_init_idx_M0,
-    m.en  //= s.ctrl.flush_init_reg_en_M1,
+    m.in_ //= s.ctrl.tag_array_init_idx_M0
+    m.en  //= s.ctrl.flush_init_reg_en_M1
 
     # Send the dty bits to the M1 stage and use for wben mask into data array
     s.dty_bits_mask_M1 = m = RegEnRst( p.BitsDirty )
-    m.in_ //= s.MSHR_dealloc_out.dirty_bits, # From M0 stage
-    m.en  //= s.ctrl.reg_en_M1,
+    m.in_ //= s.MSHR_dealloc_out.dirty_bits # From M0 stage
+    m.en  //= s.ctrl.reg_en_M1
 
     # Foward the M1 addr to M0
-    connect_bits2bitstruct( s.cachereq_addr_M1_forward, s.cachereq_M1.out.addr )
+    @update
+    def up_cachereq_addr_M1_forward():
+      s.cachereq_addr_M1_forward @= s.cachereq_M1.out.addr
 
     # Register file to store the replacement info
     s.replacement_bits_M1 = m = ReplacementBitsReg( p )
-    m.raddr //= s.cachereq_M1.out.addr.index,
-    m.waddr //= s.cachereq_M1.out.addr.index,
-    m.wdata //= s.ctrl.ctrl_bit_rep_wr_M0,
+    m.raddr //= s.cachereq_M1.out.addr.index
+    m.waddr //= s.cachereq_M1.out.addr.index
+    m.wdata //= s.ctrl.ctrl_bit_rep_wr_M0
     m.wen   //= s.ctrl.ctrl_bit_rep_en_M1
   
     # Tag arrays
-    tag_arrays_M1 = []
-    for i in range( p.associativity ):
-      tag_arrays_M1.append(
-        SramPRTL( p.bitwidth_tag_array, p.nblocks_per_way )
-        (
-          port0_val   = s.ctrl.tag_array_val_M0[i],
-          port0_type  = s.ctrl.tag_array_type_M0,
-          port0_idx   = s.tag_array_idx_mux_M0.out,
-          port0_wdata = s.tag_array_wdata_M0,
-          port0_wben  = s.ctrl.tag_array_wben_M0,
-        )
-      )
-    s.tag_arrays_M1 = tag_arrays_M1
+    s.tag_arrays_M1 = [ SramPRTL( p.bitwidth_tag_array, p.nblocks_per_way ) 
+                        for _ in range(p.associativity) ]
+    for i, m in enumerate( s.tag_arrays_M1 ):
+      m.port0_val   //= s.ctrl.tag_array_val_M0[i]
+      m.port0_type  //= s.ctrl.tag_array_type_M0
+      m.port0_idx   //= s.tag_array_idx_mux_M0.out
+      m.port0_wdata //= s.tag_array_wdata_M0
+      m.port0_wben  //= s.ctrl.tag_array_wben_M0
 
-    # Struct for the tag array output
-    s.tag_array_out_M1 = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     # Saves output of the SRAM during stall
-    stall_engines_M1 = []
-    for i in range( p.associativity ):
-      # Connect the Bits object output of SRAM to a struct
-      connect_bits2bitstruct( s.tag_arrays_M1[i].port0_rdata, s.tag_array_out_M1[i] )
-      stall_engines_M1.append(
-        StallEngine( p.StructTagArray )(
-          in_ = s.tag_array_out_M1[i],
-          en  = s.ctrl.stall_reg_en_M1
-        )
-      )
-    s.tag_array_rdata_M1 = stall_engines_M1
-
-    # Bypass the current tag-array entries to M0
-    for i in range( p.associativity ):
-      s.tag_entries_M1_bypass[i] //= s.tag_array_rdata_M1[i].out
+    s.tag_array_rdata_M1 = [ StallEngine( p.StructTagArray ) for _ in range(p.associativity) ]
+    for i, m in enumerate( s.tag_array_rdata_M1 ):
+      m.in_ //= lambda: s.tag_arrays_M1[i].port0_rdata
+      m.en  //= s.ctrl.stall_reg_en_M1
+      # Bypass the current tag-array entries to M0
+      m.out //= s.tag_entries_M1_bypass[i]
 
     # An one-entry MSHR for holding the cache request during a miss
     s.MSHR_alloc_in = Wire( p.MSHRMsg )
     s.MSHR_alloc_in.type_   //= s.cachereq_M1.out.type_
-    connect_bits2bitstruct( s.MSHR_alloc_in.addr, s.cachereq_M1.out.addr )
+    s.MSHR_alloc_in.addr    //= lambda: s.cachereq_M1.out.addr
     s.MSHR_alloc_in.opaque  //= s.cachereq_M1.out.opaque
     # select only one word of data to store since the rest is replicated
     s.MSHR_alloc_in.data    //= s.cachereq_M1.out.data[0:p.bitwidth_data]
@@ -219,58 +207,53 @@ class BlockingCacheDpathRTL (Component):
       s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty &
       s.ctrl.dirty_evict_mask_M1 )
 
-    s.MSHR_alloc_id = Wire( p.BitsOpaque )
-    s.mshr = MSHR( p, 1 )(
-      alloc_en    = s.ctrl.MSHR_alloc_en,
-      alloc_in    = s.MSHR_alloc_in,
-      alloc_id    = s.MSHR_alloc_id,
-      full        = s.status.MSHR_full,
-      empty       = s.status.MSHR_empty,
-      dealloc_id  = s.pipeline_reg_M0.out.opaque,
-      dealloc_en  = s.ctrl.MSHR_dealloc_en,
-      dealloc_out = s.MSHR_dealloc_out,
-    )
+    # s.MSHR_alloc_id = Wire( p.BitsOpaque )
+    s.mshr = m = MSHR( p, 1 )
+    m.alloc_en    //= s.ctrl.MSHR_alloc_en
+    m.alloc_in    //= s.MSHR_alloc_in
+    # m.alloc_id    //= s.MSHR_alloc_id # don't need for now
+    m.full        //= s.status.MSHR_full
+    m.empty       //= s.status.MSHR_empty
+    m.dealloc_id  //= s.pipeline_reg_M0.out.opaque
+    m.dealloc_en  //= s.ctrl.MSHR_dealloc_en
+    m.dealloc_out //= s.MSHR_dealloc_out
 
     # Combined comparator set for both dirty line detection and hit detection
-    s.tag_array_PU = TagArrayRDataProcessUnit( p )(
-      addr_tag   = s.cachereq_M1.out.addr.tag,
-      is_init    = s.ctrl.is_init_M1,
-      hit        = s.status.hit_M1,
-      hit_way    = s.status.hit_way_M1,
-      inval_hit  = s.status.inval_hit_M1,
-      offset     = s.cachereq_M1.out.addr.offset,
-      line_dirty = s.status.ctrl_bit_dty_rd_line_M1,
-      word_dirty = s.status.ctrl_bit_dty_rd_word_M1,
-    )
+    s.tag_array_PU = m = TagArrayRDataProcessUnit( p )
+    m.addr_tag   //= s.cachereq_M1.out.addr.tag
+    m.is_init    //= s.ctrl.is_init_M1
+    m.hit        //= s.status.hit_M1
+    m.hit_way    //= s.status.hit_way_M1
+    m.inval_hit  //= s.status.inval_hit_M1
+    m.offset     //= s.cachereq_M1.out.addr.offset
+    m.line_dirty //= s.status.ctrl_bit_dty_rd_line_M1
+    m.word_dirty //= s.status.ctrl_bit_dty_rd_word_M1
     for i in range( p.associativity ):
-      s.tag_array_PU.tag_array[i] //= s.tag_array_rdata_M1[i].out
+      m.tag_array[i] //= s.tag_array_rdata_M1[i].out
+
+    s.hit_way_M1_bypass //= s.tag_array_PU.hit_way
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
-    s.hit_stall_engine = StallEngine( StructHit )
-    s.hit_stall_engine.in_ //= lambda: StructHit( s.tag_array_PU.hit |
-        s.tag_array_PU.inval_hit, s.tag_array_PU.hit_way )
-    s.hit_stall_engine.en  //= s.ctrl.hit_stall_eng_en_M1
-    s.hit_stall_engine.out //= s.MSHR_alloc_in_amo_hit_bypass
+    s.hit_stall_engine = m = StallEngine( StructHit )
+    m.in_ //= lambda: StructHit( s.tag_array_PU.hit | s.tag_array_PU.inval_hit,
+                                 s.tag_array_PU.hit_way )
+    m.en  //= s.ctrl.hit_stall_eng_en_M1
+    m.out //= s.MSHR_alloc_in_amo_hit_bypass
 
-    s.hit_way_M1_bypass //= s.tag_array_PU.hit_way
     s.write_mask_M1 = Wire( p.BitsDirty )
     s.write_mask_M1 //= lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
 
     # Mux for choosing which way to evict
-    s.evict_way_mux_M1 = PMux( p.BitsTag, p.associativity )(
-      sel = s.ctrl.way_offset_M1,
-    )
+    s.evict_way_mux_M1 = m = Mux( p.BitsTag, p.associativity )
+    m.sel //= s.ctrl.way_offset_M1
     for i in range( p.associativity ):
-      s.evict_way_mux_M1.in_[i] //= s.tag_array_rdata_M1[i].out.tag
+      m.in_[i] //= s.tag_array_rdata_M1[i].out.tag
 
-    s.flush_idx_mux_M1 = Mux( p.BitsIdx, 2 )(
-      in_ = {
-        0: s.cachereq_M1.out.addr.index,
-        1: s.flush_idx_M1.out,
-      },
-      sel = s.ctrl.flush_idx_mux_sel_M1,
-    )
+    s.flush_idx_mux_M1 = m = Mux( p.BitsIdx, 2 )
+    m.in_[0] //= s.cachereq_M1.out.addr.index
+    m.in_[1] //= s.flush_idx_M1.out
+    m.sel    //= s.ctrl.flush_idx_mux_sel_M1
 
     s.evict_addr_M1 = Wire( p.StructAddr )
     s.evict_addr_M1.tag    //= s.evict_way_mux_M1.out
@@ -279,29 +262,25 @@ class BlockingCacheDpathRTL (Component):
 
     s.cachereq_M1_2 = Wire( p.PipelineMsg )
 
-    s.evict_mux_M1 = Mux( p.StructAddr, 2 )(
-      in_ = {
-        0: s.cachereq_M1.out.addr,
-        1: s.evict_addr_M1
-      },
-      sel = s.ctrl.evict_mux_sel_M1,
-      out = s.cachereq_M1_2.addr
-    )
+    s.evict_mux_M1 = m = Mux( p.StructAddr, 2 )
+    m.in_[0] //= s.cachereq_M1.out.addr
+    m.in_[1] //= s.evict_addr_M1
+    m.sel //= s.ctrl.evict_mux_sel_M1
+    m.out //= s.cachereq_M1_2.addr
 
     # Data array inputs
     s.data_array_wdata_M1 = Wire( p.BitsCacheline )
     s.data_array_wdata_M1 //= s.cachereq_M1.out.data
 
-    s.index_offset_M1 = Indexer( p )(
-      index  = s.cachereq_M1_2.addr.index,
-      offset = s.ctrl.way_offset_M1,
-    )
+    s.index_offset_M1 = m = Indexer( p )
+    m.index  //= s.cachereq_M1_2.addr.index
+    m.offset //= s.ctrl.way_offset_M1
 
-    s.WbenGen_M1 = WriteBitEnGen( p )
-    s.WbenGen_M1.offset   //= s.cachereq_M1.out.addr.offset
-    s.WbenGen_M1.len_     //= s.cachereq_M1.out.len
-    s.WbenGen_M1.dty_mask //= s.dty_bits_mask_M1.out
-    s.WbenGen_M1.cmd      //= s.ctrl.wben_cmd_M1
+    s.WbenGen_M1 = m = WriteBitEnGen( p )
+    m.offset   //= s.cachereq_M1.out.addr.offset
+    m.len_     //= s.cachereq_M1.out.len
+    m.dty_mask //= s.dty_bits_mask_M1.out
+    m.cmd      //= s.ctrl.wben_cmd_M1
 
     s.cachereq_M1_2.len    //= s.cachereq_M1.out.len
     s.cachereq_M1_2.data   //= s.cachereq_M1.out.data
@@ -320,52 +299,43 @@ class BlockingCacheDpathRTL (Component):
     #--------------------------------------------------------------------
 
     # Pipeline registers
-    s.cachereq_M2 = DpathPipelineReg( p )(
-      in_ = s.cachereq_M1_2,
-      en  = s.ctrl.reg_en_M2,
-    )
+    s.cachereq_M2 = m = DpathPipelineReg( p )
+    m.in_ //= s.cachereq_M1_2
+    m.en  //= s.ctrl.reg_en_M2
 
-    s.write_mask_M2 = RegEnRst( p.BitsDirty )(
-      in_ = s.write_mask_M1,
-      en  = s.ctrl.reg_en_M2
-    )
+    s.write_mask_M2 = m = RegEnRst( p.BitsDirty )
+    m.in_ //= s.write_mask_M1
+    m.en  //= s.ctrl.reg_en_M2
 
-    s.data_array_M2 = SramPRTL( p.bitwidth_cacheline, p.total_num_cachelines )(
-      port0_val   = s.ctrl.data_array_val_M1,
-      port0_type  = s.ctrl.data_array_type_M1,
-      port0_idx   = s.index_offset_M1.out,
-      port0_wdata = s.data_array_wdata_M1,
-      port0_wben  = s.WbenGen_M1.out
-    )
+    s.data_array_M2 = m = SramPRTL( p.bitwidth_cacheline, p.total_num_cachelines )
+    m.port0_val   //= s.ctrl.data_array_val_M1
+    m.port0_type  //= s.ctrl.data_array_type_M1
+    m.port0_idx   //= s.index_offset_M1.out
+    m.port0_wdata //= s.data_array_wdata_M1
+    m.port0_wben  //= s.WbenGen_M1.out
 
-    s.stall_engine_M2 = StallEngine( p.BitsCacheline )(
-      in_ = s.data_array_M2.port0_rdata,
-      en  = s.ctrl.stall_reg_en_M2
-    )
+    s.stall_engine_M2 = m = StallEngine( p.BitsCacheline )
+    m.in_ //= s.data_array_M2.port0_rdata
+    m.en  //= s.ctrl.stall_reg_en_M2
 
-    s.read_data_mux_M2 = Mux( p.BitsCacheline, 2 )(
-      in_ = {
-        0: s.stall_engine_M2.out,
-        1: s.cachereq_M2.out.data
-      },
-      sel = s.ctrl.read_data_mux_sel_M2
-    )
+    s.read_data_mux_M2 = m = Mux( p.BitsCacheline, 2 )
+    m.in_[0] //= s.stall_engine_M2.out
+    m.in_[1] //= s.cachereq_M2.out.data
+    m.sel    //= s.ctrl.read_data_mux_sel_M2
 
     # Data size select mux for subword accesses
-    s.data_size_mux_M2 = FastDataSelectMux( p )(
-      in_    = s.read_data_mux_M2.out,
-      en     = s.ctrl.data_size_mux_en_M2,
-      amo    = s.ctrl.is_amo_M2,
-      len_   = s.cachereq_M2.out.len,
-      offset = s.cachereq_M2.out.addr.offset,
-    )
-
+    s.data_size_mux_M2 = m = FastDataSelectMux( p )
+    m.in_    //= s.read_data_mux_M2.out
+    m.en     //= s.ctrl.data_size_mux_en_M2
+    m.amo    //= s.ctrl.is_amo_M2
+    m.len_   //= s.cachereq_M2.out.len
+    m.offset //= s.cachereq_M2.out.addr.offset
+    
     # selects the appropriate offset and len for memreq based on the type
-    s.mem_req_off_len_M2 = OffsetLenSelector( p )(
-      len_i    = s.cachereq_M2.out.len,
-      offset_i = s.cachereq_M2.out.addr.offset,
-      is_amo   = s.ctrl.is_amo_M2,
-    )
+    s.mem_req_off_len_M2 = m = OffsetLenSelector( p )
+    m.len_i    //= s.cachereq_M2.out.len
+    m.offset_i //= s.cachereq_M2.out.addr.offset
+    m.is_amo   //= s.ctrl.is_amo_M2
 
     # Send the M2 status signals to control
     s.status.cachereq_type_M2 //= s.cachereq_M2.out.type_
@@ -376,9 +346,12 @@ class BlockingCacheDpathRTL (Component):
     s.memreq_addr_out.tag    //= s.cachereq_M2.out.addr.tag
     s.memreq_addr_out.index  //= s.cachereq_M2.out.addr.index
     s.memreq_addr_out.offset //= s.mem_req_off_len_M2.offset_o
+
     s.memreq_addr_bits = Wire( p.BitsAddr )
-                            # Bits32            # StructAddr
-    connect_bits2bitstruct( s.memreq_addr_bits, s.memreq_addr_out )
+    @update
+    def memreq_addr_bits():
+      s.memreq_addr_bits @= s.memreq_addr_out
+
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type
     s.memreq_M2.data    //= s.read_data_mux_M2.out
@@ -395,5 +368,7 @@ class BlockingCacheDpathRTL (Component):
 
   def line_trace( s ):
     msg = ""
-    # msg+= s.data_size_mux_M2.line_trace()
+    # msg+= s.tag_array_PU.line_trace()
+    # msg+= f'tw[{s.tag_array_struct_M0}] tr[{s.tag_arrays_M1[0].port0_rdata}]'
+    msg+= f'req[{s.MSHR_dealloc_out.addr}] '
     return msg

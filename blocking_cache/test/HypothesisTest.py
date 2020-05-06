@@ -92,9 +92,9 @@ def gen_reqs( draw, addr_min, addr_max, clw, dbw ):
   return (addr, type_, data, len_)
 
 class HypothesisTests:
-  def hypothesis_test_harness( s, associativity, clw, dbw, num_blocks,
-                               req, stall_prob, latency, src_delay, sink_delay,
-                               min_trans, dump_vcd, test_verilog, max_cycles, dump_vtb ):
+  def hypothesis_test_harness( s, associativity, clw, dbw, num_blocks, req, stall_prob,
+                               latency, src_delay, sink_delay, min_trans, cmdline_opts, 
+                               max_cycles, dump_vtb, line_trace ):
     cacheSize = (clw * associativity * num_blocks) // 8
     addr_min = 0
     addr_max = int( cacheSize // 4 * 2 * associativity )
@@ -129,7 +129,7 @@ class HypothesisTests:
     # Prepare RTL test harness
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
-                dump_vcd, test_verilog, max_cycles, 1, dump_vtb )
+                cmdline_opts, max_cycles, dump_vtb, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 75 )
   @hypothesis.given(
@@ -141,14 +141,14 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob,
-                            latency, src_delay, sink_delay, dump_vcd,
-                            test_verilog, max_cycles, dump_vtb ):
+  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+                                src_delay, sink_delay, cmdline_opts, max_cycles, 
+                                dump_vtb, line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
     s.hypothesis_test_harness( 2, clw, dbw, num_blocks, req, stall_prob,
-                               latency, src_delay, sink_delay, 1, dump_vcd,
-                               test_verilog, max_cycles, dump_vtb )
+                               latency, src_delay, sink_delay, 1, cmdline_opts,
+                               max_cycles, dump_vtb, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 75 )
   @hypothesis.given(
@@ -160,14 +160,14 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob,
-                               latency, src_delay, sink_delay, dump_vcd,
-                               test_verilog, max_cycles, dump_vtb ):
+  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+                                   src_delay, sink_delay, cmdline_opts, max_cycles, 
+                                   dump_vtb, line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
     s.hypothesis_test_harness( 1, clw, dbw, num_blocks, req, stall_prob,
-                               latency, src_delay, sink_delay, 1, dump_vcd,
-                               test_verilog, max_cycles, dump_vtb )
+                               latency, src_delay, sink_delay, 1, cmdline_opts, 
+                               max_cycles, dump_vtb, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 30 )
   @hypothesis.given(
@@ -177,10 +177,10 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 2 ),
     sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_2way_size64_stress( s, req, dbw, latency, src_delay,
-                                   sink_delay, dump_vcd, test_verilog, max_cycles, dump_vtb ):
+  def test_hypothesis_2way_size64_stress( s, req, dbw, latency, src_delay, sink_delay, 
+                                          cmdline_opts, max_cycles, dump_vtb, line_trace ):
     s.hypothesis_test_harness( 2, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               30, dump_vcd, test_verilog, max_cycles, dump_vtb )
+                               30, cmdline_opts, max_cycles, dump_vtb, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 30 )
   @hypothesis.given(
@@ -190,8 +190,7 @@ class HypothesisTests:
     src_delay    = st.integers( 0, 2 ),
     sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_dmapped_size32_stress( s, req, dbw, latency,
-                                      src_delay, sink_delay, dump_vcd,
-                                      test_verilog, max_cycles, dump_vtb ):
+  def test_hypothesis_dmapped_size32_stress( s, req, dbw, latency, src_delay, sink_delay, 
+                                          cmdline_opts, max_cycles, dump_vtb, line_trace ):
     s.hypothesis_test_harness( 1, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               30, dump_vcd, test_verilog, max_cycles, dump_vtb )
+                               30, cmdline_opts, max_cycles, dump_vtb, line_trace )
