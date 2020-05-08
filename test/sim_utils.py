@@ -16,6 +16,7 @@ from pymtl3.stdlib.ifcs.mem_ifcs     import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
+# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL 
 # from pymtl3.passes.backends.verilog  import (
 #   TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
 # )

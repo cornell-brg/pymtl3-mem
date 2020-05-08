@@ -72,7 +72,6 @@ def gen_reqs( draw, addr_min, addr_max, clw, dbw ):
         len_ = 4
     else:
       max_len_order = clog2(dbw//8)
-      BitsLen = mk_bits( max_len_order )
       if type_ == MemMsgType.WRITE:
         max_len_order = 2
       len_order = draw( st.integers(0, max_len_order), label="len" )
@@ -87,8 +86,9 @@ def gen_reqs( draw, addr_min, addr_max, clw, dbw ):
         addr = addr & Bits32(0xfffffff0)
       elif len_ == 32:
         addr = addr & Bits32(0xffffffe0)
-      len_ = int(BitsLen(len_))
-
+      # len_ = int(BitsLen(len_))
+    bitwidth_len = clog2(dbw >> 3)   
+    len_ = Bits(bitwidth_len, len_, trunc_int=True) 
   return (addr, type_, data, len_)
 
 class HypothesisTests:
@@ -136,16 +136,20 @@ class HypothesisTests:
     clw_dbw      = st.sampled_from([(64,32),(64,64),(128,32),(128,64),(128,128)]),
     block_order  = st.integers( 1, 8 ),
     req          = st.data(),
-    stall_prob   = st.integers( 0 ),
+    # stall_prob   = st.integers( 0 ),
     latency      = st.integers( 1, 5 ),
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+  # def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+  #                               src_delay, sink_delay, cmdline_opts, max_cycles, 
+  #                               dump_vtb, line_trace ):
+  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, latency, 
                                 src_delay, sink_delay, cmdline_opts, max_cycles, 
                                 dump_vtb, line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
+    stall_prob = 0
     s.hypothesis_test_harness( 2, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts,
                                max_cycles, dump_vtb, line_trace )
@@ -155,16 +159,20 @@ class HypothesisTests:
     clw_dbw      = st.sampled_from([(64,32),(64,64),(128,32),(128,64),(128,128)]),
     block_order  = st.integers( 1, 8 ), # order of number of blocks based 2
     req          = st.data(),
-    stall_prob   = st.integers( 0 ),
+    # stall_prob   = st.integers( 0 ),
     latency      = st.integers( 1, 5 ),
     src_delay    = st.integers( 0, 5 ),
     sink_delay   = st.integers( 0, 5 )
   )
-  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+  # def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
+  #                                  src_delay, sink_delay, cmdline_opts, max_cycles, 
+  #                                  dump_vtb, line_trace ):
+  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, latency, 
                                    src_delay, sink_delay, cmdline_opts, max_cycles, 
                                    dump_vtb, line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
+    stall_prob = 0
     s.hypothesis_test_harness( 1, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts, 
                                max_cycles, dump_vtb, line_trace )

@@ -337,11 +337,12 @@ def hypo_2():
 def hypo_test():
   # testing double flush
   msg =  [
-    #    type   opq addr        len data        type   opq test len data
-    ( 'inv', 0,  0x00000000, 0,  0x0), ( 'inv', 0,  0,   0,  0 ),    
+    # type  opq addr        len data     type opq test len data
+    ( 'mi', 0,  0x00000000, 4,  0x0), ( 'mi', 0,  0,   4,  1 ),    
+    ( 'rd', 1,  0x00000000, 1,  0x0), ( 'rd', 1,  0,   1,  0 ),    
   ]
-  return SingleCacheTestParams( msg, inv_flush_mem, associativity=1, bitwidth_mem_data=64, 
-                                bitwidth_cache_data=32 )
+  return SingleCacheTestParams( msg, inv_flush_mem, associativity=2, bitwidth_mem_data=64, 
+                                bitwidth_cache_data=64 )
 
 #-------------------------------------------------------------------------
 # Test driver
@@ -371,7 +372,7 @@ class InvFlushTests:
     ("32B-1",  inv_refill5,         0,         1,      0,        0   ),
     ("32B-1",  hypo_1,              0,         1,      0,        0   ),
     ("32B-1",  hypo_2,              0,         1,      0,        0   ),
-    ("32B-1",  hypo_test,              0,         1,      0,        0   ),
+    ("TMP",  hypo_test,             0,         1,      0,        0   ),
   ])
   def test_InvFlush( s, name, test, stall_prob, latency, src_delay, sink_delay,
                      cmdline_opts, max_cycles, dump_vtb, line_trace ):

@@ -56,13 +56,14 @@ class MemoryCL( Component ):
 
   # Actual stuff
   def construct( s, nports, mem_ifc_dtypes=[mk_mem_msg(8,32,32), mk_mem_msg(8,32,32)],
-                 *, stall_prob=0, latency=1, mem_nbytes=2**20 ):
+                 stall_prob=0, latency=1, mem_nbytes=2**20 ):
 
     # Local constants
 
     s.nports = nports
     req_classes  = [ x for (x,y) in mem_ifc_dtypes ]
     resp_classes = [ y for (x,y) in mem_ifc_dtypes ]
+    
     s.mem = MemoryFL( mem_nbytes )
 
     # Interface
@@ -76,6 +77,7 @@ class MemoryCL( Component ):
     s.req_stalls = [ StallCL( stall_prob, i )     for i in range(nports) ]
     s.req_qs  = [ DelayPipeDeqCL( req_latency )   for i in range(nports) ]
     s.resp_qs = [ DelayPipeSendCL( resp_latency ) for i in range(nports) ]
+    
     for i in range(nports):
       s.req_stalls[i].recv //= s.ifc[i].req
       s.resp_qs[i].send    //= s.ifc[i].resp

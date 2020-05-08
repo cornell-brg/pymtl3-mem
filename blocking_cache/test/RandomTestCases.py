@@ -70,7 +70,6 @@ def random_test_generator( mem, associativity, bitwidth_mem_data, bitwidth_cache
         
       else:
         max_len_order = clog2( bitwidth_cache_data//8 )
-        BitsLen = mk_bits( max_len_order )
         if types[i] == MemMsgType.WRITE:
           max_len_order = 2
         len_order = random.randint( 0, max_len_order )

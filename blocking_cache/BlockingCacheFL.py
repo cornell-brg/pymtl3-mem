@@ -285,13 +285,15 @@ class ModelCache:
     self.tracker.amo_req(addr)
     new_addr = addr[self.offset_end:32]
     offset = int(addr[self.offset_start:self.offset_end])
-    value = Bits(self.cache_bitwidth_data, value, trunc_int=True)
     if new_addr not in self.mem:
       self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
     ret = zext( self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8], self.cache_bitwidth_data )
     
-    self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = \
-                    Bits( 32, AMO_FUNS[ int(func) ]( ret, value ), trunc_int=True )
+    value = Bits(self.cache_bitwidth_data, value, trunc_int=True)
+    amo_out = AMO_FUNS[ int(func) ]( ret, value )[0:32]
+
+    self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = amo_out
+    
     self.transactions.append(req (self.CacheReqType, func, opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    len_, ret))
     self.opaque += 1
