@@ -16,7 +16,7 @@ from .InvFlushTests    import InvFlushTests
 class CacheFL_Tests( GenericTestCases, InvFlushTests, AmoTests ):
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 associativity, cacheSize, stall_prob, latency, src_delay, 
-                sink_delay, cmdline_opts, max_cycles, dump_vtb, trace ):
+                sink_delay, cmdline_opts, max_cycles, trace ):
 
     cache = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,
                         MemReqType, MemRespType, mem )

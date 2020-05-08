@@ -38,9 +38,10 @@ import subprocess
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, cmdline_opts, max_cycles, trace, dump_vtb, sram_wrapper ):
+def run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper ):
   translation = bool(cmdline_opts['test_verilog'])
   vl_trace    = bool(cmdline_opts['dump_vcd'])
+  dump_vtb    = bool(cmdline_opts['dump_vtb'])
   xinit       = cmdline_opts['test_verilog']
   file_name   = str(th.cache.param) + ".v"
   if translation:
