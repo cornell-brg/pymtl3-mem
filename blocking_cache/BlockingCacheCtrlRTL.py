@@ -853,7 +853,7 @@ class BlockingCacheCtrlRTL ( Component ):
     pipeline = stage1 + stage2 + stage3
 
     add_msgs = ''
-    add_msgs += f'en:{s.memreq_rdy} '
+    # add_msgs += f'en:{s.memreq_rdy} '
     # add_msgs += f'cn:{s.counter_M0.out} fsb:{s.has_flush_sent_M1_bypass} fd:{s.prev_flush_done_M0}'
 
     return pipeline + add_msgs

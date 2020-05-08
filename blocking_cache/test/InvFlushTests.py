@@ -338,8 +338,8 @@ def hypo_test():
   # testing double flush
   msg =  [
     # type  opq addr        len data     type opq test len data
-    ( 'mi', 0,  0x00000000, 4,  0x0), ( 'mi', 0,  0,   4,  1 ),    
-    ( 'rd', 1,  0x00000000, 1,  0x0), ( 'rd', 1,  0,   1,  0 ),    
+    ( 'mi', 0,  0x00030010, 4,  0x0), ( 'mi', 0,  0,   4,  0xaaa ),    
+    ( 'ad', 1,  0x00030010, 4,  0x0), ( 'ad', 1,  0,   4,  0 ),    
   ]
   return SingleCacheTestParams( msg, inv_flush_mem, associativity=2, bitwidth_mem_data=64, 
                                 bitwidth_cache_data=64 )

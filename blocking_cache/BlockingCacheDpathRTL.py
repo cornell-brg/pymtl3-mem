@@ -370,5 +370,5 @@ class BlockingCacheDpathRTL (Component):
     msg = ""
     # msg+= s.tag_array_PU.line_trace()
     # msg+= f'tw[{s.tag_array_struct_M0}] tr[{s.tag_arrays_M1[0].port0_rdata}]'
-    msg+= f'req[{s.MSHR_dealloc_out.addr}] '
+    # msg+= f'req[{s.MSHR_dealloc_out.addr}] '
     return msg
