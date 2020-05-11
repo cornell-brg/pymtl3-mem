@@ -11,7 +11,8 @@ Date   : 19 February 2020
 from pymtl3 import *
 
 def mk_dpath_status_struct( p ):
-  cls_name    = "StructDpathStatus"
+  cls_name = f"StructDpathStatus_{p.num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_"\
+             f"{p.bitwidth_data}_{p.associativity}"
   req_cls = mk_bitstruct( cls_name, {
 
     # M0 Dpath Signals
@@ -46,7 +47,8 @@ def mk_dpath_status_struct( p ):
   return req_cls
 
 def mk_ctrl_signals_struct( p ):
-  cls_name    = f"StructCtrlSignals"
+  cls_name = f"StructCtrlSignals_{p.num_bytes}_{p.bitwidth_cacheline}_{p.bitwidth_addr}_"\
+             f"{p.bitwidth_data}_{p.associativity}"
 
   req_cls = mk_bitstruct( cls_name, {
 
@@ -102,23 +104,14 @@ def mk_ctrl_signals_struct( p ):
 
 def mk_ctrl_pipeline_struct( ):
   cls_name    = f"StructCtrlPipeline"
-
-  def req_to_str( self ):
-    return "{}:{}:{}:{}".format(
-      Bits1( self.val ),
-      Bits1( self.is_refill ),
-      Bits1( self.is_write_hit_clean ),
-      Bits1( self.is_write_refill ),
-    )
-
   req_cls = mk_bitstruct( cls_name,
-    {
-      'val'               : Bits1,
-      'is_refill'         : Bits1,
-      'is_write_hit_clean': Bits1,
-      'is_write_refill'   : Bits1,
-      'is_amo'            : Bits1,
-    },
+  {
+    'val'               : Bits1,
+    'is_refill'         : Bits1,
+    'is_write_hit_clean': Bits1,
+    'is_write_refill'   : Bits1,
+    'is_amo'            : Bits1,
+  }
   )
   return req_cls
 
@@ -129,7 +122,7 @@ def mk_ctrl_pipeline_struct( ):
 from mem_ifcs.MemMsg import MemMsgType
 
 def mk_pipeline_msg( p ):
-  cls_name    = f"StructDpathPipeline"
+  cls_name    = f"StructDpathPipeline_{p.BitsCacheline.nbits}_{p.BitsLen.nbits}"
 
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}".format(
@@ -137,7 +130,7 @@ def mk_pipeline_msg( p ):
       p.BitsOpaque( self.opaque ),
       self.addr,
       p.BitsLen( self.len ),
-       self.data ,
+      self.data ,
     )
 
   req_cls = mk_bitstruct( cls_name, {
@@ -154,7 +147,7 @@ def mk_pipeline_msg( p ):
   return req_cls
 
 def mk_MSHR_msg( p ):
-  cls_name    = f"StructMSHR"
+  cls_name    = f"StructMSHR_{p.BitsData.nbits}_{p.BitsLen.nbits}"
 
   def req_to_str( self ):
     return "{}:{}:{}:{}:{}:{}".format(
@@ -182,23 +175,17 @@ def mk_MSHR_msg( p ):
   return req_cls
 
 def mk_addr_struct( p ):
-  def req_to_str( self ):
-    return "{}{}{}".format(
-      self.tag, self.index, self.offset
-    )
   # declaration alignment MATTERS here
-  struct = mk_bitstruct( "StructAddr", {
+  struct = mk_bitstruct( f"StructAddr_{p.bitwidth_tag}_{p.bitwidth_index}_{p.bitwidth_offset}",
+  {
     'tag'   : p.BitsTag,
     'index' : p.BitsIdx,
     'offset': p.BitsOffset
-  },
-  namespace = {
-    '__str__' : req_to_str
   } )
   return struct
 
 def mk_tag_array_struct( p ):
-  struct = mk_bitstruct( "StructTagArray", {
+  struct = mk_bitstruct( f"StructTagArray_{p.bitwidth_val}_{p.bitwidth_dirty}_{p.bitwidth_tag}", {
     'val': p.BitsVal,
     'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
     'tag': p.BitsTag,
@@ -229,7 +216,7 @@ def mk_tag_ctrl_M1_struct( p ):
   return struct
 
 def mk_hit_stall_struct( p ):
-  struct = mk_bitstruct( "StructHitInfo", {
+  struct = mk_bitstruct( f"StructHitInfo_{p.bitwidth_clog_asso}", {
     'hit':     Bits1,
     'hit_way': p.BitsAssoclog2,
   } )

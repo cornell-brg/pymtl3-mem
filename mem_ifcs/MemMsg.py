@@ -86,7 +86,7 @@ def mk_mem_req_msg( opq, addr, data, has_wr_mask=True ):
   LenType       = mk_bits( clog2(data>>3) )
   WriteMaskType = mk_bits( data >> 5      )
   DataType      = mk_bits( data           )
-  cls_name      = "MemReqMsg_{}_{}_{}_m{}".format( opq, addr, data, has_wr_mask )
+  cls_name      = "MemReqMsg_{}_{}_{}_m{}".format( opq, addr, data, 1 if has_wr_mask else 0 )
 
   def req_to_str( self ):
     if has_wr_mask:
@@ -147,7 +147,7 @@ def mk_mem_resp_msg( opq, data, has_wr_mask=True ):
   WriteMaskType = mk_bits( data >> 5      )
   DataType      = mk_bits( data           )
 
-  cls_name = "MemRespMsg_{}_{}_m{}".format( opq, data, has_wr_mask )
+  cls_name = "MemRespMsg_{}_{}_m{}".format( opq, data, 1 if has_wr_mask else 0 )
 
   def resp_to_str( self ):
     if has_wr_mask:

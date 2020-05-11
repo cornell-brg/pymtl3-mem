@@ -172,7 +172,7 @@ class FastDataSelectMux( Component ):
         s.output_mux.sel @= BitsSel(0)
       else:
         for i in range( ninputs - 2 ):
-          if s.len_ == BitsLen(2**i, trunc_int=True):
+          if s.len_ == trunc(Bits32(2**i), BitsLen):
             s.output_mux.sel @= BitsSel(i+2)
     s.out //= s.output_mux.out
 

@@ -62,7 +62,7 @@ def gen_reqs( draw, addr_min, addr_max, clw, dbw ):
     len_ = 0
     data = 0
   else:
-    data = draw( st.integers(0, 0xffffffff), label="data" )
+    data = Bits(dbw,draw( st.integers(0, 0xffffffff), label="data" ),trunc_int=True)
     addr = Bits32(draw( st.integers(addr_min, addr_max), label="addr" ))
     if type_ >= MemMsgType.AMO_ADD and type_ <= MemMsgType.AMO_XOR:
       addr = addr & Bits32(0xfffffffc)
@@ -143,7 +143,7 @@ class HypothesisTests:
   )
   # def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
   #                               src_delay, sink_delay, cmdline_opts, max_cycles, 
-  #                               dump_vtb, line_trace ):
+  #                               line_trace ):
   def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, latency, 
                                 src_delay, sink_delay, cmdline_opts, max_cycles, 
                                 line_trace ):
@@ -166,7 +166,7 @@ class HypothesisTests:
   )
   # def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
   #                                  src_delay, sink_delay, cmdline_opts, max_cycles, 
-  #                                  dump_vtb, line_trace ):
+  #                                  line_trace ):
   def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, latency, 
                                    src_delay, sink_delay, cmdline_opts, max_cycles, 
                                    line_trace ):
@@ -177,7 +177,7 @@ class HypothesisTests:
                                latency, src_delay, sink_delay, 1, cmdline_opts, 
                                max_cycles, line_trace )
 
-  @hypothesis.settings( deadline = None, max_examples = 30 )
+  @hypothesis.settings( deadline = None, max_examples = 100 )
   @hypothesis.given(
     req          = st.data(),
     dbw          = st.sampled_from([32,128]),
@@ -186,11 +186,11 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 2 )
   )
   def test_hypothesis_2way_size64_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, max_cycles, dump_vtb, line_trace ):
+                                          cmdline_opts, max_cycles, line_trace ):
     s.hypothesis_test_harness( 2, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               30, cmdline_opts, max_cycles, line_trace )
+                               2, cmdline_opts, max_cycles, line_trace )
 
-  @hypothesis.settings( deadline = None, max_examples = 30 )
+  @hypothesis.settings( deadline = None, max_examples = 100 )
   @hypothesis.given(
     req          = st.data(),
     dbw          = st.sampled_from([32,128]),
@@ -199,6 +199,6 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 2 )
   )
   def test_hypothesis_dmapped_size32_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, max_cycles, dump_vtb, line_trace ):
+                                          cmdline_opts, max_cycles, line_trace ):
     s.hypothesis_test_harness( 1, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               30, cmdline_opts, max_cycles, line_trace )
+                               2, cmdline_opts, max_cycles, line_trace )

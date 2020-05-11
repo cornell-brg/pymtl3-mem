@@ -184,10 +184,10 @@ class BlockingCacheCtrlRTL ( Component ):
           s.FSM_state_M0_next @= M0_FSM_STATE_INIT
       
       elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
-        if s.memresp_val_M0 and (s.status.MSHR_type == WRITE or s.status.MSHR_type == READ):
+        if s.memresp_val_M0 & ((s.status.MSHR_type == WRITE) | (s.status.MSHR_type == READ)):
           # Have valid replays in the MSHR
           s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
-        elif ( s.status.MSHR_empty and s.cachereq_en ):
+        elif ( s.status.MSHR_empty & s.cachereq_en ):
           if s.status.cachereq_type_M0 == INV:
             s.FSM_state_M0_next @= M0_FSM_STATE_INV
           elif s.status.cachereq_type_M0 == FLUSH:
@@ -205,7 +205,7 @@ class BlockingCacheCtrlRTL ( Component ):
       
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         # For flush we need to wait for the final write_ack
-        if (~s.status.MSHR_empty) and s.status.MSHR_type == FLUSH:
+        if (~s.status.MSHR_empty) & (s.status.MSHR_type == FLUSH):
           if s.prev_flush_done_M0:
             s.FSM_state_M0_next @= M0_FSM_STATE_READY
           else:
@@ -224,7 +224,7 @@ class BlockingCacheCtrlRTL ( Component ):
       
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH_WAIT:
         if s.memresp_wr_ack_M0:
-          if s.counter_M0.out == p.total_num_cachelines - 1:
+          if s.counter_M0.out == trunc(Bits32(p.total_num_cachelines - 1), p.BitsClogNlines ):
             s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
           else:
             s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH
@@ -247,13 +247,13 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.is_write_hit_clean_M0:
         s.trans_M0 @= TRANS_TYPE_CLEAN_HIT
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
-        if (~s.status.MSHR_empty) and s.status.MSHR_type == WRITE:
+        if (~s.status.MSHR_empty) & (s.status.MSHR_type == WRITE):
           s.trans_M0 @= TRANS_TYPE_REPLAY_WRITE
-        elif (~s.status.MSHR_empty) and s.status.MSHR_type == READ:
+        elif (~s.status.MSHR_empty) & (s.status.MSHR_type == READ):
           s.trans_M0 @= TRANS_TYPE_REPLAY_READ
-        elif (~s.status.MSHR_empty) and s.status.MSHR_type == INV:
+        elif (~s.status.MSHR_empty) & (s.status.MSHR_type == INV):
           s.trans_M0 @= TRANS_TYPE_REPLAY_INV
-        elif (~s.status.MSHR_empty) and s.status.MSHR_type == FLUSH:
+        elif (~s.status.MSHR_empty) & (s.status.MSHR_type == FLUSH):
           if s.prev_flush_done_M0:
             s.trans_M0 @= TRANS_TYPE_REPLAY_FLUSH
           else:
@@ -271,14 +271,14 @@ class BlockingCacheCtrlRTL ( Component ):
         else:
           s.trans_M0 @= TRANS_TYPE_FLUSH_WAIT
       elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
-        if s.memresp_val_M0 and (~s.status.MSHR_empty):
-          if s.status.MSHR_type == WRITE or s.status.MSHR_type == READ:
+        if s.memresp_val_M0 & (~s.status.MSHR_empty):
+          if (s.status.MSHR_type == WRITE) | (s.status.MSHR_type == READ):
             s.trans_M0 @= TRANS_TYPE_REFILL
-          elif ( s.status.MSHR_type >= AMO_ADD and
-                 s.status.MSHR_type <  INV ):
+          elif ( (s.status.MSHR_type >= AMO_ADD) &
+                 (s.status.MSHR_type <  INV) ):
             s.trans_M0 @= TRANS_TYPE_REPLAY_AMO
 
-        elif s.status.MSHR_empty and s.cachereq_en:
+        elif s.status.MSHR_empty & s.cachereq_en:
           # Request from s.cachereq, not MSHR
           if s.status.cachereq_type_M0 == INIT:
             s.trans_M0 @= TRANS_TYPE_INIT_REQ
@@ -286,8 +286,8 @@ class BlockingCacheCtrlRTL ( Component ):
             s.trans_M0 @= TRANS_TYPE_READ_REQ
           elif s.status.cachereq_type_M0 == WRITE:
             s.trans_M0 @= TRANS_TYPE_WRITE_REQ
-          elif ( s.status.cachereq_type_M0 >= AMO_ADD and
-                 s.status.cachereq_type_M0 < INV ):
+          elif ( (s.status.cachereq_type_M0 >= AMO_ADD) &
+                 (s.status.cachereq_type_M0 < INV) ):
             s.trans_M0 @= TRANS_TYPE_AMO_REQ
           elif s.status.cachereq_type_M0 == INV:
             s.trans_M0 @= TRANS_TYPE_INV_START
@@ -299,8 +299,8 @@ class BlockingCacheCtrlRTL ( Component ):
     @update
     def up_counter_en_logic_M0():
       s.counter_en_M0 @= b1(0)
-      if ( s.FSM_state_M0.out == M0_FSM_STATE_INIT or
-           s.FSM_state_M0.out == M0_FSM_STATE_INV ):
+      if ( (s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
+           (s.FSM_state_M0.out == M0_FSM_STATE_INV) ):
         s.counter_en_M0 @= b1(1)
       elif s.trans_M0 == TRANS_TYPE_FLUSH_READ:
         s.counter_en_M0 @= b1(1)
@@ -428,8 +428,8 @@ class BlockingCacheCtrlRTL ( Component ):
           if s.update_way_idx_M0 % BitsClogNlines(associativity) == BitsClogNlines(i):
             s.ctrl.tag_array_val_M0[i] @= y
             s.ctrl.update_tag_way_M0 @= BitsAssoclog2(i)
-      elif ( s.trans_M0 == TRANS_TYPE_REFILL or
-             s.trans_M0 == TRANS_TYPE_REPLAY_WRITE ):
+      elif ( (s.trans_M0 == TRANS_TYPE_REFILL) |
+             (s.trans_M0 == TRANS_TYPE_REPLAY_WRITE) ):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] @= y
       elif (s.trans_M0 == TRANS_TYPE_REPLAY_AMO) & (s.status.amo_hit_M0):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] @= y
@@ -437,9 +437,9 @@ class BlockingCacheCtrlRTL ( Component ):
         s.ctrl.tag_array_val_M0[s.status.ctrl_bit_rep_rd_M1] @= y
       elif s.trans_M0 == TRANS_TYPE_CLEAN_HIT:
         s.ctrl.tag_array_val_M0[s.status.hit_way_M1] @= y
-      elif ( s.trans_M0 == TRANS_TYPE_READ_REQ or
-             s.trans_M0 == TRANS_TYPE_WRITE_REQ or
-             s.trans_M0 == TRANS_TYPE_AMO_REQ ):
+      elif ( (s.trans_M0 == TRANS_TYPE_READ_REQ) |
+             (s.trans_M0 == TRANS_TYPE_WRITE_REQ) |
+             (s.trans_M0 == TRANS_TYPE_AMO_REQ) ):
         for i in range( associativity ):
           s.ctrl.tag_array_val_M0[i] @= y # Enable all SRAMs since we are reading
 
@@ -486,12 +486,12 @@ class BlockingCacheCtrlRTL ( Component ):
     @update
     def asso_data_array_offset_way_M1():
       s.ctrl.way_offset_M1 @= s.status.hit_way_M1
-      if ( s.trans_M1.out == TRANS_TYPE_REPLAY_READ or
-           s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE or
-           s.trans_M1.out == TRANS_TYPE_REFILL ):
+      if ( (s.trans_M1.out == TRANS_TYPE_REPLAY_READ) |
+           (s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE) |
+           (s.trans_M1.out == TRANS_TYPE_REFILL) ):
         s.ctrl.way_offset_M1 @= s.way_ptr_M1.out
-      elif ( s.trans_M1.out == TRANS_TYPE_READ_REQ or
-             s.trans_M1.out == TRANS_TYPE_WRITE_REQ ):
+      elif ( (s.trans_M1.out == TRANS_TYPE_READ_REQ) |
+             (s.trans_M1.out == TRANS_TYPE_WRITE_REQ) ):
         if ~s.hit_M1:
           if s.status.inval_hit_M1:
             s.ctrl.way_offset_M1 @= s.status.hit_way_M1
@@ -533,9 +533,9 @@ class BlockingCacheCtrlRTL ( Component ):
       s.hit_M1            @= n
       s.is_write_hit_clean_M0 @= n
 
-      if ( s.trans_M1.out == TRANS_TYPE_INIT_REQ or
-           s.trans_M1.out == TRANS_TYPE_WRITE_REQ or
-           s.trans_M1.out == TRANS_TYPE_READ_REQ ):
+      if ( (s.trans_M1.out == TRANS_TYPE_INIT_REQ) |
+           (s.trans_M1.out == TRANS_TYPE_WRITE_REQ)|
+           (s.trans_M1.out == TRANS_TYPE_READ_REQ) ):
         s.hit_M1 @= s.status.hit_M1
         # if hit, dty bit will come from the way where the hit occured
         if s.hit_M1:
@@ -547,17 +547,17 @@ class BlockingCacheCtrlRTL ( Component ):
 
         # Check that we don't have a situation where ~val and dty but we're
         # still accessing the same address.
-        if not s.status.inval_hit_M1:
+        if ~s.status.inval_hit_M1:
           # moyang: we are not check s.is_line_valid_M1 because for invalid
           # but dirty cache lines (due to cache invalidation), we still need
           # to evict them
-          if not s.hit_M1 and s.is_dty_M1:
+          if ~s.hit_M1 & s.is_dty_M1:
             s.is_evict_M1 @= y
-          elif s.hit_M1 and not s.is_dty_M1:
+          elif s.hit_M1 & ~s.is_dty_M1:
             if s.trans_M1.out == TRANS_TYPE_WRITE_REQ:
               s.is_write_hit_clean_M0 @= y
 
-        if not s.is_evict_M1:
+        if ~s.is_evict_M1:
           # Better to update replacement bit right away because we need it
           # for nonblocking capability. For blocking, we can also update
           # during a refill for misses
@@ -707,7 +707,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_START:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_WAIT:   s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_WRITE:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif ~s.memreq_rdy or ~s.cacheresp_rdy:         s.cs2 @= concat( n,       b1(0),    y,     READ,       n,     n        )
+      elif ~s.memreq_rdy|~s.cacheresp_rdy:         s.cs2 @= concat( n,       b1(0),    y,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_READ:   s.cs2 @= concat( n,       b1(0),    n,     WRITE,      flush, n        )
       elif s.is_evict_M2.out:                         s.cs2 @= concat( n,       b1(0),    n,     WRITE,      y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_READ:  s.cs2 @= concat( y,       b1(0),    n,     READ,       n,     y        )

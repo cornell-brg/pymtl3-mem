@@ -12,7 +12,8 @@ Date   : Mar 12, 2018
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.fl import MemoryFL
+# from pymtl3.stdlib.fl import MemoryFL
+from .MemoryFL import MemoryFL
 from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.mem_ifcs import MemMinionIfcCL
 from pymtl3.stdlib.cl.DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL

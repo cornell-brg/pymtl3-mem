@@ -103,7 +103,7 @@ class DataReplicatorv2( Component ):
       s.output_mux.sel @= BitsSel(0)
       if ~s.amo:
         for i in range( ninputs - 1 ):
-          if s.len_ == BitsLen(2**i, trunc_int=True):
+          if s.len_ == trunc(Bits32(2**i), BitsLen):
             s.output_mux.sel @= BitsSel(i+1)
     s.out //= s.output_mux.out
 
@@ -126,7 +126,7 @@ class Indexer ( Component ):
     @update
     def index_logic():
       s.out @= zext( s.index, BitsClogNlines ) + zext( s.offset, BitsClogNlines ) * \
-        BitsClogNlines(nblocks_per_way, trunc_int=True) 
+        trunc( Bits32(nblocks_per_way), BitsClogNlines) 
   
   def line_trace( s ):
     msg = ""
@@ -212,9 +212,10 @@ class WriteBitEnGen( Component ):
     s.len_     = InPort( p.BitsLen )
     s.out      = OutPort( p.BitsDataWben )    
 
-    BitsLen      = p.BitsLen
-    BitsNByte    = mk_bits( p.bitwidth_data_wben / 8 )
-    s.word_mask  = Wire( BitsNByte )
+    BitsLen     = p.BitsLen
+    bitwidth_nbyte = p.bitwidth_data_wben / 8
+    BitsNByte   = mk_bits( bitwidth_nbyte )
+    s.word_mask = Wire( BitsNByte )
     # Not used due to large area overhead
     nlens = clog2( p.bitwidth_data ) - 2 
     # @update
@@ -227,26 +228,32 @@ class WriteBitEnGen( Component ):
     @update
     def req_word_mask_logic(): # smaller area
       if s.len_ == BitsLen(1):
-        s.word_mask @= BitsNByte(0b1) 
+        s.word_mask @= 0b1
       elif s.len_ == BitsLen(2):
-        s.word_mask @= BitsNByte(0b11) 
-      elif s.len_ == BitsLen(4, trunc_int=True):
-        s.word_mask @= BitsNByte(0b1111) 
-      elif s.len_ == BitsLen(8, trunc_int=True):
-        s.word_mask @= BitsNByte(0b11111111) 
-      elif s.len_ == BitsLen(16, trunc_int=True):
-        s.word_mask @= BitsNByte(0xffff) 
+        s.word_mask @= 0b11 
+      elif s.len_ == trunc(Bits32(4), BitsLen):
+        s.word_mask @= 0b1111 
+      elif s.len_ == trunc(Bits32(8), BitsLen):
+        s.word_mask @= 0b11111111 
+      elif s.len_ == trunc(Bits32(16), BitsLen):
+        s.word_mask @= 0xffff 
       else:
-        s.word_mask @= BitsNByte(0)
+        s.word_mask @= 0
     
     s.shifted = Wire( BitsNByte )
     s.shifted //= lambda: s.word_mask << zext(s.offset, BitsNByte) 
     
     s.wben_req   = Wire( p.BitsDataWben )
     s.wben_dirty = Wire( p.BitsDataWben )
-    for i in range( p.bitwidth_data_wben ):
-      s.wben_req[i]   //= lambda: s.shifted[ i / 8 ]
-      s.wben_dirty[i] //= lambda: ~(s.dty_mask[ i / 32 ])
+    bitwidth_clog_nbyte = clog2(bitwidth_nbyte)
+    bitwidth_clog_dirty = clog2(p.bitwidth_dirty)
+    @update
+    def wben_shift_logic():
+      for i in range( p.bitwidth_data_wben ):
+        i_byte = trunc(Bits32(i >> 3), bitwidth_clog_nbyte)
+        i_mask = trunc(Bits32(i >> 5), bitwidth_clog_dirty)
+        s.wben_req[i]   @= s.shifted[ i_byte ]
+        s.wben_dirty[i] @= ~(s.dty_mask[ i_mask ])
     
     BitsDataWben = p.BitsDataWben
     @update
@@ -256,7 +263,7 @@ class WriteBitEnGen( Component ):
       elif s.cmd == WriteBitEnGen_CMD_DIRTY:
         s.out @= s.wben_dirty
       else: # s.cmd == WriteBitEnGen_CMD_NONE
-        s.out @= BitsDataWben(0)
+        s.out @= 0
     
   def line_trace( s ):
     msg = f'o[{s.out}] '

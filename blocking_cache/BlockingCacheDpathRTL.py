@@ -81,7 +81,7 @@ class BlockingCacheDpathRTL (Component):
     m.in_[1] //= s.cachereq_addr_M1_forward
     m.sel    //= s.ctrl.addr_mux_sel_M0
     @update
-    def cachereq_M0_addr_logic():
+    def cachereq_M0_addr_bits_to_bitstruct():
       s.cachereq_M0.addr @= s.addr_mux_M0.out
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
@@ -136,7 +136,7 @@ class BlockingCacheDpathRTL (Component):
     s.tag_array_struct_M0.dty //= s.update_tag_unit.out.dty
     s.tag_array_wdata_M0 = Wire( p.BitsTagArray )
     @update
-    def tag_array_struct_M0():
+    def tag_array_struct_M0_bits_to_bitstruct():
       s.tag_array_wdata_M0 @= s.tag_array_struct_M0
 
     # Send the M0 status signals to control
@@ -164,7 +164,7 @@ class BlockingCacheDpathRTL (Component):
 
     # Foward the M1 addr to M0
     @update
-    def up_cachereq_addr_M1_forward():
+    def up_cachereq_addr_M1_forward_bits_to_bitstruct():
       s.cachereq_addr_M1_forward @= s.cachereq_M1.out.addr
 
     # Register file to store the replacement info
@@ -349,7 +349,7 @@ class BlockingCacheDpathRTL (Component):
 
     s.memreq_addr_bits = Wire( p.BitsAddr )
     @update
-    def memreq_addr_bits():
+    def memreq_addr_bits_to_bitstruct():
       s.memreq_addr_bits @= s.memreq_addr_out
 
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
