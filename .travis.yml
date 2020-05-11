@@ -34,7 +34,7 @@ install:
 
  # Install PyMTL3
  - pip install --requirement requirements.txt
- - pip install -U git+https://github.com/cornell-brg/pymtl3.git@master --constraint constraints.txt
+ - pip install -U git+https://github.com/cornell-brg/pymtl3.git@dev-3.0-release --constraint constraints.txt
  - pip list
 
 #------------------------------------------------------------------------

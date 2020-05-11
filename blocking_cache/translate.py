@@ -21,7 +21,7 @@ sys.path.insert( 0, parent_path )
 sram_wrapper_file = os.path.join( parent_path, 'sram', 'brg_gf14_sram_generic.v' )
 
 # Import the translation pass from verilog backend
-from pymtl3.passes.backends.verilog import TranslationConfigs, TranslationPass
+from pymtl3.passes.backends.verilog import TranslationPass
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
@@ -75,13 +75,15 @@ def main( opts ):
   dut = BlockingCacheRTL( CacheReqType, CacheRespType, MemReqType,
                           MemRespType, opts.size, opts.asso )
   success = False
-  dut.verilog_translate = True
   module_name = f"BlockingCache_{opts.size}_{opts.clw}_{opts.abw}_{opts.dbw}_{opts.asso}"
   file_name = module_name + ".v"
-  dut.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = module_name,
-      explicit_file_name = file_name
-    )
+  
+  dut.set_metadata( TranslationPass.enable, True )
+  # dut.verilog_translate = True
+  # dut.config_verilog_translate = TranslationConfigs(
+  #     explicit_module_name = module_name,
+  #     explicit_file_name = file_name
+  #   )
   try:
     dut.elaborate()
     dut.apply( TranslationPass() )

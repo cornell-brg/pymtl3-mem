@@ -17,24 +17,18 @@ class StallEngine( Component ):
   def construct( s, dtype ):
 
     s.in_ = InPort( dtype )
-    s.en  = InPort( Bits1 )
+    s.en  = InPort()
     s.out = OutPort( dtype )
 
-    s.stall_reg = RegEn( dtype )(
-      en  = s.en,
-      in_ = s.in_
-    )
+    s.stall_reg = m = RegEn( dtype )
+    m.en  //= s.en
+    m.in_ //= s.in_
 
-    s.stall_mux_M2 = Mux( dtype, 2 )(
-      in_ = {
-        0: s.in_,
-        1: s.stall_reg.out
-      },
-      out = s.out
-    )
-    s.stall_mux_M2.sel //= lambda: ~s.en
+    s.stall_mux_M2 = m = Mux( dtype, 2 )
+    m.in_[0] //= s.in_
+    m.in_[1] //= s.stall_reg.out
+    m.out    //= s.out
+    m.sel    //= lambda: ~s.en
 
   def line_trace( s ):
-    msg = ''
-    msg += f'in:{s.in_} out:{s.out} en:{s.en} '
-    return msg
+    return f'in:{s.in_} out:{s.out} en:{s.en} '

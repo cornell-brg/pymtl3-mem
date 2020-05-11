@@ -70,24 +70,24 @@ class MulticoreModel( Component ):
     s.curr_order_in_flight.up_amt //= b32(0)
     s.curr_order_in_flight.up_en  //= b1(0)
 
-    @s.update
+    @update
     def src_send_recv():
       for i in range( p.ncaches ):
-        s.src[i].send.rdy = n
+        s.src[i].send.rdy @= n
         if s.proc_model[i].proc.req.rdy:      
           if s.src[i].send.msg.order <= s.curr_order.out:
-            s.src[i].send.rdy = y
+            s.src[i].send.rdy @= y
         
-    @s.update
+    @update
     def curr_order_in_flight_logic():
-      s.curr_order_in_flight.dw_en = n
+      s.curr_order_in_flight.dw_en @= n
       trans_done = 0
       for i in range( p.ncaches ):
         if s.proc_model[i].proc.resp.en:
-          s.curr_order_in_flight.dw_en = y
+          s.curr_order_in_flight.dw_en @= y
           trans_done += 1
 
-      s.curr_order_in_flight.dw_amt = b32(trans_done)     
+      s.curr_order_in_flight.dw_amt @= b32(trans_done)     
       
 
   def done( s ):

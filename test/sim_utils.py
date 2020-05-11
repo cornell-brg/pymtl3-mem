@@ -15,10 +15,13 @@ from pymtl3 import *
 from pymtl3.stdlib.ifcs.mem_ifcs     import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
-# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
+# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL 
+# from pymtl3.passes.backends.verilog  import (
+#   TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
+# )
 from pymtl3.passes.backends.verilog  import (
-  TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
+  VerilogTBGenPass, TranslationPass, VerilogPlaceholderPass
 )
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -26,6 +29,7 @@ from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 from .ProcModel import ProcModel
 from .MemoryCL  import MemoryCL as CiferMemoryCL
 from .MulticoreModel import MulticoreModel
+
 from blocking_cache.BlockingCacheFL import ModelCache
 from blocking_cache.translate import replace_sram, sram_wrapper_file
 import subprocess
@@ -34,23 +38,21 @@ import subprocess
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2, 
-             dump_vtb=False, sram_wrapper=False ):
-  # print (" -----------starting simulation----------- ")
-  file_name = str(th.cache.param) + ".v"
+def run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper ):
+  translation = bool(cmdline_opts['test_verilog'])
+  dump_vcd    = bool(cmdline_opts['dump_vcd'])
+  dump_vtb    = bool(cmdline_opts['dump_vtb'])
+  xinit       = cmdline_opts['test_verilog']
+  file_name   = str(th.cache.param) + "__pickled.v"
   if translation:
-    th.cache.verilog_translate_import = True
-    th.cache.config_verilog_translate = TranslationConfigs(
-      explicit_module_name = str(th.cache.param),
-    )
-    th.cache.config_verilog_import = VerilatorImportConfigs(
-          vl_xinit = translation, # init all bits as zeros, ones, or rand
-          vl_trace = True if dump_vcd else False, # view vcd using gtkwave
-          vl_Wno_list=['UNOPTFLAT', 'WIDTH', 'UNSIGNED'],
-      )
-    
+    th.cache.set_metadata( TranslationImportPass.enable, True )
+    th.cache.set_metadata( VerilatorImportPass.vl_xinit, xinit )
+    th.cache.set_metadata( VerilatorImportPass.vl_trace, True if dump_vcd else False )
+    th.cache.set_metadata( VerilatorImportPass.vl_trace_filename, dump_vcd )
+    th.cache.set_metadata( TranslationPass.explicit_module_name, str(th.cache.param) )
     th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
+
     if dump_vtb:
       th.cache.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )
@@ -62,18 +64,15 @@ def run_sim( th, max_cycles=1000, dump_vcd=False, translation='zeros', trace=2,
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
 
-  th.apply( SimulationPass() )
+  th.apply( SimulationPass(print_line_trace=True) )
   th.sim_reset()
-  ncycles  = 0
-  print("")
-  while not th.done() and ncycles < max_cycles:
-    th.tick()
-    print ("{:3d}: {}".format(ncycles, th.line_trace(trace)))
-    ncycles += 1
-  # check timeout
-  assert ncycles < max_cycles
-  th.tick()
-  th.tick()
+  while not th.done() and th.sim_cycle_count() < max_cycles:
+    th.sim_tick()
+ # Check timeout
+  assert th.sim_cycle_count() < max_cycles
+  th.sim_tick()
+  th.sim_tick()
+  th.sim_tick()
 
 #----------------------------------------------------------------------
 # Generate req/response pair from the requests using ref model
@@ -127,9 +126,8 @@ class TestHarness( Component ):
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
-    s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)], latency) # Use our own modified mem
-    s.cache2mem = RecvRTL2SendCL(MemReqType)
-    s.mem2cache = RecvCL2SendRTL(MemRespType)
+    s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)],
+                             stall_prob=stall_prob, latency=latency) # Use our own modified mem
     s.sink  = TestSinkRTL(CacheRespType, sink_msgs, src_delay, sink_delay)
 
     # Set the test signals to better model the processor
@@ -141,10 +139,7 @@ class TestHarness( Component ):
     s.proc_model.cache //= s.cache.mem_minion_ifc
 
     # Connect the cache req and resp ports to test memory
-    connect( s.mem.ifc[0].resp, s.mem2cache.recv )
-    connect( s.cache.mem_master_ifc.resp, s.mem2cache.send )
-    connect( s.cache.mem_master_ifc.req, s.cache2mem.recv )
-    connect( s.mem.ifc[0].req, s.cache2mem.send )
+    s.mem.ifc[0] //= s.cache.mem_master_ifc 
 
   def load( s, addrs, data_ints ):
     for addr, data_int in zip( addrs, data_ints ):
@@ -155,7 +150,7 @@ class TestHarness( Component ):
   def done( s ):
     return s.src.done() and s.sink.done()
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     return s.src.line_trace() + " " + s.cache.line_trace() + " " \
         + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
 
@@ -291,7 +286,7 @@ class MultiCache( Component ):
       s.caches[i].mem_minion_ifc //= s.mem_minion_ifc[i]
       s.caches[i].mem_master_ifc //= s.mem_master_ifc[i]
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     for i in range(s.p.ncaches):
       msg += s.caches[i].line_trace()
 
@@ -320,7 +315,7 @@ class MultiCacheTestHarness( Component ):
   def done( s ):
     return s.proc.done()
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     msg = ''
     # msg += s.cache.line_trace()
     msg += s.proc.line_trace()

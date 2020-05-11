@@ -163,7 +163,7 @@ def amo_mi():
     #    type opq   addr     len data      type opq test len data
     ( 'mi', 0, 0x00000004, 0, -1), ( 'mi', 0, 0,  0,  2 ),
     ( 'rd', 1, 0x00000000, 0, 0),  ( 'rd', 1, 0,  0,  1 ),
-    ( 'rd', 2, 0x00000004, 0, 0),  ( 'rd', 2, 1,  0,  -1 ),
+    ( 'rd', 2, 0x00000004, 0, 0),  ( 'rd', 2, 1,  0,  2 ),
   ]
   return SingleCacheTestParams( msg, amo_mem, associativity=1, bitwidth_mem_data=64, 
                                 bitwidth_cache_data=32 )
@@ -310,9 +310,9 @@ class AmoTests:
     ("64B-2", amo_hypo5, 0,         1,      0,        0   ),
     ("64B-2", amo_hypo6, 0,         1,      0,        0   ),
   ])
-  def test_AMO( s, name, test, dump_vcd, test_verilog, max_cycles, stall_prob, 
-                latency, src_delay, sink_delay, dump_vtb ):
+  def test_AMO( s, name, test, stall_prob, latency, src_delay, sink_delay,
+                cmdline_opts, max_cycles, line_trace ):
     p = test()            
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
-            p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
-            dump_vcd, test_verilog, max_cycles, dump_vtb )
+                p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
+                cmdline_opts, max_cycles, line_trace )

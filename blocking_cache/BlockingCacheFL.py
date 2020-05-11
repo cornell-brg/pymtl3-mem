@@ -65,9 +65,9 @@ AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_AND  : lambda m,a : m&a,
              MemMsgType.AMO_OR   : lambda m,a : m|a,
              MemMsgType.AMO_SWAP : lambda m,a : a,
-             MemMsgType.AMO_MIN  : lambda m,a : m if m.int() < a.int() else a,
+             MemMsgType.AMO_MIN  : lambda m,a : m if m.uint() < a.uint() else a,
              MemMsgType.AMO_MINU : min,
-             MemMsgType.AMO_MAX  : lambda m,a : m if m.int() > a.int() else a,
+             MemMsgType.AMO_MAX  : lambda m,a : m if m.uint() > a.uint() else a,
              MemMsgType.AMO_MAXU : max,
              MemMsgType.AMO_XOR  : lambda m,a : m^a,
            }
@@ -243,7 +243,8 @@ class ModelCache:
       value = self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8]
     else:
       value = self.mem[new_addr][offset*8 : (offset + int(len_))*8 ]
-
+    
+    value = zext(value, self.cache_bitwidth_data)
     self.transactions.append(req (self.CacheReqType, 'rd', opaque, addr, len_, 0))
     self.transactions.append(resp(self.CacheRespType,'rd', opaque, hit,  len_, value))
     self.opaque += 1
@@ -256,9 +257,9 @@ class ModelCache:
     if new_addr not in self.mem:
       self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
     if len_ == 0:
-      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value
+      self.mem[new_addr][offset*8 : (offset+self.cache_bitwidth_data/8)*8] = value[0 : self.cache_bitwidth_data ]
     else:
-      self.mem[new_addr][offset*8 : (offset + int(len_))*8 ] = value
+      self.mem[new_addr][offset*8 : (offset + int(len_))*8] = value[0 : int(len_)*8 ]
 
     self.transactions.append(req (self.CacheReqType, 'wr', opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,'wr', opaque, hit,  len_, 0))
@@ -284,11 +285,16 @@ class ModelCache:
     self.tracker.amo_req(addr)
     new_addr = addr[self.offset_end:32]
     offset = int(addr[self.offset_start:self.offset_end])
-    value = Bits(32, value)
     if new_addr not in self.mem:
       self.mem[new_addr] = Bits(self.mem_bitwidth_data, 0)
     ret = self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8]
-    self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = AMO_FUNS[ int(func) ]( ret, value )
+    
+    value = trunc(value, 32)
+    amo_out = AMO_FUNS[ int(func) ]( ret, value )[0:32]
+    ret = zext( ret, self.cache_bitwidth_data )
+    value = zext( value, self.cache_bitwidth_data )
+    self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = amo_out
+    
     self.transactions.append(req (self.CacheReqType, func, opaque, addr, len_, value))
     self.transactions.append(resp(self.CacheRespType,func, opaque, 0,    len_, ret))
     self.opaque += 1

@@ -14,10 +14,9 @@ from .AmoTests         import AmoTests
 from .InvFlushTests    import InvFlushTests
 
 class CacheFL_Tests( GenericTestCases, InvFlushTests, AmoTests ):
-  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType,
-                MemRespType, associativity=1, cacheSize=512, stall_prob=0,
-                latency=1, src_delay=0, sink_delay=0, dump_vcd=False,
-                test_verilog='zeros', max_cycles=500, trace=2 ):
+  def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
+                associativity, cacheSize, stall_prob, latency, src_delay, 
+                sink_delay, cmdline_opts, max_cycles, trace ):
 
     cache = ModelCache( cacheSize, associativity, 0, CacheReqType, CacheRespType,
                         MemReqType, MemRespType, mem )

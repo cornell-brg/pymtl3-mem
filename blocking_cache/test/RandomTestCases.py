@@ -67,9 +67,9 @@ def random_test_generator( mem, associativity, bitwidth_mem_data, bitwidth_cache
       if types[i] >= MemMsgType.AMO_ADD and types[i] <= MemMsgType.AMO_XOR:
         len_ = 0 if bitwidth_cache_data == 32 else 4
         addr = addr & 0xfffffffc
+        
       else:
         max_len_order = clog2( bitwidth_cache_data//8 )
-        BitsLen = mk_bits( max_len_order )
         if types[i] == MemMsgType.WRITE:
           max_len_order = 2
         len_order = random.randint( 0, max_len_order )
@@ -84,8 +84,12 @@ def random_test_generator( mem, associativity, bitwidth_mem_data, bitwidth_cache
           addr = addr & Bits32(0xfffffff0)
         elif len_ == 32:
           addr = addr & Bits32(0xffffffe0)
-        
-    reqs.append( ( types[i], i, addr, len_, data) )  
+    bitwidth_len = clog2(bitwidth_cache_data >> 3)   
+    len_ = Bits(bitwidth_len, len_, trunc_int=True) 
+    # i = Bits( 8, i, trunc_int=True )
+    # if types[i] >= MemMsgType.AMO_ADD and types[i] <= MemMsgType.AMO_XOR:
+    #   print(f"l:{len_} a:{addr}")
+    reqs.append( ( types[i], Bits( 8, i, trunc_int=True ), addr, len_, data) )  
   reqs = mk_req( tp.CacheReqType, reqs )
 
   tp.msg = gen_req_resp( reqs, tp.mem, tp.CacheReqType, tp.CacheRespType, tp.MemReqType,
@@ -142,9 +146,9 @@ class RandomTests:
     ("4KB",  asso2_size4096_lineb128_datab128,0,         2,      1,        2   ),
     ("4KB",  asso2_size4096_lineb128_datab32, 0,         2,      1,        2   ),
   ])
-  def test_random( s, name, test, dump_vcd, test_verilog, max_cycles,
-                   stall_prob, latency, src_delay, sink_delay, dump_vtb ):
+  def test_random( s, name, test, stall_prob, latency, src_delay, sink_delay,
+                   cmdline_opts, max_cycles, line_trace ):
     p = test()
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
-                p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, dump_vcd,
-                test_verilog, max_cycles, dump_vtb )
+                p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
+                cmdline_opts, max_cycles, line_trace )

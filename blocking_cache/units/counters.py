@@ -21,7 +21,7 @@ class CounterEnRst( Component ):
     s.load_value = InPort ( Type  )
     s.out        = OutPort( Type  )
 
-    @s.update_ff
+    @update_ff
     def counter_ff_logic():
       if s.reset:
         s.out <<= Type( reset_value )
@@ -48,17 +48,17 @@ class CounterUpDown( Component ):
     s.counter = RegRst( Type, reset_value )
     s.out //= s.counter.out
 
-    @s.update
+    @update
     def counter_logic():
-      s.counter.in_ = s.counter.out
+      s.counter.in_ @= s.counter.out
       if s.ld_en:
-        s.counter.in_ = s.ld_amt
+        s.counter.in_ @= s.ld_amt
       else:
         # state remains at 00 and 11
         if s.up_en & (~s.dw_en):
-          s.counter.in_ = s.counter.out + s.up_amt
+          s.counter.in_ @= s.counter.out + s.up_amt
         elif ~s.up_en & s.dw_en:
-          s.counter.in_ = s.counter.out - s.dw_amt
+          s.counter.in_ @= s.counter.out - s.dw_amt
   
   def line_trace( s ):
     msg =''

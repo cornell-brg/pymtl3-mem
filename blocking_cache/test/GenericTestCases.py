@@ -562,9 +562,9 @@ class GenericTestCases:
     ("32B-2", ev_2way,            0.0,       2,      1,        2   ),
     ("4KB-2", long_msg_2way,      0.0,       2,      1,        2   ),
    ])
-  def test_ReadWrite( s, name, test, dump_vcd, test_verilog, max_cycles,
-                   stall_prob, latency, src_delay, sink_delay, dump_vtb):  
+  def test_ReadWrite( s, name, test, stall_prob, latency, src_delay, sink_delay,
+                      cmdline_opts, max_cycles, line_trace ):  
     p = test()
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
                 p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
-                dump_vcd, test_verilog, max_cycles, dump_vtb )
+                cmdline_opts, max_cycles, line_trace )
