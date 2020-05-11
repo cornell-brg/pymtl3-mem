@@ -286,7 +286,7 @@ class MultiCache( Component ):
       s.caches[i].mem_minion_ifc //= s.mem_minion_ifc[i]
       s.caches[i].mem_master_ifc //= s.mem_master_ifc[i]
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     for i in range(s.p.ncaches):
       msg += s.caches[i].line_trace()
 
@@ -315,7 +315,7 @@ class MultiCacheTestHarness( Component ):
   def done( s ):
     return s.proc.done()
 
-  def line_trace( s, trace ):
+  def line_trace( s ):
     msg = ''
     # msg += s.cache.line_trace()
     msg += s.proc.line_trace()

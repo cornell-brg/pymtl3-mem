@@ -119,11 +119,11 @@ class MultiCacheTestCases:
     ("SIMP",  rd_wr_2c,  0.0,       2,      1,        1   ),
     ])
   # defaults to 4 word cache line by importing from sim_utils
-  def test_generic( s, name, test, dump_vcd, test_verilog, max_cycles, line_trace,
-                    stall_prob, latency, src_delay, sink_delay ):
+  def test_generic( s, name, test, stall_prob, latency, src_delay, sink_delay,
+                    cmdline_opts, max_cycles, line_trace ):
     mem = multicache_mem()
     associativities, cache_sizes, msgs = test()
     tp = CacheTestParams( msgs, mem, CacheReqType, CacheRespType, MemReqType,
                           MemRespType, associativities, cache_sizes, stall_prob,
                           latency, src_delay, sink_delay )
-    s.run_test( tp, dump_vcd, test_verilog, max_cycles, line_trace )
+    s.run_test( tp, cmdline_opts, max_cycles, line_trace )

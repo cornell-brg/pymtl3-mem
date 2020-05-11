@@ -48,7 +48,7 @@ class CounterUpDown( Component ):
     s.counter = RegRst( Type, reset_value )
     s.out //= s.counter.out
 
-    @s.update
+    @update
     def counter_logic():
       s.counter.in_ @= s.counter.out
       if s.ld_en:
