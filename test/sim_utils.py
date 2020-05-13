@@ -17,11 +17,9 @@ from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
 from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
 from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
 # from pymtl3.stdlib.cl.MemoryCL       import MemoryCL 
-# from pymtl3.passes.backends.verilog  import (
-#   TranslationImportPass, VerilatorImportConfigs, VerilogPlaceholderPass, VerilogTBGenPass
-# )
+
 from pymtl3.passes.backends.verilog  import (
-  VerilogTBGenPass, TranslationPass, VerilogPlaceholderPass
+  TranslationPass, TranslationImportPass, VerilogPlaceholderPass, VerilogTBGenPass
 )
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -39,16 +37,16 @@ import subprocess
 #---------------------------------------------------------------------
 
 def run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper ):
-  translation = bool(cmdline_opts['test_verilog'])
-  dump_vcd    = bool(cmdline_opts['dump_vcd'])
-  dump_vtb    = bool(cmdline_opts['dump_vtb'])
-  xinit       = cmdline_opts['test_verilog']
-  file_name   = str(th.cache.param) + "__pickled.v"
-  if translation:
+  test_verilog = cmdline_opts['test_verilog']
+  dump_vcd     = cmdline_opts['dump_vcd']
+  dump_vtb     = cmdline_opts['dump_vtb']
+  file_name    = f"{th.cache.param}.v"
+  if test_verilog:
     th.cache.set_metadata( TranslationImportPass.enable, True )
-    th.cache.set_metadata( VerilatorImportPass.vl_xinit, xinit )
+    th.cache.set_metadata( VerilatorImportPass.vl_xinit, test_verilog )
     th.cache.set_metadata( VerilatorImportPass.vl_trace, True if dump_vcd else False )
     th.cache.set_metadata( VerilatorImportPass.vl_trace_filename, dump_vcd )
+    th.cache.set_metadata( TranslationPass.explicit_file_name, str(th.cache.param) )
     th.cache.set_metadata( TranslationPass.explicit_module_name, str(th.cache.param) )
     th.apply( VerilogPlaceholderPass() )
     th = TranslationImportPass()( th )
@@ -302,7 +300,8 @@ class MultiCacheTestHarness( Component ):
     s.mem   = CiferMemoryCL( p.ncaches, [(p.MemReqType, p.MemRespType)]*p.ncaches, latency=p.latency )
     for i in range( p.ncaches ):
       connect( s.proc.mem_master_ifc[i],  s.cache.mem_minion_ifc[i] )
-      connect( s.cache.mem_master_ifc[i], s.mem.ifc[i]              )
+      # connect( s.cache.mem_master_ifc[i], s.mem.ifc[i]              )
+      s.cache.mem_master_ifc[i] //= s.mem.ifc[i]       
 
   def load( s ):
     addrs = s.tp.mem[::2]

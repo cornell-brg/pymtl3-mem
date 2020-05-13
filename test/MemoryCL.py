@@ -12,8 +12,7 @@ Date   : Mar 12, 2018
 """
 
 from pymtl3 import *
-# from pymtl3.stdlib.fl import MemoryFL
-from .MemoryFL import MemoryFL
+from pymtl3.stdlib.fl import MemoryFL
 from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
 from pymtl3.stdlib.ifcs.mem_ifcs import MemMinionIfcCL
 from pymtl3.stdlib.cl.DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
@@ -124,6 +123,7 @@ class MemoryCL( Component ):
               resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
 
           else: # AMOS
+            # Assume AMO operations are always a word
             amo_result = s.mem.amo( req.type_, req.addr, len_, req.data[0:32] )
             resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0,
               zext(amo_result, data_nbits) )

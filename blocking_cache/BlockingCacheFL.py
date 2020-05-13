@@ -65,9 +65,9 @@ AMO_FUNS = { MemMsgType.AMO_ADD  : lambda m,a : m+a,
              MemMsgType.AMO_AND  : lambda m,a : m&a,
              MemMsgType.AMO_OR   : lambda m,a : m|a,
              MemMsgType.AMO_SWAP : lambda m,a : a,
-             MemMsgType.AMO_MIN  : lambda m,a : m if m.uint() < a.uint() else a,
+             MemMsgType.AMO_MIN  : lambda m,a : m if m.int() < a.int() else a,
              MemMsgType.AMO_MINU : min,
-             MemMsgType.AMO_MAX  : lambda m,a : m if m.uint() > a.uint() else a,
+             MemMsgType.AMO_MAX  : lambda m,a : m if m.int() > a.int() else a,
              MemMsgType.AMO_MAXU : max,
              MemMsgType.AMO_XOR  : lambda m,a : m^a,
            }
@@ -290,7 +290,7 @@ class ModelCache:
     ret = self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8]
     
     value = trunc(value, 32)
-    amo_out = AMO_FUNS[ int(func) ]( ret, value )[0:32]
+    amo_out = AMO_FUNS[ int(func) ]( ret, value )
     ret = zext( ret, self.cache_bitwidth_data )
     value = zext( value, self.cache_bitwidth_data )
     self.mem[new_addr.int()][offset * 8 : (offset + 4) * 8] = amo_out

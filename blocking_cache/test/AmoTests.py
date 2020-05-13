@@ -161,9 +161,9 @@ def amo_sw():
 def amo_mi():
   msg =  [
     #    type opq   addr     len data      type opq test len data
-    ( 'mi', 0, 0x00000004, 0, -1), ( 'mi', 0, 0,  0,  2 ),
+    ( 'mi', 0, 0x00000004, 0, -1), ( 'mi', 0, 0,  0,  2 ), # AMO_MIN is signed!
     ( 'rd', 1, 0x00000000, 0, 0),  ( 'rd', 1, 0,  0,  1 ),
-    ( 'rd', 2, 0x00000004, 0, 0),  ( 'rd', 2, 1,  0,  2 ),
+    ( 'rd', 2, 0x00000004, 0, 0),  ( 'rd', 2, 1,  0,  -1 ),
   ]
   return SingleCacheTestParams( msg, amo_mem, associativity=1, bitwidth_mem_data=64, 
                                 bitwidth_cache_data=32 )

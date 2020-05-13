@@ -22,12 +22,12 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
                 associativity, cacheSize, stall_prob, latency, src_delay, 
                 sink_delay, cmdline_opts, max_cycles, trace ):
 
-    harness = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
+    th = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
                            src_delay, sink_delay, BlockingCacheRTL,
                            CacheReqType, CacheRespType, MemReqType,
                            MemRespType, cacheSize, associativity )
-    harness.elaborate()
+    th.elaborate()
     if mem != None:
-      harness.load( mem[::2], mem[1::2] )
-    sram_wrapper = True if cacheSize == 4096 else False
-    run_sim( harness, cmdline_opts, max_cycles, trace, sram_wrapper )
+      th.load( mem[::2], mem[1::2] )
+    sram_wrapper = True if cacheSize == 4096 else False    
+    run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper )

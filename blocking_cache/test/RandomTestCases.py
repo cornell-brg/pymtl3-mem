@@ -119,10 +119,16 @@ def asso2_size64_lineb128_datab128():
   return random_test_generator(random_memory, 2, 128, 128, 64, 500)
 
 def asso2_size4096_lineb128_datab128():
-  return random_test_generator(random_memory, 2, 128, 128, 4096, 100)
+  return random_test_generator(random_memory, 2, 128, 128, 4096, 200)
 
 def asso2_size4096_lineb128_datab32():
-  return random_test_generator(random_memory, 2, 128, 32, 4096, 100)
+  return random_test_generator(random_memory, 2, 128, 32, 4096, 200)
+
+def dmap_size4096_lineb128_datab128():
+  return random_test_generator(random_memory, 1, 128, 128, 4096, 200)
+
+def dmap_size4096_lineb128_datab32():
+  return random_test_generator(random_memory, 1, 128, 32, 4096, 200)
 
 #-------------------------------------------------------------------------
 # Test driver
@@ -138,6 +144,10 @@ class RandomTests:
     ("64B",  asso2_size64_lineb128_datab128,  0,         1,      0,        0   ),
     ("4KB",  asso2_size4096_lineb128_datab128,0,         1,      0,        0   ),
     ("4KB",  asso2_size4096_lineb128_datab32, 0,         1,      0,        0   ),
+    ("4KB",  dmap_size4096_lineb128_datab128, 0,         1,      0,        0   ),
+    ("4KB",  dmap_size4096_lineb128_datab32,  0,         1,      0,        0   ),
+    ("4KB",  dmap_size4096_lineb128_datab128, 0,         2,      1,        2   ),
+    ("4KB",  dmap_size4096_lineb128_datab32,  0,         2,      1,        2   ),
     ("16B",  dmap_size16_lineb64_datab32,     0,         2,      1,        2   ),
     ("32B",  dmap_size32_lineb128_datab64,    0,         2,      1,        2   ),
     ("32B",  dmap_size32_lineb128_datab128,   0,         2,      1,        2   ),
