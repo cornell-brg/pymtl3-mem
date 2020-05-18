@@ -1,4 +1,3 @@
-
 module SramGenericPRTL
  #(parameter num_bits=128 , parameter num_words=256)
 (
@@ -66,12 +65,12 @@ module SramGenericPRTL
   assign ret1n = 1'd1;
   assign se = 1'd0;
   assign si = 2'd0;
-  assign ta = 8'd0;
+  assign ta = {$clog2(num_words){1'b0}}; //8'd0;
   assign tcen = 1'd0;
-  assign td = 128'd0;
+  assign td = {num_bits{1'b0}}; //128'd0;
   assign ten = 1'd1;
   assign tgwen = 1'd0;
-  assign twen = 128'd0;
+  assign twen = {num_bits{1'b0}}; //128'd0;
 
   assign brg_ceny = ceny;
   assign brg_weny = weny;
@@ -99,6 +98,11 @@ module SramGenericPRTL
     gf14_sram_128x32_m2 sram_128x32 (.ceny(ceny), .gweny(gweny), .ay(ay), .weny(weny), .q(q), .so(so), .clk(clk), .cen(cen), .gwen(gwen), .a(a), .d(d), .wen(~wen), .stov(1'b0), .ema(ema), 
     .emaw(emaw), .emas(emas), .ten(ten), .tcen(tcen), .tgwen(tgwen), .ta(7'd0), .td(32'd0), .twen(32'd0), .si(si), .se(se), .dftrambyp(dftrambyp), .ret1n(ret1n));
   end
+ else if ((num_bits==26) && (num_words==128)) begin
+    gf14_sram_128x26_m2 sram_128x26 (.ceny(ceny), .gweny(gweny), .ay(ay), .weny(weny), .q(q), .so(so), .clk(clk), .cen(cen), .gwen(gwen), .a(a), .d(d), .wen(~wen), .stov(1'b0), .ema(ema),
+    .emaw(emaw), .emas(emas), .ten(ten), .tcen(tcen), .tgwen(tgwen), .ta(7'd0), .td(26'd0), .twen(26'd0), .si(si), .se(se), .dftrambyp(dftrambyp), .ret1n(ret1n));
+  end
+
   else begin
   // Do not find a hard SRAM, then use the behavioral model
   logic [num_bits-1:0] dout_next;
@@ -320,6 +324,76 @@ module gf14_sram_128x32_m2 (ceny, gweny, ay, weny, q, so, clk, cen, gwen, a, d, 
     end
     else
       dout_next = 32'd0;
+  end
+
+  always_comb begin : write_logic
+    for ( int i = 0; i < __const__num_words_at_write_logic; i += 1 )
+      ram_next[i] = ram[i];
+    for ( int i = 0; i < __const__num_bits_at_write_logic; i += 1 )
+      if ( ( !cen ) && ( !gwen ) && (!wen[i]) ) begin
+        ram_next[a][i] = d[i];
+      end
+  end
+
+  always_ff @(posedge clk) begin : update_sram
+    q <= dout_next;
+    if ( ( !cen ) && ( !gwen ) ) begin
+      for ( int i = 0; i < __const__num_words_at_update_sram; i += 1 )
+        ram[i] <= ram_next[i];
+    end
+  end
+
+// synopsys translate_on
+endmodule
+
+module gf14_sram_128x26_m2 (ceny, gweny, ay, weny, q, so, clk, cen, gwen, a, d, wen,
+    stov, ema, emaw, emas, ten, tcen, tgwen, ta, td, twen, si, se, dftrambyp, ret1n);
+
+  output  ceny;
+  output  gweny;
+  output [6:0] ay;
+  output [25:0] weny;
+  output [25:0] q;
+  output [1:0] so;
+  input  clk;
+  input  cen;
+  input  gwen;
+  input [6:0] a;
+  input [25:0] d;
+  input [25:0] wen;
+  input  stov;
+  input [2:0] ema;
+  input [1:0] emaw;
+  input  emas;
+  input  ten;
+  input  tcen;
+  input  tgwen;
+  input [6:0] ta;
+  input [25:0] td;
+  input [25:0] twen;
+  input [1:0] si;
+  input  se;
+  input  dftrambyp;
+  input  ret1n;
+
+
+// synopsys translate_off
+  localparam logic [31:0] __const__num_words_at_write_logic  = 32'd128;
+  localparam logic [31:0] __const__num_bits_at_write_logic  = 32'd26;
+  localparam logic [31:0] __const__num_words_at_update_sram  = 32'd128;
+  logic [25:0] dout;
+  logic [25:0] dout_next;
+  logic [25:0] ram [0:127];
+  logic [25:0] ram_next [0:127];
+  reg [25:0] q;
+
+
+  always_comb begin : read_logic
+    if ( ( !cen ) && gwen ) begin
+      dout_next = ram[a];
+    end
+    else
+      dout_next = 26'd0;
   end
 
   always_comb begin : write_logic

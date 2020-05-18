@@ -82,6 +82,7 @@ def mk_ctrl_signals_struct( p ):
     'flush_idx_mux_sel_M1'  : Bits1,
     'dirty_evict_mask_M1'   : p.BitsDirty,
     'wben_cmd_M1'           : Bits2,
+    'tag_processing_en_M1'  : Bits1,
 
     # M2 Ctrl Signals
     'reg_en_M2'             : Bits1,

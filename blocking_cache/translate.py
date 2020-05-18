@@ -57,9 +57,9 @@ def replace_sram( file_name ):
         new_line = line.replace( "SramGenericPRTL__num_bits_128__num_words_256 sram",
                                  "SramGenericPRTL #(.num_bits(128) , .num_words(256)) sram" )
         print( new_line, end='' )
-      elif "SramGenericPRTL__num_bits_32__num_words_128 sram" in line.rstrip('\r\n'):
-        new_line = line.replace( "SramGenericPRTL__num_bits_32__num_words_128 sram",
-                                 "SramGenericPRTL #(.num_bits(32) , .num_words(128)) sram" )
+      elif "SramGenericPRTL__num_bits_26__num_words_128 sram" in line.rstrip('\r\n'):
+        new_line = line.replace( "SramGenericPRTL__num_bits_26__num_words_128 sram",
+                                 "SramGenericPRTL #(.num_bits(26) , .num_words(128)) sram" )
         print( new_line, end='' )
       else:
         print( line, end='' )
@@ -79,6 +79,8 @@ def main( opts ):
   file_name = module_name + ".v"
   
   dut.set_metadata( TranslationPass.enable, True )
+  dut.set_metadata( TranslationPass.explicit_file_name, module_name )
+  dut.set_metadata( TranslationPass.explicit_module_name, module_name )
   # dut.verilog_translate = True
   # dut.config_verilog_translate = TranslationConfigs(
   #     explicit_module_name = module_name,

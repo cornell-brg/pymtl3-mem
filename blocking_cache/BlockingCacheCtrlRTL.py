@@ -580,6 +580,9 @@ class BlockingCacheCtrlRTL ( Component ):
     m.in_ //= s.ostall_M2
     s.evict_bypass = Wire( Bits1 )
 
+    s.ctrl.tag_processing_en_M1 //= lambda: ((~s.is_evict_M2.out) & 
+                                             (s.trans_M1.out!=TRANS_TYPE_INVALID)) 
+
     #---------------------------------------------------------------------
     # M1 control signal table
     #---------------------------------------------------------------------
@@ -707,7 +710,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_START:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_WAIT:   s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_WRITE:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif ~s.memreq_rdy|~s.cacheresp_rdy:         s.cs2 @= concat( n,       b1(0),    y,     READ,       n,     n        )
+      elif ~s.memreq_rdy|~s.cacheresp_rdy:            s.cs2 @= concat( n,       b1(0),    y,     READ,       n,     n        )
       elif s.trans_M2.out == TRANS_TYPE_FLUSH_READ:   s.cs2 @= concat( n,       b1(0),    n,     WRITE,      flush, n        )
       elif s.is_evict_M2.out:                         s.cs2 @= concat( n,       b1(0),    n,     WRITE,      y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_READ:  s.cs2 @= concat( y,       b1(0),    n,     READ,       n,     y        )
@@ -853,7 +856,7 @@ class BlockingCacheCtrlRTL ( Component ):
     pipeline = stage1 + stage2 + stage3
 
     add_msgs = ''
-    # add_msgs += f'en:{s.memreq_rdy} '
+    # add_msgs += f'ev:{s.is_evict_M2.out} '
     # add_msgs += f'cn:{s.counter_M0.out} fsb:{s.has_flush_sent_M1_bypass} fd:{s.prev_flush_done_M0}'
 
     return pipeline + add_msgs

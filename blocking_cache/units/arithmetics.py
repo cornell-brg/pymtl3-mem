@@ -272,7 +272,7 @@ class WriteBitEnGen( Component ):
 class TagArrayRDataProcessUnit( Component ):
 
   def construct(s, p):
-
+    s.en        = InPort()
     s.addr_tag  = InPort( p.BitsTag )
     s.tag_array = [ InPort( p.StructTagArray ) for _ in range( p.associativity ) ]
     s.is_init   = InPort ()
@@ -297,18 +297,19 @@ class TagArrayRDataProcessUnit( Component ):
     @update
     def line_dirty_logic():
       s.line_dirty @= BitsAssoc( 0 )
-      # OR all the wires together to see if a line is dirty
-      for i in range( associativity ):
-        for j in range( bitwidth_dirty ):
-          if s.tag_array[i].dty[j]:
-            s.line_dirty[i] @= y
+      if s.en:
+        # OR all the wires together to see if a line is dirty
+        for i in range( associativity ):
+          for j in range( bitwidth_dirty ):
+            if s.tag_array[i].dty[j]:
+              s.line_dirty[i] @= y
 
     @update
     def comparing_logic():
       s.hit       @= n
       s.inval_hit @= n
       s.hit_way   @= BitsAssoclog2(0)
-      if ~s.is_init:
+      if (~s.is_init) & s.en:
         for i in range( associativity ):
           if s.tag_array[i].val == CACHE_LINE_STATE_VALID:
             if s.tag_array[i].tag == s.addr_tag:

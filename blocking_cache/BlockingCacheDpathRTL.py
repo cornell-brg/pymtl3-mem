@@ -174,7 +174,7 @@ class BlockingCacheDpathRTL (Component):
     m.wdata //= s.ctrl.ctrl_bit_rep_wr_M0
     m.wen   //= s.ctrl.ctrl_bit_rep_en_M1
   
-    # Tag arrays
+    # Tag arrays instantiations
     s.tag_arrays_M1 = [ SramPRTL( p.bitwidth_tag_array, p.nblocks_per_way ) 
                         for _ in range(p.associativity) ]
     for i, m in enumerate( s.tag_arrays_M1 ):
@@ -184,7 +184,7 @@ class BlockingCacheDpathRTL (Component):
       m.port0_wdata //= s.tag_array_wdata_M0
       m.port0_wben  //= s.ctrl.tag_array_wben_M0
 
-    # Saves output of the SRAM during stall
+    # Saves output of the SRAM during stall 
     s.tag_array_rdata_M1 = [ StallEngine( p.StructTagArray ) for _ in range(p.associativity) ]
     for i, m in enumerate( s.tag_array_rdata_M1 ):
       m.in_ //= lambda: s.tag_arrays_M1[i].port0_rdata
@@ -228,6 +228,7 @@ class BlockingCacheDpathRTL (Component):
     m.offset     //= s.cachereq_M1.out.addr.offset
     m.line_dirty //= s.status.ctrl_bit_dty_rd_line_M1
     m.word_dirty //= s.status.ctrl_bit_dty_rd_word_M1
+    m.en         //= s.ctrl.tag_processing_en_M1
     for i in range( p.associativity ):
       m.tag_array[i] //= s.tag_array_rdata_M1[i].out
 
@@ -370,5 +371,5 @@ class BlockingCacheDpathRTL (Component):
     msg = ""
     # msg+= s.tag_array_PU.line_trace()
     # msg+= f'tw[{s.tag_array_struct_M0}] tr[{s.tag_arrays_M1[0].port0_rdata}]'
-    # msg+= f'req[{s.MSHR_dealloc_out.addr}] '
+    msg+= f'tpu[{s.ctrl.tag_processing_en_M1}] '
     return msg
