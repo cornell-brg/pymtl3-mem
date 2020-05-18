@@ -20,7 +20,7 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 associativity, cacheSize, stall_prob, latency, src_delay, 
-                sink_delay, cmdline_opts, max_cycles, trace ):
+                sink_delay, cmdline_opts, trace ):
 
     th = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
                            src_delay, sink_delay, BlockingCacheRTL,
@@ -30,4 +30,4 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
     if mem != None:
       th.load( mem[::2], mem[1::2] )
     sram_wrapper = True if cacheSize == 4096 else False    
-    run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper )
+    run_sim( th, cmdline_opts, trace, sram_wrapper )

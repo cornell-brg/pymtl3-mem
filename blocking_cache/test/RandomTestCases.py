@@ -157,8 +157,8 @@ class RandomTests:
     ("4KB",  asso2_size4096_lineb128_datab32, 0,         2,      1,        2   ),
   ])
   def test_random( s, name, test, stall_prob, latency, src_delay, sink_delay,
-                   cmdline_opts, max_cycles, line_trace ):
+                   cmdline_opts, line_trace ):
     p = test()
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
                 p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
-                cmdline_opts, max_cycles, line_trace )
+                cmdline_opts, line_trace )

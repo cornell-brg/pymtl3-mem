@@ -94,7 +94,7 @@ def gen_reqs( draw, addr_min, addr_max, clw, dbw ):
 class HypothesisTests:
   def hypothesis_test_harness( s, associativity, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, min_trans, cmdline_opts, 
-                               max_cycles, line_trace ):
+                               line_trace ):
     cacheSize = (clw * associativity * num_blocks) // 8
     addr_min = 0
     addr_max = int( cacheSize // 4 * 2 * associativity )
@@ -129,7 +129,7 @@ class HypothesisTests:
     # Prepare RTL test harness
     s.run_test( msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
                 associativity, cacheSize, stall_prob, latency, src_delay, sink_delay,
-                cmdline_opts, max_cycles, line_trace )
+                cmdline_opts, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 75 )
   @hypothesis.given(
@@ -142,17 +142,17 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 5 )
   )
   # def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
-  #                               src_delay, sink_delay, cmdline_opts, max_cycles, 
+  #                               src_delay, sink_delay, cmdline_opts, 
   #                               line_trace ):
   def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, latency, 
-                                src_delay, sink_delay, cmdline_opts, max_cycles, 
+                                src_delay, sink_delay, cmdline_opts, 
                                 line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
     stall_prob = 0
     s.hypothesis_test_harness( 2, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts,
-                               max_cycles, line_trace )
+                               line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 75 )
   @hypothesis.given(
@@ -165,17 +165,17 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 5 )
   )
   # def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
-  #                                  src_delay, sink_delay, cmdline_opts, max_cycles, 
+  #                                  src_delay, sink_delay, cmdline_opts, 
   #                                  line_trace ):
   def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, latency, 
-                                   src_delay, sink_delay, cmdline_opts, max_cycles, 
+                                   src_delay, sink_delay, cmdline_opts, 
                                    line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
     stall_prob = 0
     s.hypothesis_test_harness( 1, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts, 
-                               max_cycles, line_trace )
+                               line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 100 )
   @hypothesis.given(
@@ -186,9 +186,9 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 2 )
   )
   def test_hypothesis_2way_size64_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, max_cycles, line_trace ):
+                                          cmdline_opts, line_trace ):
     s.hypothesis_test_harness( 2, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               2, cmdline_opts, max_cycles, line_trace )
+                               2, cmdline_opts, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 100 )
   @hypothesis.given(
@@ -199,6 +199,6 @@ class HypothesisTests:
     sink_delay   = st.integers( 0, 2 )
   )
   def test_hypothesis_dmapped_size32_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, max_cycles, line_trace ):
+                                          cmdline_opts, line_trace ):
     s.hypothesis_test_harness( 1, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
-                               2, cmdline_opts, max_cycles, line_trace )
+                               2, cmdline_opts, line_trace )

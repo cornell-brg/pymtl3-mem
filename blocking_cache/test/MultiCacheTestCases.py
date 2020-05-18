@@ -120,10 +120,10 @@ class MultiCacheTestCases:
     ])
   # defaults to 4 word cache line by importing from sim_utils
   def test_generic( s, name, test, stall_prob, latency, src_delay, sink_delay,
-                    cmdline_opts, max_cycles, line_trace ):
+                    cmdline_opts, line_trace ):
     mem = multicache_mem()
     associativities, cache_sizes, msgs = test()
     tp = CacheTestParams( msgs, mem, CacheReqType, CacheRespType, MemReqType,
                           MemRespType, associativities, cache_sizes, stall_prob,
                           latency, src_delay, sink_delay )
-    s.run_test( tp, cmdline_opts, max_cycles, line_trace )
+    s.run_test( tp, cmdline_opts, line_trace )

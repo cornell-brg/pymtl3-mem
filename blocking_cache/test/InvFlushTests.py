@@ -375,8 +375,8 @@ class InvFlushTests:
     ("TMP",  hypo_test,             0,         1,      0,        0   ),
   ])
   def test_InvFlush( s, name, test, stall_prob, latency, src_delay, sink_delay,
-                     cmdline_opts, max_cycles, line_trace ):
+                     cmdline_opts, line_trace ):
     p = test()            
     s.run_test( p.msg, p.mem, p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType, 
                 p.associativity, p.size, stall_prob, latency, src_delay, sink_delay, 
-                cmdline_opts, max_cycles, line_trace )
+                cmdline_opts, line_trace )

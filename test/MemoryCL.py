@@ -86,7 +86,7 @@ class MemoryCL( Component ):
 
     data_nbits = req_classes[i].data_nbits
 
-    @update
+    @update_once
     def up_mem():
 
       for i in range(s.nports):

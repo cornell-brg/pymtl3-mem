@@ -36,10 +36,13 @@ import subprocess
 # Run the simulation
 #---------------------------------------------------------------------
 
-def run_sim( th, cmdline_opts, max_cycles, trace, sram_wrapper ):
+def run_sim( th, cmdline_opts, trace, sram_wrapper ):
   test_verilog = cmdline_opts['test_verilog']
   dump_vcd     = cmdline_opts['dump_vcd']
   dump_vtb     = cmdline_opts['dump_vtb']
+  max_cycles   = cmdline_opts['max_cycles']
+  if max_cycles == 'inf':
+    max_cycles = 10000
   file_name    = f"{th.cache.param}.v"
   if test_verilog:
     th.cache.set_metadata( TranslationImportPass.enable, True )
