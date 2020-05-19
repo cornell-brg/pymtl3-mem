@@ -580,8 +580,12 @@ class BlockingCacheCtrlRTL ( Component ):
     m.in_ //= s.ostall_M2
     s.evict_bypass = Wire( Bits1 )
 
-    s.ctrl.tag_processing_en_M1 //= lambda: ((~s.is_evict_M2.out) & 
-                                             (s.trans_M1.out!=TRANS_TYPE_INVALID)) 
+    s.ctrl.tag_processing_en_M1 //= lambda:( (~s.is_evict_M2.out) & 
+                                             ((s.trans_M1.out==TRANS_TYPE_READ_REQ) |  
+                                             (s.trans_M1.out==TRANS_TYPE_WRITE_REQ) |  
+                                             (s.trans_M1.out==TRANS_TYPE_AMO_REQ) |  
+                                             (s.trans_M1.out==TRANS_TYPE_FLUSH_READ) ) 
+                                            ) 
 
     #---------------------------------------------------------------------
     # M1 control signal table
@@ -616,7 +620,7 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.trans_M1.out == TRANS_TYPE_INV_START:    s.cs1 @= concat( none, x , n,      n,     b1(0),    y       )
       elif s.trans_M1.out == TRANS_TYPE_INV_WRITE:    s.cs1 @= concat( none, x , n,      n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_FLUSH_START:  s.cs1 @= concat( none, x , n,      n,     b1(0),    y       )
-      elif s.trans_M1.out == TRANS_TYPE_FLUSH_READ:   s.cs1 @= concat( none, x , flush,  n,     b1(1),    n       )
+      elif s.trans_M1.out == TRANS_TYPE_FLUSH_READ:   s.cs1 @= concat( none, rd, flush,  n,     b1(1),    n       )
       elif s.trans_M1.out == TRANS_TYPE_FLUSH_WAIT:   s.cs1 @= concat( none, x , n,      n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_FLUSH_WRITE:  s.cs1 @= concat( none, x , n,      n,     b1(0),    n       )
       elif s.trans_M1.out == TRANS_TYPE_REPLAY_FLUSH: s.cs1 @= concat( none, x , n,      n,     b1(0),    n       )
@@ -700,32 +704,33 @@ class BlockingCacheCtrlRTL ( Component ):
     @update
     def cs_table_M2():
       flush = s.has_flush_sent_M2.out
+      fl_sel = b1(0) if flush else b1(1)
       #                                                                dsize_en|rdata_mux|ostall|memreq_type|memreq|cacheresp
-      s.cs2                                                 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_INV_START:    s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_INV_WRITE:    s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_CLEAN_HIT:    s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_FLUSH_START:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_FLUSH_WAIT:   s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_FLUSH_WRITE:  s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     n        )
-      elif ~s.memreq_rdy|~s.cacheresp_rdy:            s.cs2 @= concat( n,       b1(0),    y,     READ,       n,     n        )
-      elif s.trans_M2.out == TRANS_TYPE_FLUSH_READ:   s.cs2 @= concat( n,       b1(0),    n,     WRITE,      flush, n        )
+      s.cs2                                                 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      if   s.trans_M2.out == TRANS_TYPE_INVALID:      s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_CACHE_INIT:   s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_INV_START:    s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_INV_WRITE:    s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_CLEAN_HIT:    s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_FLUSH_START:  s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_FLUSH_WAIT:   s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_FLUSH_WRITE:  s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     n        )
+      elif ~s.memreq_rdy|~s.cacheresp_rdy:            s.cs2 @= concat( n,       b1(1),    y,     READ,       n,     n        )
+      elif s.trans_M2.out == TRANS_TYPE_FLUSH_READ:   s.cs2 @= concat( n,      fl_sel,    n,     WRITE,      flush, n        )
       elif s.is_evict_M2.out:                         s.cs2 @= concat( n,       b1(0),    n,     WRITE,      y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_READ:  s.cs2 @= concat( y,       b1(0),    n,     READ,       n,     y        )
-      elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: s.cs2 @= concat( n,       b1(0),    n,     WRITE,      n,     y        )
+      elif s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE: s.cs2 @= concat( n,       b1(1),    n,     WRITE,      n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_REPLAY_AMO:   s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     y        )
-      elif s.trans_M2.out == TRANS_TYPE_REPLAY_INV:   s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     y        )
-      elif s.trans_M2.out == TRANS_TYPE_REPLAY_FLUSH: s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     y        )
-      elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     y        )
+      elif s.trans_M2.out == TRANS_TYPE_REPLAY_INV:   s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     y        )
+      elif s.trans_M2.out == TRANS_TYPE_REPLAY_FLUSH: s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     y        )
+      elif s.trans_M2.out == TRANS_TYPE_INIT_REQ:     s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     y        )
       elif s.trans_M2.out == TRANS_TYPE_AMO_REQ:      s.cs2 @= concat( n,       b1(1),    n,     AMO,        y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_READ_REQ:
         if    s.ctrl.hit_M2[0]:                       s.cs2 @= concat( y,       b1(0),    n,     READ,       n,     y        )
-        elif ~s.ctrl.hit_M2[0]:                       s.cs2 @= concat( n,       b1(0),    n,     READ,       y,     n        )
+        elif ~s.ctrl.hit_M2[0]:                       s.cs2 @= concat( n,       b1(1),    n,     READ,       y,     n        )
       elif s.trans_M2.out == TRANS_TYPE_WRITE_REQ:
-        if  s.ctrl.hit_M2[0]:                         s.cs2 @= concat( n,       b1(0),    n,     READ,       n,     y        )
-        elif ~s.ctrl.hit_M2[0]:                       s.cs2 @= concat( n,       b1(0),    n,     READ,       y,     n        )
+        if  s.ctrl.hit_M2[0]:                         s.cs2 @= concat( n,       b1(1),    n,     READ,       n,     y        )
+        elif ~s.ctrl.hit_M2[0]:                       s.cs2 @= concat( n,       b1(1),    n,     READ,       y,     n        )
 
       s.ctrl.data_size_mux_en_M2  @= s.cs2[ CS_data_size_mux_en_M2  ]
       s.ctrl.read_data_mux_sel_M2 @= s.cs2[ CS_read_data_mux_sel_M2 ]

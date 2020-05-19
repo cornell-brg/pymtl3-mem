@@ -98,9 +98,8 @@ class BlockingCacheDpathRTL (Component):
     m.sel    //= s.ctrl.wdata_mux_sel_M0
     m.out    //= s.cachereq_M0.data
 
-    s.tag_entries_M1_bypass = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
-    s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
 
+    s.hit_way_M1_bypass = Wire( p.BitsAssoclog2 )
     # Update tag-array entry
     s.update_tag_way_mux_M0 = m = OptimizedMux( p.BitsAssoclog2, 2 )
     m.in_[0] //= s.hit_way_M1_bypass
@@ -114,6 +113,7 @@ class BlockingCacheDpathRTL (Component):
     m.cmd        //= s.ctrl.update_tag_cmd_M0
     m.refill_dty //= s.MSHR_dealloc_out.dirty_bits
     
+    s.tag_entries_M1_bypass = [ Wire( p.StructTagArray ) for _ in range( p.associativity ) ]
     for i in range( p.associativity ):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
 
@@ -189,8 +189,6 @@ class BlockingCacheDpathRTL (Component):
     for i, m in enumerate( s.tag_array_rdata_M1 ):
       m.in_ //= lambda: s.tag_arrays_M1[i].port0_rdata
       m.en  //= s.ctrl.stall_reg_en_M1
-      # Bypass the current tag-array entries to M0
-      m.out //= s.tag_entries_M1_bypass[i]
 
     # An one-entry MSHR for holding the cache request during a miss
     s.MSHR_alloc_in = Wire( p.MSHRMsg )
@@ -203,9 +201,8 @@ class BlockingCacheDpathRTL (Component):
     s.MSHR_alloc_in.repl    //= s.ctrl.way_offset_M1
     s.MSHR_alloc_in_amo_hit_bypass = Wire( p.StructHit )
     s.MSHR_alloc_in.amo_hit //= s.MSHR_alloc_in_amo_hit_bypass.hit
-    s.MSHR_alloc_in.dirty_bits //= lambda: (
-      s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty &
-      s.ctrl.dirty_evict_mask_M1 )
+    s.write_mask_M1 = Wire( p.BitsDirty )
+    s.MSHR_alloc_in.dirty_bits //= lambda: ( s.write_mask_M1 & s.ctrl.dirty_evict_mask_M1 )
 
     # s.MSHR_alloc_id = Wire( p.BitsOpaque )
     s.mshr = m = MSHR( p, 1 )
@@ -219,6 +216,7 @@ class BlockingCacheDpathRTL (Component):
     m.dealloc_out //= s.MSHR_dealloc_out
 
     # Combined comparator set for both dirty line detection and hit detection
+    # It has an enable to so it doesn't always look at the output of the sram
     s.tag_array_PU = m = TagArrayRDataProcessUnit( p )
     m.addr_tag   //= s.cachereq_M1.out.addr.tag
     m.is_init    //= s.ctrl.is_init_M1
@@ -229,10 +227,16 @@ class BlockingCacheDpathRTL (Component):
     m.line_dirty //= s.status.ctrl_bit_dty_rd_line_M1
     m.word_dirty //= s.status.ctrl_bit_dty_rd_word_M1
     m.en         //= s.ctrl.tag_processing_en_M1
+    
+    # Send the output of tag array sram into the processing unit
     for i in range( p.associativity ):
       m.tag_array[i] //= s.tag_array_rdata_M1[i].out
+      
+      # Bypass the current tag-array entries to M0
+      s.tag_entries_M1_bypass[i] //= m.tag_entires[i]
 
     s.hit_way_M1_bypass //= s.tag_array_PU.hit_way
+    s.write_mask_M1 //= lambda: s.tag_array_PU.tag_entires[s.ctrl.way_offset_M1].dty
 
     # stall engine to save the hit bit into the MSHR for AMO operations only
     StructHit = p.StructHit
@@ -241,9 +245,6 @@ class BlockingCacheDpathRTL (Component):
                                  s.tag_array_PU.hit_way )
     m.en  //= s.ctrl.hit_stall_eng_en_M1
     m.out //= s.MSHR_alloc_in_amo_hit_bypass
-
-    s.write_mask_M1 = Wire( p.BitsDirty )
-    s.write_mask_M1 //= lambda: s.tag_array_rdata_M1[s.ctrl.way_offset_M1].out.dty
 
     # Mux for choosing which way to evict
     s.evict_way_mux_M1 = m = Mux( p.BitsTag, p.associativity )
@@ -353,23 +354,23 @@ class BlockingCacheDpathRTL (Component):
     def memreq_addr_bits_to_bitstruct():
       s.memreq_addr_bits @= s.memreq_addr_out
 
-    s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.type_   //= s.ctrl.memreq_type
-    s.memreq_M2.data    //= s.read_data_mux_M2.out
+    s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
+    s.memreq_M2.addr    //= s.memreq_addr_bits
     s.memreq_M2.len     //= s.mem_req_off_len_M2.len_o
     s.memreq_M2.wr_mask //= s.write_mask_M2.out
-    s.memreq_M2.addr    //= s.memreq_addr_bits
+    s.memreq_M2.data    //= s.read_data_mux_M2.out
 
     # Construct the cacheresp signal
-    s.cacheresp_M2.data   //= s.data_size_mux_M2.out
     s.cacheresp_M2.type_  //= s.cachereq_M2.out.type_
-    s.cacheresp_M2.len    //= s.cachereq_M2.out.len
     s.cacheresp_M2.opaque //= s.cachereq_M2.out.opaque
     s.cacheresp_M2.test   //= s.ctrl.hit_M2
+    s.cacheresp_M2.len    //= s.cachereq_M2.out.len
+    s.cacheresp_M2.data   //= s.data_size_mux_M2.out
 
   def line_trace( s ):
     msg = ""
     # msg+= s.tag_array_PU.line_trace()
     # msg+= f'tw[{s.tag_array_struct_M0}] tr[{s.tag_arrays_M1[0].port0_rdata}]'
-    msg+= f'tpu[{s.ctrl.tag_processing_en_M1}] '
+    # msg+= f'tpu[{s.ctrl.tag_processing_en_M1}] '
     return msg

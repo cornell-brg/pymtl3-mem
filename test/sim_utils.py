@@ -42,7 +42,7 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
   dump_vtb     = cmdline_opts['dump_vtb']
   max_cycles   = cmdline_opts['max_cycles']
   if max_cycles == 'inf':
-    max_cycles = 10000
+    max_cycles = 20000
   file_name    = f"{th.cache.param}.v"
   if test_verilog:
     th.cache.set_metadata( TranslationImportPass.enable, True )

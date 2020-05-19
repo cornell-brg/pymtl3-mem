@@ -280,15 +280,17 @@ class TagArrayRDataProcessUnit( Component ):
     s.hit       = OutPort() # general hit
     s.inval_hit = OutPort() # hit on an invalid cache line that is dirty
     
-    s.offset    = InPort( p.BitsOffset )
-    s.word_dirty= OutPort( p.BitsAssoc ) # If the word in cacheline is dirty
-    s.line_dirty= OutPort( p.BitsAssoc ) # If the line is dirty
+    s.offset     = InPort( p.BitsOffset )
+    s.word_dirty = OutPort( p.BitsAssoc ) # If the word in cacheline is dirty
+    s.line_dirty = OutPort( p.BitsAssoc ) # If the line is dirty
+    s.tag_entires= [ OutPort( p.StructTagArray ) for _ in range( p.associativity ) ] 
 
     BitsAssoclog2 = p.BitsAssoclog2
     BitsAssoc     = p.BitsAssoc
     associativity = p.associativity
     bitwidth_offset = p.bitwidth_offset
     bitwidth_dirty  = p.bitwidth_dirty
+    StructTagArray = p.StructTagArray
 
     # word dirty logic
     for i in range( associativity ):
@@ -297,12 +299,11 @@ class TagArrayRDataProcessUnit( Component ):
     @update
     def line_dirty_logic():
       s.line_dirty @= BitsAssoc( 0 )
-      if s.en:
-        # OR all the wires together to see if a line is dirty
-        for i in range( associativity ):
-          for j in range( bitwidth_dirty ):
-            if s.tag_array[i].dty[j]:
-              s.line_dirty[i] @= y
+      # OR all the wires together to see if a line is dirty
+      for i in range( associativity ):
+        for j in range( bitwidth_dirty ):
+          if s.tag_array[i].dty[j] & s.en:
+            s.line_dirty[i] @= y
 
     @update
     def comparing_logic():
@@ -323,6 +324,16 @@ class TagArrayRDataProcessUnit( Component ):
               s.inval_hit @= s.inval_hit | y
               s.hit_way   @= BitsAssoclog2(i)
     
+    @update
+    def tag_entry_output_logic():
+      # Outputs what we're reading from the sram if the processing unit is 
+      # enabled. Otherwise we output zeros.
+      for i in range( associativity ):
+        if s.en:
+          s.tag_entires[i] @= s.tag_array[i]
+        else:
+          s.tag_entires[i] @= StructTagArray(0, 0, 0)        
+
   def line_trace( s ):
     msg = ''
     msg += f't[{s.tag_array[0].tag}]'

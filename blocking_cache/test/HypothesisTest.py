@@ -136,20 +136,16 @@ class HypothesisTests:
     clw_dbw      = st.sampled_from([(64,32),(64,64),(128,32),(128,64),(128,128)]),
     block_order  = st.integers( 1, 8 ),
     req          = st.data(),
-    # stall_prob   = st.integers( 0 ),
-    latency      = st.integers( 1, 5 ),
-    src_delay    = st.integers( 0, 5 ),
-    sink_delay   = st.integers( 0, 5 )
+    stall_prob   = st.decimals( 0, 0.75 ),
+    latency      = st.integers( 1, 3 ),
+    src_delay    = st.integers( 0, 3 ),
+    sink_delay   = st.integers( 0, 3 )
   )
-  # def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
-  #                               src_delay, sink_delay, cmdline_opts, 
-  #                               line_trace ):
-  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, latency, 
+  def test_hypothesis_2way_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
                                 src_delay, sink_delay, cmdline_opts, 
                                 line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
-    stall_prob = 0
     s.hypothesis_test_harness( 2, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts,
                                line_trace )
@@ -159,20 +155,16 @@ class HypothesisTests:
     clw_dbw      = st.sampled_from([(64,32),(64,64),(128,32),(128,64),(128,128)]),
     block_order  = st.integers( 1, 8 ), # order of number of blocks based 2
     req          = st.data(),
-    # stall_prob   = st.integers( 0 ),
-    latency      = st.integers( 1, 5 ),
-    src_delay    = st.integers( 0, 5 ),
-    sink_delay   = st.integers( 0, 5 )
+    stall_prob   = st.decimals( 0, 0.75 ),
+    latency      = st.integers( 1, 3 ),
+    src_delay    = st.integers( 0, 3 ),
+    sink_delay   = st.integers( 0, 3 )
   )
-  # def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
-  #                                  src_delay, sink_delay, cmdline_opts, 
-  #                                  line_trace ):
-  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, latency, 
+  def test_hypothesis_dmapped_gen( s, clw_dbw, block_order, req, stall_prob, latency, 
                                    src_delay, sink_delay, cmdline_opts, 
                                    line_trace ):
     num_blocks = 2**block_order
     clw, dbw = clw_dbw
-    stall_prob = 0
     s.hypothesis_test_harness( 1, clw, dbw, num_blocks, req, stall_prob,
                                latency, src_delay, sink_delay, 1, cmdline_opts, 
                                line_trace )
@@ -181,24 +173,26 @@ class HypothesisTests:
   @hypothesis.given(
     req          = st.data(),
     dbw          = st.sampled_from([32,128]),
+    stall_prob   = st.decimals( 0, 0.75 ),
     latency      = st.integers( 1, 2 ),
     src_delay    = st.integers( 0, 2 ),
     sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_2way_size64_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, line_trace ):
-    s.hypothesis_test_harness( 2, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
+  def test_hypothesis_2way_size64_stress( s, req, dbw, stall_prob, latency, src_delay, 
+                                          sink_delay, cmdline_opts, line_trace ):
+    s.hypothesis_test_harness( 2, 128, dbw, 2, req, stall_prob, latency, src_delay, sink_delay,
                                2, cmdline_opts, line_trace )
 
   @hypothesis.settings( deadline = None, max_examples = 100 )
   @hypothesis.given(
     req          = st.data(),
     dbw          = st.sampled_from([32,128]),
+    stall_prob   = st.decimals( 0, 0.75 ),
     latency      = st.integers( 1, 2 ),
     src_delay    = st.integers( 0, 2 ),
     sink_delay   = st.integers( 0, 2 )
   )
-  def test_hypothesis_dmapped_size32_stress( s, req, dbw, latency, src_delay, sink_delay, 
-                                          cmdline_opts, line_trace ):
-    s.hypothesis_test_harness( 1, 128, dbw, 2, req, 0, latency, src_delay, sink_delay,
+  def test_hypothesis_dmapped_size32_stress( s, req, dbw, stall_prob, latency, src_delay, 
+                                             sink_delay, cmdline_opts, line_trace ):
+    s.hypothesis_test_harness( 1, 128, dbw, 2, req, stall_prob, latency, src_delay, sink_delay,
                                2, cmdline_opts, line_trace )
