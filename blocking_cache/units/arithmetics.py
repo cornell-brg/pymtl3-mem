@@ -11,23 +11,9 @@ Date   : 1 March 2020
 
 from pymtl3 import *
 from constants.constants import *
-from pymtl3.stdlib.rtl.registers   import RegEnRst, RegEn
-from pymtl3.stdlib.rtl.arithmetics import Mux
-
-from constants.constants import *
-from ..constants import *
-
-class EComp ( Component ):
-
-  def construct( s, Type ):
-
-    s.in0 = InPort( Type )
-    s.in1 = InPort( Type )
-    s.out = OutPort()
-
-    @update
-    def up_ecomp():
-      s.out @= Bits1(s.in0 == s.in1)
+from pymtl3.stdlib.basic_rtl   import RegEnRst, RegEn, Mux
+from constants import *
+from ..cache_constants import *
 
 class DataReplicator( Component ):
 
@@ -332,10 +318,10 @@ class TagArrayRDataProcessUnit( Component ):
         if s.en:
           s.tag_entires[i] @= s.tag_array[i]
         else:
-          s.tag_entires[i] @= StructTagArray(0, 0, 0)        
+          s.tag_entires[i] @= StructTagArray()        
 
   def line_trace( s ):
     msg = ''
-    msg += f't[{s.tag_array[0].tag}]'
-    # msg += f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
+    # msg += f't[{s.tag_array[0].tag}]'
+    msg += f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
     return msg

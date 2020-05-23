@@ -12,14 +12,14 @@ import struct
 import random
 from pymtl3 import *
 
-from pymtl3.stdlib.ifcs.mem_ifcs     import MemMasterIfcRTL, MemMinionIfcRTL
-from pymtl3.stdlib.test.test_srcs    import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test.test_sinks   import TestSinkCL, TestSinkRTL
-from pymtl3.stdlib.ifcs.SendRecvIfc  import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
-# from pymtl3.stdlib.cl.MemoryCL       import MemoryCL 
+from pymtl3.stdlib.mem        import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.test_utils import TestSrcCL
+from pymtl3.stdlib.test_utils import TestSinkCL
+# from pymtl3.stdlib.mem       import MemoryCL 
 
 from pymtl3.passes.backends.verilog  import (
-  TranslationPass, TranslationImportPass, VerilogPlaceholderPass, VerilogTBGenPass
+  VerilogTranslationPass, VerilogTranslationImportPass, VerilogPlaceholderPass, 
+  VerilogTBGenPass, VerilogVerilatorImportPass
 )
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
@@ -43,19 +43,20 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
   max_cycles   = cmdline_opts['max_cycles']
   if max_cycles == 'inf':
     max_cycles = 20000
-  file_name    = f"{th.cache.param}.v"
   if test_verilog:
-    th.cache.set_metadata( TranslationImportPass.enable, True )
-    th.cache.set_metadata( VerilatorImportPass.vl_xinit, test_verilog )
-    th.cache.set_metadata( VerilatorImportPass.vl_trace, True if dump_vcd else False )
-    th.cache.set_metadata( VerilatorImportPass.vl_trace_filename, dump_vcd )
-    th.cache.set_metadata( TranslationPass.explicit_file_name, str(th.cache.param) )
-    th.cache.set_metadata( TranslationPass.explicit_module_name, str(th.cache.param) )
-    th.apply( VerilogPlaceholderPass() )
-    th = TranslationImportPass()( th )
+    m = th.cache 
+    file_name    = f"{m.param}.v"
+    m.set_metadata( VerilogTranslationImportPass.enable, True )
+    m.set_metadata( VerilogVerilatorImportPass.vl_xinit, test_verilog )
+    m.set_metadata( VerilogVerilatorImportPass.vl_trace, True if dump_vcd else False )
+    m.set_metadata( VerilogVerilatorImportPass.vl_trace_filename, dump_vcd )
+    m.set_metadata( VerilogTranslationPass.explicit_file_name, str(m.param) )
+    m.set_metadata( VerilogTranslationPass.explicit_module_name, str(m.param) )
+    # th.apply( VerilogPlaceholderPass() )
+    th = VerilogTranslationImportPass()( th )
 
     if dump_vtb:
-      th.cache.verilog_tbgen = dump_vtb
+      m.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )
     
     # Replace sram with wrapper
@@ -65,7 +66,7 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
 
-  th.apply( SimulationPass(print_line_trace=True) )
+  th.apply( DefaultPassGroup(print_line_trace=True) )
   th.sim_reset()
   while not th.done() and th.sim_cycle_count() < max_cycles:
     th.sim_tick()
@@ -123,13 +124,13 @@ class TestHarness( Component ):
                  sink_delay, CacheModel, CacheReqType, CacheRespType,
                  MemReqType, MemRespType, cacheSize=128, associativity=1 ):
     # Instantiate models
-    s.src   = TestSrcRTL(CacheReqType, src_msgs, src_delay, src_delay)
+    s.src   = TestSrcCL(CacheReqType, src_msgs, src_delay, src_delay)
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
     s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)],
                              stall_prob=stall_prob, latency=latency) # Use our own modified mem
-    s.sink  = TestSinkRTL(CacheRespType, sink_msgs, src_delay, sink_delay)
+    s.sink  = TestSinkCL(CacheRespType, sink_msgs, src_delay, sink_delay)
 
     # Set the test signals to better model the processor
 

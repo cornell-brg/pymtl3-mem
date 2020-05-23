@@ -9,10 +9,8 @@ Date   : 9 March 2020
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
-from pymtl3.stdlib.rtl.registers import RegRst
-
-from constants.constants import *
+from pymtl3.stdlib.mem       import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.basic_rtl import RegRst
 
 class ProcModel( Component ):
 

@@ -196,3 +196,23 @@ class HypothesisTests:
                                              sink_delay, cmdline_opts, line_trace ):
     s.hypothesis_test_harness( 1, 128, dbw, 2, req, stall_prob, latency, src_delay, sink_delay,
                                2, cmdline_opts, line_trace )
+
+
+  # Pyh2 tests that tests all the parameters for the cache
+  @hypothesis.settings( deadline = None, max_examples = 10 )
+  @hypothesis.given(
+    associativity= st.sampled_from([ 1, 2 ]),
+    clw_dbw      = st.sampled_from([(64,32),(64,64),(128,32),(128,64),(128,128)]),
+    block_order  = st.integers( 1, 8 ),
+    req          = st.data(),
+    stall_prob   = st.decimals( 0, 0.75 ),
+    latency      = st.integers( 1, 3 ),
+    src_delay    = st.integers( 0, 3 ),
+    sink_delay   = st.integers( 0, 3 )
+  )
+  def test_hypothesis_all( s, associativity, clw_dbw, block_order, req, stall_prob, latency, 
+                           src_delay, sink_delay, cmdline_opts, line_trace ):
+    clw, dbw = clw_dbw
+    num_blocks = 2**block_order
+    s.hypothesis_test_harness( associativity, clw, dbw, num_blocks, req, stall_prob, latency, 
+                               src_delay, sink_delay, 1, cmdline_opts, line_trace )

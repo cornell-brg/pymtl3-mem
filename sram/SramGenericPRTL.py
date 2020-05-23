@@ -40,7 +40,7 @@ class SramGenericPRTL( Component ):
 
     @update
     def read_logic():
-      s.dout_next @= s.ram[ s.A1 ] if (~s.CSB1 & s.WEB1) else 0
+      s.dout_next @= s.ram[ s.A1 ] if (~s.CSB1 & s.WEB1) else s.dout
 
     # write path
     @update

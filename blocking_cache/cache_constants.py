@@ -1,6 +1,6 @@
 """
 #=========================================================================
-# constants.py
+# cache_constants.py
 #=========================================================================
 BlockingCache-specific constants
 
@@ -9,6 +9,7 @@ Date   : 10 February 2020
 """
 
 from pymtl3 import *
+from mem_ifcs.MemMsg import MemMsgType
 
 #-------------------------------------------------------------------------
 # Cacheline states

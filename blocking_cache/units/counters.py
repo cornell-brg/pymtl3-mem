@@ -9,7 +9,7 @@ Date  : March 25, 2020
 '''
 
 from pymtl3 import *
-from pymtl3.stdlib.rtl.registers import RegRst
+from pymtl3.stdlib.basic_rtl import RegRst
 
 class CounterEnRst( Component ):
 

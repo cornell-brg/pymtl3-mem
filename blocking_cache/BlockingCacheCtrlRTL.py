@@ -3,22 +3,21 @@
  BlockingCacheCtrlRTL.py
 =========================================================================
 Parameterizable Pipelined Blocking Cache Control
+
 Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 10 February 2020
 """
 
-from colorama                      import Fore, Back, Style
+from colorama                import Fore, Back, Style
+from pymtl3                  import *
+from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst
+# Import generic constants used in the repo
+from constants               import *
 
-from pymtl3                        import *
-from pymtl3.stdlib.rtl.registers   import RegEnRst, RegRst
-from constants.constants import *
-from .ReplacementPolicy            import ReplacementPolicy
-from .constants                    import *
-from .units.counters               import CounterEnRst
-
-#=========================================================================
-# Constants
-#=========================================================================
+# Import cache specific constants
+from .cache_constants import *
+# Import from modules specific to the cache
+from .units           import *
 
 #-------------------------------------------------------------------------
 # M0 FSM states

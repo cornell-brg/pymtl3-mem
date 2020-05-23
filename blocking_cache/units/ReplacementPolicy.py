@@ -9,10 +9,9 @@ Date   : 12/23/19
 """
 
 from pymtl3                  import *
-from pymtl3.stdlib.ifcs      import RecvIfcRTL
 from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst
 
-class ReplacementPolicy(Component):
+class ReplacementPolicy (Component):
   """
   Given an input of histories for past accesses (LRU bits),
   output the way number that should have its cache line
@@ -22,8 +21,8 @@ class ReplacementPolicy(Component):
   Base two associativity only
   """
   def construct(s,
-                BitsAssoc    ,
-                BitsAssoclog2,
+                BitsAssoc     = "inv",
+                BitsAssoclog2 = "inv",
                 associativity = 1,
                 policy        = 0, # what policy to use? LRU for now
   ):

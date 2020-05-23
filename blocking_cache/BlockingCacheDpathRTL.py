@@ -9,25 +9,18 @@ Date   : 20 February 2020
 """
 
 from pymtl3                         import *
-from pymtl3.stdlib.rtl.arithmetics  import Mux
-from pymtl3.stdlib.rtl.RegisterFile import RegisterFile
-from pymtl3.stdlib.rtl.registers    import RegEnRst, RegEn
+from pymtl3.stdlib.basic_rtl        import Mux, RegisterFile, RegEnRst, RegEn
 
-from constants.constants  import *
+# Import generic constants used in the repo
+from constants  import *
+
+# Generic behavioral SRAM model
 from sram.SramPRTL        import SramPRTL
 
-from .constants                import *
-from .units.MSHR_v1            import MSHR
-from .units.muxes              import *
-from .units.arithmetics        import (
-  Indexer, DataReplicator, OffsetLenSelector,
-  TagArrayRDataProcessUnit, DataReplicatorv2, WriteBitEnGen
-  )
-from .units.registers          import (
-  DpathPipelineRegM0, DpathPipelineReg, ReplacementBitsReg
-)
-from .units.UpdateTagArrayUnit import UpdateTagArrayUnit
-from .units.StallEngine        import StallEngine
+# Import cache specific constants
+from .cache_constants import *
+# Import from modules specific to the cache
+from .units           import *
 
 class BlockingCacheDpathRTL (Component):
 
@@ -371,6 +364,6 @@ class BlockingCacheDpathRTL (Component):
   def line_trace( s ):
     msg = ""
     # msg+= s.tag_array_PU.line_trace()
-    # msg+= f'tw[{s.tag_array_struct_M0}] tr[{s.tag_arrays_M1[0].port0_rdata}]'
+    # msg+= f'tr[{s.tag_arrays_M1[0].port0_rdata}] '
     # msg+= f'tpu[{s.ctrl.tag_processing_en_M1}] '
     return msg

@@ -8,10 +8,10 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 13 April 2020
 """
 from pymtl3 import *
-from pymtl3.stdlib.ifcs.mem_ifcs import MemMasterIfcRTL, MemMinionIfcRTL
-from pymtl3.stdlib.test.test_srcs  import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
-from constants.constants import *
+from pymtl3.stdlib.mem import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.test_utils.test_srcs  import TestSrcCL, TestSrcRTL
+from pymtl3.stdlib.test_utils.test_sinks import TestSinkCL, TestSinkRTL
+from constants import *
 from .ProcModel import ProcModel
 from blocking_cache.units.counters import CounterUpDown, CounterEnRst
 

@@ -8,7 +8,7 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 1 March 2020
 """
 from pymtl3                      import *
-from pymtl3.stdlib.rtl.registers import RegEnRst, RegEn, RegRst
+from pymtl3.stdlib.basic_rtl import RegEnRst, RegEn, RegRst
 
 class DpathPipelineRegM0 ( Component ):
 

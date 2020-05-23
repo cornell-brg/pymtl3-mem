@@ -12,7 +12,9 @@ from pymtl3 import *
 
 from mem_ifcs.MemMsg import MemMsgType
 
-# General
+#-------------------------------------------------------------------------
+# General yes/no and rd/wr statements
+#-------------------------------------------------------------------------
 
 wr = y             = b1(1)
 rd = n = x         = b1(0)

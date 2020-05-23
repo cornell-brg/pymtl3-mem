@@ -10,7 +10,7 @@ Date:   17 March 2020
 
 from pymtl3 import *
 
-from ..constants import *
+from ..cache_constants import *
 
 class UpdateTagArrayUnit( Component ):
 

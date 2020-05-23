@@ -21,7 +21,7 @@ sys.path.insert( 0, parent_path )
 sram_wrapper_file = os.path.join( parent_path, 'sram', 'brg_gf14_sram_generic.v' )
 
 # Import the translation pass from verilog backend
-from pymtl3.passes.backends.verilog import TranslationPass
+from pymtl3.passes.backends.verilog import VerilogTranslationPass
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL

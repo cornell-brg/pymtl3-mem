@@ -9,7 +9,7 @@ Date:   27 February 2020
 '''
 
 from pymtl3 import *
-from pymtl3.stdlib.rtl.arithmetics import Mux
+from pymtl3.stdlib.basic_rtl import Mux
 
 class OptimizedMux( Component ):
   '''Optimized 2 input muxes'''

@@ -12,7 +12,6 @@ from pymtl3 import *
 from ..BlockingCacheRTL import BlockingCacheRTL
 from .MultiCacheTestCases import MultiCacheTestCases
 from test.sim_utils import run_sim, MultiCacheTestHarness
-from pymtl3.stdlib.test import run_sim as stdlib_run_sim
 
 class MultiCache_Tests( MultiCacheTestCases ):
   def run_test( s, tp, cmdline_opts, trace=True ):
@@ -20,6 +19,5 @@ class MultiCache_Tests( MultiCacheTestCases ):
     harness.elaborate()
     if tp.mem != None:
       harness.load()
-    # stdlib_run_sim( harness, dump_vcd, test_verilog, trace, max_cycles )
     sram_wrapper = False
     run_sim( harness, cmdline_opts, trace, sram_wrapper )

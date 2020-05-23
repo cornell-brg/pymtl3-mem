@@ -1,48 +1,21 @@
 """
 ========================================================================
-TestMemory
+Cifer MemoryCL
 ========================================================================
 A behavioral Test Memory which is parameterized based on the number of
 memory request/response ports. This version is a little different from
 the one in pclib because we actually use the memory messages correctly
 in the interface.
 
-Author : Shunning Jiang
+Modified for Cifer Tapeout to include write bits
+
+Author : Shunning Jiang, edited by Xiaoyu Yan (xy97)
 Date   : Mar 12, 2018
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.fl import MemoryFL
-from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.ifcs.mem_ifcs import MemMinionIfcCL
-from pymtl3.stdlib.cl.DelayPipeCL import DelayPipeDeqCL, DelayPipeSendCL
-from pymtl3.stdlib.cl.StallCL import StallCL
-
-# BRGTC2 custom MemMsg modified for RISC-V 32
-
-#- - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - -
-#-------------------------------------------------------------------------
-# BRGTC2
-#-------------------------------------------------------------------------
-# The AMO implementations (and MemMsg) has been updated to match RISC-V.
-#
-# There is also a small fix to the AMO ops to handle signed ops. The AMO
-# operations act on the bitwidth of the processor architecture, so the
-# read_data from the TestMemory used with AMOs cannot just be the memory
-# request message size (e.g., 128b):
-#
-#         read_data = Bits( s.data_nbits )
-#
-# It must instead be the number of bytes matching the bitwidth in the
-# processor (e.g., 32b):
-#
-#         read_data = Bits( nbytes*8 )
-#
-# Otherwise for example we would be reading 128b from the memory and
-# comparing that to the 32b value from the request message.
-#
-#-------------------------------------------------------------------------
-#- - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - - - NOTE  - -
+from pymtl3.stdlib.mem import MagicMemoryFL, MemMsgType, mk_mem_msg, MemMinionIfcCL
+from pymtl3.stdlib.delays import DelayPipeDeqCL, DelayPipeSendCL, StallCL
 
 class MemoryCL( Component ):
 
@@ -64,7 +37,7 @@ class MemoryCL( Component ):
     req_classes  = [ x for (x,y) in mem_ifc_dtypes ]
     resp_classes = [ y for (x,y) in mem_ifc_dtypes ]
     
-    s.mem = MemoryFL( mem_nbytes )
+    s.mem = MagicMemoryFL( mem_nbytes )
 
     # Interface
 
