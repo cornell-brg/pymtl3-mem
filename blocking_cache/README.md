@@ -1,7 +1,7 @@
 # Pipelined Blocking Cache 
 
 ## Datapath
-![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache_compact2.svg)
+![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache_cifer.svg)
 ## Pipeline Stages
 
 `M0`: Tag array SRAM access. Refill response comes to M0 as well.
