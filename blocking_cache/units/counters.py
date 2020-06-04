@@ -15,21 +15,21 @@ class CounterEnRst( Component ):
 
   def construct( s, Type, reset_value=0 ):
 
-    s.en         = InPort ( Bits1 )
-    s.load       = InPort ( Bits1 )
-    s.count_down = InPort ( Bits1 )
-    s.load_value = InPort ( Type  )
-    s.out        = OutPort( Type  )
+    s.en         = InPort (1)
+    s.load       = InPort (1)
+    s.count_down = InPort (1)
+    s.load_value = InPort (Type)
+    s.out        = OutPort(Type)
 
     @update_ff
     def counter_ff_logic():
       if s.reset:
-        s.out <<= Type( reset_value )
+        s.out <<= reset_value
       elif s.en:
         if s.count_down:
-          s.out <<= s.out - Type(1)
+          s.out <<= s.out - 1
         else:
-          s.out <<= s.out + Type(1)
+          s.out <<= s.out + 1
 
   def line_trace( s ):
     return f"[{'en' if s.en else '  '}|{s.out}]"

@@ -20,26 +20,19 @@ class ReplacementPolicy (Component):
   Latency sensitive - do not expect to be problems?
   Base two associativity only
   """
-  def construct(s,
-                BitsAssoc     = "inv",
-                BitsAssoclog2 = "inv",
-                associativity = 1,
-                policy        = 0, # what policy to use? LRU for now
-  ):
+  def construct(s, p, policy = 0):
     # policy 0 = LRU policy
     # More area efficient policies include FIFO
     s.repreq_en      = InPort()
     s.repreq_rdy     = OutPort()
-    s.repreq_hit_ptr = InPort(BitsAssoclog2)
+    s.repreq_hit_ptr = InPort(p.bitwidth_clog_asso)
     s.repreq_is_hit  = InPort()
-    s.repreq_ptr     = InPort(BitsAssoclog2)
-    s.represp_ptr    = OutPort(BitsAssoclog2)
-
+    s.repreq_ptr     = InPort(p.bitwidth_clog_asso)
+    s.represp_ptr    = OutPort(p.bitwidth_clog_asso)
+    
     s.repreq_rdy //= 1
 
-    # hits and misses
-    # print(associativity, policy)
-    if associativity == 2:
+    if p.associativity == 2:
       # if policy == 0: # LRU - flip bit when hit or miss
       # LRU for 2 way is extra simple since we don't need
       # to keep track
@@ -53,7 +46,7 @@ class ReplacementPolicy (Component):
             s.represp_ptr @= ~s.repreq_hit_ptr
     else:
       # Real difficult to implement LRU here
-      s.represp_ptr //= b1(0)
+      s.represp_ptr //= 0
 
   def line_trace( s ):
     msg = ""

@@ -12,27 +12,29 @@ from pymtl3                  import *
 from pymtl3.stdlib.ifcs      import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst, Reg, RegEn, Mux
 from constants.constants import *
-from .registers import MSHRReg
 
 class MSHR(Component):
+  """
+  Miss Status Hit Register - keeps track of outstanding misses
+  Blocks if all entries all filled
 
+  For blocking cache, it is 1 entry
+  """
   def construct( s, p, entries ):
-
-    BitsEntries   = mk_bits( clog2( entries + 1 ) )
-
     s.alloc_en    = InPort ()
     s.alloc_in    = InPort (p.MSHRMsg)
     s.full        = OutPort()
-    s.alloc_id    = OutPort(p.BitsOpaque)
+    s.alloc_id    = OutPort(p.bitwidth_opaque)
 
-    s.dealloc_id  = InPort (p.BitsOpaque)
+    s.dealloc_id  = InPort (p.bitwidth_opaque)
     s.dealloc_en  = InPort ()
     s.dealloc_out = OutPort(p.MSHRMsg)
     s.empty       = OutPort() # high when no more secondary misses?
 
     # Number of free MSHR Entries
-    s.num_entries_in  = Wire(BitsEntries)
-    s.num_entries_reg = m = RegRst(BitsEntries)
+    bitwidth_entries = clog2(entries + 1)
+    s.num_entries_in  = Wire(bitwidth_entries)
+    s.num_entries_reg = m = RegRst(bitwidth_entries)
     m.in_ //= s.num_entries_in
 
     @update
@@ -52,7 +54,7 @@ class MSHR(Component):
       s.empty @= (s.num_entries_reg.out == 0)
 
     if entries == 1:
-      s.storage_regs = m = MSHRReg( p )
+      s.storage_regs = m = RegEnRst( p.MSHRMsg, p.MSHRMsg() )
       m.in_ //= s.alloc_in
       m.out //= s.dealloc_out
       m.en  //= s.alloc_en

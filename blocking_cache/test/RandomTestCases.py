@@ -86,9 +86,6 @@ def random_test_generator( mem, associativity, bitwidth_mem_data, bitwidth_cache
           addr = addr & Bits32(0xffffffe0)
     bitwidth_len = clog2(bitwidth_cache_data >> 3)   
     len_ = Bits(bitwidth_len, len_, trunc_int=True) 
-    # i = Bits( 8, i, trunc_int=True )
-    # if types[i] >= MemMsgType.AMO_ADD and types[i] <= MemMsgType.AMO_XOR:
-    #   print(f"l:{len_} a:{addr}")
     reqs.append( ( types[i], Bits( 8, i, trunc_int=True ), addr, len_, data) )  
   reqs = mk_req( tp.CacheReqType, reqs )
 
@@ -114,6 +111,9 @@ def dmap_size32_lineb128_datab128():
 
 def asso2_size32_lineb64_datab32():
   return random_test_generator(random_memory, 2, 64, 32, 32, 500)
+
+def asso2_size64_lineb128_datab64():
+  return random_test_generator(random_memory, 2, 128, 64, 64, 500)
 
 def asso2_size64_lineb128_datab128():
   return random_test_generator(random_memory, 2, 128, 128, 64, 500)
@@ -141,6 +141,7 @@ class RandomTests:
     ("32B",  dmap_size32_lineb128_datab64,    0,         1,      0,        0   ),
     ("32B",  dmap_size32_lineb128_datab128,   0,         1,      0,        0   ),
     ("32B",  asso2_size32_lineb64_datab32,    0,         1,      0,        0   ),
+    ("64B",  asso2_size64_lineb128_datab64,   0,         1,      0,        0   ),
     ("64B",  asso2_size64_lineb128_datab128,  0,         1,      0,        0   ),
     ("4KB",  asso2_size4096_lineb128_datab128,0,         1,      0,        0   ),
     ("4KB",  asso2_size4096_lineb128_datab32, 0,         1,      0,        0   ),

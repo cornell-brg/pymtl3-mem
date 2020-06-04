@@ -69,9 +69,6 @@ class CacheDerivedParams:
     # sum of the tag bitwidth, valid, and dirty bit per word 
     self.bitwidth_tag_array        = self.bitwidth_tag + self.bitwidth_val + self.bitwidth_dirty
     self.bitwidth_tag_wben         = self.bitwidth_tag_array # Tag array write byte bitwidth
-    
-    # print( "size[{}], asso[{}], clw[{}], tag[{}], idx[{}]".format(num_bytes, associativity,
-    #        self.bitwidth_cacheline//8, self.bitwidth_tag, self.bitwidth_index )
 
     #--------------------------------------------------------------------
     # Make Bits object
@@ -130,15 +127,3 @@ class CacheDerivedParams:
     # Structs local to the ctrl
     self.CtrlMsg = mk_ctrl_pipeline_struct()
     self.BitsCtrlStates = mk_bits(clog2(6))
-
-    #--------------------------------------------------------------------
-    # Default Values
-    #--------------------------------------------------------------------
-    # TEMP NAMES: Will come up with something
-    self.wdmx0 = self.BitsRdDataMuxSel(0)
-    self.btmx0 = self.BitsRdByteMuxSel(0)
-    self.bbmx0 = self.BitsRd2ByteMuxSel(0)
-    self.acmx0 = Bits2(0) # access select 0
-    self.wben0 = self.BitsDataWben(0)
-    self.wbenf = self.BitsDataWben(-1)
-    self.tg_wbenf = self.BitsTagWben(-1)

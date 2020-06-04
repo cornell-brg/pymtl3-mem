@@ -53,54 +53,44 @@ M0_FSM_STATE_FLUSH_WAIT = b3(5) # Flush, waiting for response
 
 TRANS_TYPE_NBITS = 5
 
-TRANS_TYPE_INVALID      = b5(0)
+TRANS_TYPE_INVALID      = 0
 
 # Normal read/write
-TRANS_TYPE_REFILL       = b5(1)  # Refill only (for write-miss)
-TRANS_TYPE_REPLAY_READ  = b5(2)  # Replay the read miss along with refill
-TRANS_TYPE_REPLAY_WRITE = b5(3)  # Replay the write miss after refill
-TRANS_TYPE_CLEAN_HIT    = b5(4)  # M1 stage hit a clean word, update dirty bits
-TRANS_TYPE_READ_REQ     = b5(5)  # Read req from cachereq
-TRANS_TYPE_WRITE_REQ    = b5(6)  # Write req from cachereq
-TRANS_TYPE_INIT_REQ     = b5(7)  # Init-write req from cachereq
+TRANS_TYPE_REFILL       = 1  # Refill only (for write-miss)
+TRANS_TYPE_REPLAY_READ  = 2  # Replay the read miss along with refill
+TRANS_TYPE_REPLAY_WRITE = 3  # Replay the write miss after refill
+TRANS_TYPE_CLEAN_HIT    = 4  # M1 stage hit a clean word, update dirty bits
+TRANS_TYPE_READ_REQ     = 5  # Read req from cachereq
+TRANS_TYPE_WRITE_REQ    = 6  # Write req from cachereq
+TRANS_TYPE_INIT_REQ     = 7  # Init-write req from cachereq
 
 # Cache initialization
-TRANS_TYPE_CACHE_INIT   = b5(8)  # Init cache
+TRANS_TYPE_CACHE_INIT   = 8  # Init cache
 
 # Atomics
-TRANS_TYPE_AMO_REQ      = b5(9)  # AMO req from cachereq
-TRANS_TYPE_REPLAY_AMO   = b5(10) # Replay the AMO req after receiving memresp
+TRANS_TYPE_AMO_REQ      = 9  # AMO req from cachereq
+TRANS_TYPE_REPLAY_AMO   = 10 # Replay the AMO req after receiving memresp
 
 # Cache invalidation
-TRANS_TYPE_INV_START    = b5(11) # Start the inv req
-TRANS_TYPE_INV_WRITE    = b5(12) # Inv req: write tag arrays
-TRANS_TYPE_REPLAY_INV   = b5(13) # Replay the INV req after is done
+TRANS_TYPE_INV_START    = 11 # Start the inv req
+TRANS_TYPE_INV_WRITE    = 12 # Inv req: write tag arrays
+TRANS_TYPE_REPLAY_INV   = 13 # Replay the INV req after is done
 
 # Cache flush
-TRANS_TYPE_FLUSH_START  = b5(14) # Start the flush req
-TRANS_TYPE_FLUSH_READ   = b5(15) # flush req: read tag arrays
-TRANS_TYPE_FLUSH_WAIT   = b5(16) # flush req: wait for memresp write ack
-TRANS_TYPE_FLUSH_WRITE  = b5(17) # flush req: write tag arrays
-TRANS_TYPE_REPLAY_FLUSH = b5(18) # Replay the flush req after is done
+TRANS_TYPE_FLUSH_START  = 14 # Start the flush req
+TRANS_TYPE_FLUSH_READ   = 15 # flush req: read tag arrays
+TRANS_TYPE_FLUSH_WAIT   = 16 # flush req: wait for memresp write ack
+TRANS_TYPE_FLUSH_WRITE  = 17 # flush req: write tag arrays
+TRANS_TYPE_REPLAY_FLUSH = 18 # Replay the flush req after is done
 
 #=========================================================================
 # BlockingCacheCtrlRTL
 #=========================================================================
 
-class BlockingCacheCtrlRTL ( Component ):
+class BlockingCacheCtrlRTL( Component ):
 
   def construct( s, p ):
-
-    # Constants (required for translation to work)
-
-    associativity      = p.associativity
-    clog_asso          = clog2( p.associativity )
-    BitsAssoclog2      = p.BitsAssoclog2
-    BitsClogNlines     = p.BitsClogNlines
-    BitsTagWben        = p.BitsTagWben
-    bitwidth_num_lines = p.bitwidth_num_lines
-    BitsClogNlines     = p.BitsClogNlines
-
+    
     #=====================================================================
     # Interface
     #=====================================================================
@@ -117,8 +107,8 @@ class BlockingCacheCtrlRTL ( Component ):
     s.memresp_en    = InPort ()
     s.memresp_rdy   = OutPort()
 
-    s.status        = InPort ( p.StructStatus )
-    s.ctrl          = OutPort( p.StructCtrl )
+    s.status        = InPort (p.StructStatus)
+    s.ctrl          = OutPort(p.StructCtrl)
 
     #=====================================================================
     # Y Stage
@@ -132,7 +122,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 Stage
     #=====================================================================
 
-    s.memresp_en_M0 = m = RegEnRst( Bits1 )
+    s.memresp_en_M0 = m = RegEnRst(1)
     m.in_ //= s.memresp_en
     m.en  //= s.ctrl.reg_en_M0
     
@@ -146,9 +136,9 @@ class BlockingCacheCtrlRTL ( Component ):
     s.memresp_wr_ack_M0 //= lambda: s.memresp_en_M0.out & ( s.status.memresp_type_M0 == WRITE )
 
     # A counter used by FSM
-    s.counter_M0 = CounterEnRst( p.BitsClogNlines,
-                                 reset_value=( p.total_num_cachelines - 1 ) )
-    s.update_way_idx_M0 = Wire( BitsClogNlines )
+    s.counter_M0 = CounterEnRst(p.bitwidth_num_lines,
+                                reset_value=(p.total_num_cachelines - 1) )
+    s.update_way_idx_M0 = Wire(p.bitwidth_num_lines)
 
     # We need to update the dirty bits, set in M1 stage.
     s.is_write_hit_clean_M0 = Wire()
@@ -166,8 +156,8 @@ class BlockingCacheCtrlRTL ( Component ):
     # M0 stage FSM
     #---------------------------------------------------------------------
 
-    s.FSM_state_M0_next = Wire( mk_bits(M0_FSM_STATE_NBITS) )
-    s.FSM_state_M0 = m = RegEnRst( mk_bits(M0_FSM_STATE_NBITS), reset_value=M0_FSM_STATE_INIT )
+    s.FSM_state_M0_next = Wire(M0_FSM_STATE_NBITS)
+    s.FSM_state_M0 = m = RegEnRst(M0_FSM_STATE_NBITS, reset_value=M0_FSM_STATE_INIT )
     m.in_ //= s.FSM_state_M0_next
     m.en  //= s.ctrl.reg_en_M0
     
@@ -177,7 +167,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.FSM_state_M0_next @= M0_FSM_STATE_INIT
       
       if   s.FSM_state_M0.out == M0_FSM_STATE_INIT:
-        if s.counter_M0.out == BitsClogNlines(0):
+        if s.counter_M0.out == 0:
           s.FSM_state_M0_next @= M0_FSM_STATE_READY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_INIT
@@ -216,14 +206,14 @@ class BlockingCacheCtrlRTL ( Component ):
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH:
         if s.has_flush_sent_M1_bypass:
           s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH_WAIT
-        elif s.counter_M0.out == BitsClogNlines(0):
+        elif s.counter_M0.out == 0:
           s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH
       
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH_WAIT:
         if s.memresp_wr_ack_M0:
-          if s.counter_M0.out == trunc(Bits32(p.total_num_cachelines - 1), p.BitsClogNlines ):
+          if s.counter_M0.out == trunc(Bits32(p.total_num_cachelines - 1), p.bitwidth_num_lines):
             s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
           else:
             s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH
@@ -236,7 +226,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # Generate cache control transaction signal based on FSM state and
     # request type from cachereq or MSHR
 
-    s.trans_M0 = Wire( mk_bits(TRANS_TYPE_NBITS) )
+    s.trans_M0 = Wire(TRANS_TYPE_NBITS)
 
     @update
     def transaction_logic_M0():
@@ -293,18 +283,18 @@ class BlockingCacheCtrlRTL ( Component ):
           elif s.status.cachereq_type_M0 == FLUSH:
             s.trans_M0 @= TRANS_TYPE_FLUSH_START
 
-    s.counter_en_M0 = Wire( Bits1 )
+    s.counter_en_M0 = Wire(1)
 
     @update
     def up_counter_en_logic_M0():
-      s.counter_en_M0 @= b1(0)
+      s.counter_en_M0 @= 0
       if ( (s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
            (s.FSM_state_M0.out == M0_FSM_STATE_INV) ):
-        s.counter_en_M0 @= b1(1)
+        s.counter_en_M0 @= 1
       elif s.trans_M0 == TRANS_TYPE_FLUSH_READ:
-        s.counter_en_M0 @= b1(1)
+        s.counter_en_M0 @= 1
 
-    s.counter_M0.count_down //= b1(1)
+    s.counter_M0.count_down //= 1
     s.counter_M0.en         //= lambda: s.ctrl.reg_en_M0 & s.counter_en_M0
 
     # When the flush ack come back, the counter has already been
@@ -314,7 +304,7 @@ class BlockingCacheCtrlRTL ( Component ):
       s.update_way_idx_M0 @= s.counter_M0.out
       if ( ( s.trans_M0 == TRANS_TYPE_FLUSH_WRITE ) |
            ( s.trans_M0 == TRANS_TYPE_REPLAY_FLUSH ) ):
-        s.update_way_idx_M0 @= s.counter_M0.out + BitsClogNlines(1)
+        s.update_way_idx_M0 @= s.counter_M0.out + 1
 
     #---------------------------------------------------------------------
     # M0 control signals
@@ -322,17 +312,17 @@ class BlockingCacheCtrlRTL ( Component ):
     # Control signals are generated based on transaction type and inputs
 
     # Stalls originating from M1 and M2
-    s.ostall_M1 = Wire( Bits1 )
-    s.ostall_M2 = Wire( Bits1 )
+    s.ostall_M1 = Wire(1)
+    s.ostall_M2 = Wire(1)
 
-    s.stall_M0 = Wire( Bits1 )
+    s.stall_M0 = Wire(1)
     s.stall_M0 //= lambda: s.ostall_M1 | s.ostall_M2
 
     # We will select MSHR dealloc output instead of incoming cachereq if:
     # 1. We have a valid memresp ( we prioritize handling refills/replays )
     # 2. We are in a middle of a replay
-    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: (
-        (s.FSM_state_M0.out == M0_FSM_STATE_REPLAY) | s.memresp_en_M0.out)
+    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: ((s.FSM_state_M0.out == M0_FSM_STATE_REPLAY) 
+                                                   | s.memresp_en_M0.out)
 
     # We will stall for the following conditions:
     # 1. We are initializing cache as a result of a reset
@@ -342,14 +332,14 @@ class BlockingCacheCtrlRTL ( Component ):
     # 4. MSHR is not empty (for blocking cache)
     # 5. MSHR is full (for nonblocking cache)
     s.cachereq_rdy //= lambda: ~( (s.FSM_state_M0.out == M0_FSM_STATE_INIT) |
-        s.is_write_hit_clean_M0 | s.stall_M0 | (~s.status.MSHR_empty ) |
-        s.status.MSHR_full )
+             s.is_write_hit_clean_M0 | s.stall_M0 | (~s.status.MSHR_empty ) |
+             s.status.MSHR_full )
 
     #---------------------------------------------------------------------
     # M0 control signal table
     #---------------------------------------------------------------------
 
-    s.cs0 = Wire( mk_bits( 9 + p.bitwidth_tag_wben ) )
+    s.cs0 = Wire(9 + p.bitwidth_tag_wben)
 
     CS_tag_array_wben_M0     = slice( 9, 9 + p.bitwidth_tag_wben )
     CS_wdata_mux_sel_M0      = slice( 8, 9 )
@@ -360,13 +350,17 @@ class BlockingCacheCtrlRTL ( Component ):
     CS_update_tag_tag_sel_M0 = slice( 1, 2 )
     CS_mshr_dealloc_M0       = slice( 0, 1 )
 
-    wben_val = concat( p.BitsVal(-1), p.BitsDirty(0), p.BitsTag(0) )
-    wben_dty = concat( p.BitsVal(0), p.BitsDirty(-1), p.BitsTag(0) )
+    BitsVal   = mk_bits(p.bitwidth_val)
+    BitsDirty = mk_bits(p.bitwidth_dirty)
+    BitsTag   = mk_bits(p.bitwidth_tag)
+    wben_val = concat( BitsVal(-1), BitsDirty(0),  BitsTag(0) )
+    wben_dty = concat( BitsVal(0),  BitsDirty(-1), BitsTag(0) )
 
+    BitsTagWben = mk_bits(p.bitwidth_tag_wben)
     @update
     def cs_table_M0():
-      wben_none = BitsTagWben( 0 )  # not enable
-      wben_all  = BitsTagWben( -1 ) # all-enable
+      wben_none = BitsTagWben( 0) # not enable
+      wben_all  = BitsTagWben(-1) # all-enable
       none      = UpdateTagArrayUnit_CMD_NONE
       clear     = UpdateTagArrayUnit_CMD_CLEAR
       wr_hit    = UpdateTagArrayUnit_CMD_WR_HIT
@@ -406,15 +400,16 @@ class BlockingCacheCtrlRTL ( Component ):
 
     s.ctrl.reg_en_M0 //= lambda: ~s.stall_M0
     # use higher bits of the counter to select index
-    s.ctrl.tag_array_init_idx_M0 //= lambda: s.update_way_idx_M0[ clog_asso : bitwidth_num_lines ]
+    clog_asso = clog2( p.associativity )
+    s.ctrl.tag_array_init_idx_M0 //= lambda: s.update_way_idx_M0[ clog_asso : p.bitwidth_num_lines ]
     s.ctrl.is_amo_M0 //= lambda: (( s.trans_M0 == TRANS_TYPE_REPLAY_AMO ) |
                                   ( s.trans_M0 == TRANS_TYPE_AMO_REQ ))
 
     @update
     def tag_array_val_logic_M0():
       # Most of the logic is for associativity > 1; should simplify for dmapped
-      s.ctrl.update_tag_way_M0 @= BitsAssoclog2(0)
-      for i in range( associativity ):
+      s.ctrl.update_tag_way_M0 @= 0
+      for i in range(p.associativity):
         s.ctrl.tag_array_val_M0[i] @= n # by default all tag arrays accesses are invalid
       if ( (s.trans_M0 == TRANS_TYPE_CACHE_INIT) |
            (s.trans_M0 == TRANS_TYPE_INV_WRITE) |
@@ -423,10 +418,10 @@ class BlockingCacheCtrlRTL ( Component ):
            (s.trans_M0 == TRANS_TYPE_FLUSH_WRITE) |
            (s.trans_M0 == TRANS_TYPE_REPLAY_FLUSH) ):
         # use lower bits of the counter to select ways
-        for i in range( associativity ):
-          if s.update_way_idx_M0 % BitsClogNlines(associativity) == BitsClogNlines(i):
+        for i in range(p.associativity):
+          if s.update_way_idx_M0 % p.associativity == i:
             s.ctrl.tag_array_val_M0[i] @= y
-            s.ctrl.update_tag_way_M0 @= BitsAssoclog2(i)
+            s.ctrl.update_tag_way_M0 @= i
       elif ( (s.trans_M0 == TRANS_TYPE_REFILL) |
              (s.trans_M0 == TRANS_TYPE_REPLAY_WRITE) ):
         s.ctrl.tag_array_val_M0[s.status.MSHR_ptr] @= y
@@ -439,40 +434,40 @@ class BlockingCacheCtrlRTL ( Component ):
       elif ( (s.trans_M0 == TRANS_TYPE_READ_REQ) |
              (s.trans_M0 == TRANS_TYPE_WRITE_REQ) |
              (s.trans_M0 == TRANS_TYPE_AMO_REQ) ):
-        for i in range( associativity ):
+        for i in range(p.associativity):
           s.ctrl.tag_array_val_M0[i] @= y # Enable all SRAMs since we are reading
 
     #=====================================================================
     # M1 Stage
     #=====================================================================
-    s.ctrl_pipeline_reg_en_M1 = Wire( Bits1 )
-    s.trans_M1 = m = RegEnRst( mk_bits(TRANS_TYPE_NBITS) )
+    s.ctrl_pipeline_reg_en_M1 = Wire(1)
+    s.trans_M1 = m = RegEnRst(TRANS_TYPE_NBITS)
     m.in_ //= s.trans_M0
     m.en  //= s.ctrl_pipeline_reg_en_M1
 
     # Indicates which way in the cache to replace. We receive the value from
     # dealloc in the M0 stage and use it in both M0 and M1
-    s.way_ptr_M1 = m = RegEnRst( p.BitsAssoclog2 )
+    s.way_ptr_M1 = m = RegEnRst(p.bitwidth_clog_asso)
     m.in_ //= s.status.MSHR_ptr
     m.en  //= s.ctrl_pipeline_reg_en_M1
 
-    s.update_tag_way_M1 = m = RegEnRst( p.BitsAssoclog2 )
+    s.update_tag_way_M1 = m = RegEnRst(p.bitwidth_clog_asso)
     m.in_ //= s.ctrl.update_tag_way_M0
     m.en  //= s.ctrl_pipeline_reg_en_M1
 
-    s.hit_M1            = Wire( Bits1 )
-    s.is_evict_M1       = Wire( Bits1 )
-    s.stall_M1          = Wire( Bits1 )
-    s.is_dty_M1         = Wire( Bits1 )
+    s.hit_M1            = Wire(1)
+    s.is_evict_M1       = Wire(1)
+    s.stall_M1          = Wire(1)
+    s.is_dty_M1         = Wire(1)
     # EXTRA Logic for accounting for set associative caches
-    s.repreq_en_M1      = Wire( Bits1 )
-    s.repreq_is_hit_M1  = Wire( Bits1 )
-    s.repreq_hit_ptr_M1 = Wire( p.BitsAssoclog2 )
+    s.repreq_en_M1      = Wire(1)
+    s.repreq_is_hit_M1  = Wire(1)
+    s.repreq_hit_ptr_M1 = Wire(p.bitwidth_clog_asso)
 
     s.stall_M1 //= lambda: s.ostall_M1 | s.ostall_M2
 
     # TODO: Need more work
-    s.replacement_M1 = m = ReplacementPolicy( p.BitsAssoc, p.BitsAssoclog2, associativity, 0)
+    s.replacement_M1 = m = ReplacementPolicy(p, 0)
     m.repreq_en      //= s.repreq_en_M1
     m.repreq_hit_ptr //= s.repreq_hit_ptr_M1
     m.repreq_is_hit  //= s.repreq_is_hit_M1
@@ -506,15 +501,15 @@ class BlockingCacheCtrlRTL ( Component ):
 
     @update
     def up_flush_tag_read_logic_M1():
-      s.no_flush_needed_M1_bypass @= b1(0)
-      s.has_flush_sent_M1_bypass  @= b1(0)
+      s.no_flush_needed_M1_bypass @= 0
+      s.has_flush_sent_M1_bypass  @= 0
       if s.trans_M1.out == TRANS_TYPE_FLUSH_READ:
         if s.status.ctrl_bit_dty_rd_line_M1[ s.update_tag_way_M1.out ]:
-          s.no_flush_needed_M1_bypass @= b1(0)
-          s.has_flush_sent_M1_bypass  @= b1(1)
+          s.no_flush_needed_M1_bypass @= 0
+          s.has_flush_sent_M1_bypass  @= 1
         else:
-          s.no_flush_needed_M1_bypass @= b1(1)
-          s.has_flush_sent_M1_bypass  @= b1(0)
+          s.no_flush_needed_M1_bypass @= 1
+          s.has_flush_sent_M1_bypass  @= 0
 
     #---------------------------------------------------------------------
     # M1 status
@@ -575,9 +570,9 @@ class BlockingCacheCtrlRTL ( Component ):
 
       s.ctrl.ctrl_bit_rep_en_M1 @= s.repreq_en_M1 & ~s.stall_M2
 
-    s.was_stalled = m = RegRst( Bits1 )
+    s.was_stalled = m = RegRst(1)
     m.in_ //= s.ostall_M2
-    s.evict_bypass = Wire( Bits1 )
+    s.evict_bypass = Wire(1)
 
     s.ctrl.tag_processing_en_M1 //= lambda:( (~s.is_evict_M2.out) & 
                                              ((s.trans_M1.out==TRANS_TYPE_READ_REQ) |  
@@ -590,7 +585,7 @@ class BlockingCacheCtrlRTL ( Component ):
     # M1 control signal table
     #---------------------------------------------------------------------
 
-    s.cs1 = Wire( mk_bits( 7 ) )
+    s.cs1 = Wire(7)
     CS_data_array_wben_M1 = slice( 5, 7 )
     CS_data_array_type_M1 = slice( 4, 5 )
     CS_data_array_val_M1  = slice( 3, 4 )
@@ -637,17 +632,17 @@ class BlockingCacheCtrlRTL ( Component ):
 
     # Logic for pipelined registers for dpath
     s.ctrl.reg_en_M1 //= lambda: (~s.stall_M1 & ~s.is_evict_M1 &
-        (s.trans_M0 != TRANS_TYPE_CACHE_INIT))
+                                 (s.trans_M0 != TRANS_TYPE_CACHE_INIT))
 
     # Logic for pipelined registers for ctrl
     s.ctrl_pipeline_reg_en_M1 //= lambda: (s.ctrl.reg_en_M1 |
-        (s.trans_M0 == TRANS_TYPE_CACHE_INIT))
+                                          (s.trans_M0 == TRANS_TYPE_CACHE_INIT))
 
     # Logic for the SRAM tag array as a result of a stall in cache since the
     # values from the SRAM are valid for one cycle
-    s.ctrl.stall_reg_en_M1      //= lambda: ~s.was_stalled.out
-    s.ctrl.hit_stall_eng_en_M1  //= lambda: ~s.was_stalled.out & ~s.evict_bypass
-    s.ctrl.is_init_M1           //= lambda: s.trans_M1.out == TRANS_TYPE_INIT_REQ
+    s.ctrl.stall_reg_en_M1     //= lambda: ~s.was_stalled.out
+    s.ctrl.hit_stall_eng_en_M1 //= lambda: ~s.was_stalled.out & ~s.evict_bypass
+    s.ctrl.is_init_M1          //= lambda: s.trans_M1.out == TRANS_TYPE_INIT_REQ
 
     # Flush transaction
     s.ctrl.flush_init_reg_en_M1 //= lambda: s.ctrl_pipeline_reg_en_M1
@@ -657,48 +652,48 @@ class BlockingCacheCtrlRTL ( Component ):
 
     # MSHR mask for the dirty bit; if we have an evict, then the dirty bits
     # stored in the MSHR is all 0 else we store the dirty bits in MSHR
-    maskf = p.BitsDirty( -1 ) # need this for translation
-    s.ctrl.dirty_evict_mask_M1 //= lambda: p.BitsDirty(0) if s.is_evict_M1 else maskf
+    maskf = BitsDirty(-1) # need this for translation
+    s.ctrl.dirty_evict_mask_M1 //= lambda: 0 if s.is_evict_M1 else maskf
 
     #=====================================================================
     # M2 Stage
     #=====================================================================
 
-    s.ctrl_pipeline_reg_en_M2 = Wire( Bits1 )
-    s.trans_M2 = m = RegEnRst( mk_bits(TRANS_TYPE_NBITS) )
+    s.ctrl_pipeline_reg_en_M2 = Wire(1)
+    s.trans_M2 = m = RegEnRst(TRANS_TYPE_NBITS)
     m.in_ //= s.trans_M1.out
     m.en  //= s.ctrl_pipeline_reg_en_M2
 
-    s.is_evict_M2 = m = RegEnRst( Bits1 )
+    s.is_evict_M2 = m = RegEnRst(1)
     m.in_ //= s.is_evict_M1
     m.en  //= s.ctrl_pipeline_reg_en_M2
     
     s.evict_bypass //= s.is_evict_M2.out
 
-    s.hit_reg_M2 = m = RegEnRst( Bits1 )
+    s.hit_reg_M2 = m = RegEnRst(1)
     m.in_ //= s.hit_M1
     m.en  //= s.ctrl_pipeline_reg_en_M2
     m.out //= s.ctrl.hit_M2[0]
     
-    s.has_flush_sent_M2 = m = RegEnRst( Bits1 )
+    s.has_flush_sent_M2 = m = RegEnRst(1)
     m.in_ //= s.has_flush_sent_M1_bypass
     m.en  //= s.ctrl_pipeline_reg_en_M2
 
-    s.stall_M2  = Wire( Bits1 )
+    s.stall_M2  = Wire(1)
     s.stall_M2 //= s.ostall_M2
 
     #---------------------------------------------------------------------
     # M2 control signal table
     #---------------------------------------------------------------------
 
-    s.cs2 = Wire( Bits9 )
+    s.cs2 = Wire(9)
 
-    CS_data_size_mux_en_M2  = slice( 8,  9 )
-    CS_read_data_mux_sel_M2 = slice( 7,  8 )
-    CS_ostall_M2            = slice( 6,  7 )
-    CS_memreq_type          = slice( 2,  6 )
-    CS_memreq_en            = slice( 1,  2 )
-    CS_cacheresp_en         = slice( 0,  1 )
+    CS_data_size_mux_en_M2  = slice( 8, 9 )
+    CS_read_data_mux_sel_M2 = slice( 7, 8 )
+    CS_ostall_M2            = slice( 6, 7 )
+    CS_memreq_type          = slice( 2, 6 )
+    CS_memreq_en            = slice( 1, 2 )
+    CS_cacheresp_en         = slice( 0, 1 )
 
     @update
     def cs_table_M2():
@@ -754,10 +749,9 @@ class BlockingCacheCtrlRTL ( Component ):
     s.ctrl.stall_reg_en_M2 //= lambda: ~s.was_stalled.out
 
     # Set a flag for amo transaction
-    s.ctrl.is_amo_M2 //= lambda: (
-      ( (s.trans_M2.out == TRANS_TYPE_AMO_REQ) |
-        (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO) ) &
-      (~s.is_evict_M2.out) )
+    s.ctrl.is_amo_M2 //= lambda: ( ((s.trans_M2.out == TRANS_TYPE_AMO_REQ) |
+                                    (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO)) &
+                                    (~s.is_evict_M2.out) )
 
     s.ctrl.hit_M2[1] //= 0 # hit output expects 2 bits but we only use one bit
 
@@ -860,7 +854,4 @@ class BlockingCacheCtrlRTL ( Component ):
     pipeline = stage1 + stage2 + stage3
 
     add_msgs = ''
-    # add_msgs += f'ev:{s.is_evict_M2.out} '
-    # add_msgs += f'cn:{s.counter_M0.out} fsb:{s.has_flush_sent_M1_bypass} fd:{s.prev_flush_done_M0}'
-
     return pipeline + add_msgs

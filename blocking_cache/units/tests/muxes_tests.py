@@ -11,7 +11,7 @@ Date   : 23 April 2020
 
 from pymtl3 import *
 import pytest
-from pymtl3.stdlib.test.test_utils import run_test_vector_sim
+from pymtl3.stdlib.test_utils import run_test_vector_sim
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 from blocking_cache.CacheDerivedParams import CacheDerivedParams
 from ..muxes import *
@@ -41,7 +41,7 @@ def clw128_dbw128():
   return [ (
       'in_',                              'out*',     'en', 'amo', 'len_', 'offset' ),
     [  1,                                  0,          0,    0,     0,      0  ], 
-    [  0x0123456789abcdeffedcba9876543210, 0x76543210, 0,    1,     0,      0  ], 
+    [  0x76543210,                         0x76543210, 0,    1,     4,      0  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x0123456789abcdeffedcba9876543210, 1,  0,  0,      0  ], 
     [  0x0123456789abcdeffedcba9876543210, 0x0123456789abcdeffedcba9876543210, 1,  0,  0,      4  ], 
     [  0x0123456789abcdeffedcba9876543210, 0xfedcba9876543210, 1,    0,     0x8,    0b0000  ], 
@@ -80,7 +80,7 @@ def clw128_dbw128():
     'name,   test',[
     (""  ,   clw128_dbw32),
   ])
-def test_DataSelectMux_dbw32_clw128( name, test, dump_vcd, test_verilog ):
+def test_DataSelectMux_dbw32_clw128( name, test, cmdline_opts ):
   CacheReqType, CacheRespType = mk_mem_msg(obw, abw, 32) 
   MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
   # cache model
@@ -88,13 +88,13 @@ def test_DataSelectMux_dbw32_clw128( name, test, dump_vcd, test_verilog ):
       MemRespType, num_bytes, associativity )
   # Check the correctness of different inputs
   test_vectors = test()
-  run_test_vector_sim( DataSelectMux(cache_params), test_vectors, dump_vcd, test_verilog )
+  run_test_vector_sim( DataSelectMux(cache_params), test_vectors, cmdline_opts )
 
 @pytest.mark.parametrize(
     'name,   test',[
     (""  ,   clw128_dbw128),
   ])
-def test_DataSelectMux_dbw128_clw128( name, test, dump_vcd, test_verilog ):
+def test_DataSelectMux_dbw128_clw128( name, test, cmdline_opts ):
   CacheReqType, CacheRespType = mk_mem_msg(obw, abw, 128) 
   MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
   # cache model
@@ -102,13 +102,13 @@ def test_DataSelectMux_dbw128_clw128( name, test, dump_vcd, test_verilog ):
       MemRespType, num_bytes, associativity )
   # Check the correctness of different inputs
   test_vectors = test()
-  run_test_vector_sim( DataSelectMux(cache_params), test_vectors, dump_vcd, test_verilog )
+  run_test_vector_sim( DataSelectMux(cache_params), test_vectors, cmdline_opts )
 
 @pytest.mark.parametrize(
     'name,   test',[
     (""  ,   clw128_dbw128),
   ])
-def test_FastDataSelectMux_dbw128_clw128( name, test, dump_vcd, test_verilog ):
+def test_FastDataSelectMux_dbw128_clw128( name, test, cmdline_opts ):
   CacheReqType, CacheRespType = mk_mem_msg(obw, abw, 128) 
   MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
   # cache model
@@ -116,13 +116,13 @@ def test_FastDataSelectMux_dbw128_clw128( name, test, dump_vcd, test_verilog ):
       MemRespType, num_bytes, associativity )
   # Check the correctness of different inputs
   test_vectors = test()
-  run_test_vector_sim( FastDataSelectMux(cache_params), test_vectors, dump_vcd, test_verilog )
+  run_test_vector_sim( FastDataSelectMux(cache_params), test_vectors, cmdline_opts )
 
 @pytest.mark.parametrize(
     'name,   test',[
     (""  ,   clw128_dbw32),
   ])
-def test_FastDataSelectMux_dbw32_clw128( name, test, dump_vcd, test_verilog ):
+def test_FastDataSelectMux_dbw32_clw128( name, test, cmdline_opts ):
   CacheReqType, CacheRespType = mk_mem_msg(obw, abw, 32) 
   MemReqType, MemRespType = mk_mem_msg(obw, abw, 128)
   # cache model
@@ -130,4 +130,4 @@ def test_FastDataSelectMux_dbw32_clw128( name, test, dump_vcd, test_verilog ):
       MemRespType, num_bytes, associativity )
   # Check the correctness of different inputs
   test_vectors = test()
-  run_test_vector_sim( FastDataSelectMux(cache_params), test_vectors, dump_vcd, test_verilog )
+  run_test_vector_sim( FastDataSelectMux(cache_params), test_vectors, cmdline_opts )

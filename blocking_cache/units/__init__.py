@@ -11,7 +11,6 @@ from .ReplacementPolicy import (
 )
 
 from .muxes import (
-  OptimizedMux,
   DataSelectMux,
   FastDataSelectMux
 )
@@ -26,7 +25,7 @@ from .counters import (
 )
 
 from .arithmetics import (
-  DataReplicatorv2,
+  DataReplicator,
   Indexer,
   OffsetLenSelector,
   WriteBitEnGen,
@@ -34,10 +33,5 @@ from .arithmetics import (
 )
 
 from .registers import (
-  DpathPipelineRegM0,
-  DpathPipelineReg,
-  CtrlPipelineReg,
-  MSHRReg,
   ReplacementBitsReg,
-  ValReg
 )

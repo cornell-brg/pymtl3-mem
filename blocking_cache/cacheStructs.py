@@ -69,31 +69,31 @@ def mk_ctrl_signals_struct( p ):
     'is_amo_M0'                   : Bits1,
 
     # M1 Ctrl Signals
-    'reg_en_M1'             : Bits1,
-    'flush_init_reg_en_M1'  : Bits1,
-    'data_array_val_M1'     : Bits1,
-    'data_array_type_M1'    : Bits1,
-    'evict_mux_sel_M1'      : Bits1,
-    'stall_reg_en_M1'       : Bits1,
-    'hit_stall_eng_en_M1'   : Bits1,
-    'ctrl_bit_rep_en_M1'    : Bits1,
-    'way_offset_M1'         : p.BitsAssoclog2,
-    'is_init_M1'            : Bits1,
-    'flush_idx_mux_sel_M1'  : Bits1,
-    'dirty_evict_mask_M1'   : p.BitsDirty,
-    'wben_cmd_M1'           : Bits2,
-    'tag_processing_en_M1'  : Bits1,
+    'reg_en_M1'            : Bits1,
+    'flush_init_reg_en_M1' : Bits1,
+    'data_array_val_M1'    : Bits1,
+    'data_array_type_M1'   : Bits1,
+    'evict_mux_sel_M1'     : Bits1,
+    'stall_reg_en_M1'      : Bits1,
+    'hit_stall_eng_en_M1'  : Bits1,
+    'ctrl_bit_rep_en_M1'   : Bits1,
+    'way_offset_M1'        : p.BitsAssoclog2,
+    'is_init_M1'           : Bits1,
+    'flush_idx_mux_sel_M1' : Bits1,
+    'dirty_evict_mask_M1'  : p.BitsDirty,
+    'wben_cmd_M1'          : Bits2,
+    'tag_processing_en_M1' : Bits1,
 
     # M2 Ctrl Signals
-    'reg_en_M2'             : Bits1,
-    'read_data_mux_sel_M2'  : Bits1,
-    'data_size_mux_en_M2'   : Bits1,
-    'stall_reg_en_M2'       : Bits1,
-    'hit_M2'                : Bits2,
-    'memreq_type'           : p.BitsType,
-    'MSHR_alloc_en'         : Bits1,
-    'MSHR_dealloc_en'       : Bits1,
-    'is_amo_M2'             : Bits1,
+    'reg_en_M2'            : Bits1,
+    'read_data_mux_sel_M2' : Bits1,
+    'data_size_mux_en_M2'  : Bits1,
+    'stall_reg_en_M2'      : Bits1,
+    'hit_M2'               : Bits2,
+    'memreq_type'          : p.BitsType,
+    'MSHR_alloc_en'        : Bits1,
+    'MSHR_dealloc_en'      : Bits1,
+    'is_amo_M2'            : Bits1,
 
   })
   return req_cls
@@ -189,29 +189,6 @@ def mk_tag_array_struct( p ):
   struct = mk_bitstruct( f"StructTagArray_{p.bitwidth_val}_{p.bitwidth_dirty}_{p.bitwidth_tag}", {
     'val': p.BitsVal,
     'dty': p.BitsDirty,  # n bits for cifer, 1 bit otherwise
-    'tag': p.BitsTag,
-  } )
-  return struct
-
-def mk_short_tag_array_struct( p ):
-  if p.full_sram:
-    struct = mk_bitstruct( "StructShortTagArray", {
-      'dty': p.BitsDirty,
-      'tag': p.BitsTag,
-    } )
-  else:
-    struct = mk_bitstruct( "StructShortTagArray", {
-      'dty': p.BitsDirty,
-      'tag': p.BitsTag,
-      'tmp': p.BitsTagArrayTmp
-    } )
-  return struct
-
-def mk_tag_ctrl_M1_struct( p ):
-  # Aggreate the ctrl signals together
-  struct = mk_bitstruct( "StructTagValAggregate", {
-    'val': Bits1,
-    'dty': p.BitsDirty,
     'tag': p.BitsTag,
   } )
   return struct

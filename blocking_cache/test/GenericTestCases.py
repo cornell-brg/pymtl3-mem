@@ -497,10 +497,20 @@ def long_msg_2way():
   return SingleCacheTestParams( msg, gen_mem, associativity=2, bitwidth_mem_data=128, 
                                 bitwidth_cache_data=32, cache_size=4096 )
 
+def dbw64_clw64():
+  msg = [
+    #  type opq addr        len data     type  opq test len data
+    ( 'wr', 0,  0x00000004, 4,  1   ), ( 'wr', 0,  0,   4,  0 ), 
+    ( 'rd', 1,  0x00000004, 1,  0   ), ( 'rd', 1,  1,   1,  1 ), 
+  ]
+  return SingleCacheTestParams( msg, gen_mem, associativity=2, bitwidth_mem_data=64, 
+                                bitwidth_cache_data=64 )
+
 class GenericTestCases:
 
   @pytest.mark.parametrize(
     " name,   test,               stall_prob,latency,src_delay,sink_delay", [
+    ("32B-2", dbw64_clw64,        0.0,       1,      0,        0   ),
     ("32B-1", rd_data128_line128, 0.0,       1,      0,        0   ),
     ("32B-1", wr_data128_line128, 0.0,       1,      0,        0   ),
     ("16B-1", rd_data32_line64,   0.0,       1,      0,        0   ),

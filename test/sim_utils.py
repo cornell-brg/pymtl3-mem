@@ -52,11 +52,11 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
     m.set_metadata( VerilogVerilatorImportPass.vl_trace_filename, dump_vcd )
     m.set_metadata( VerilogTranslationPass.explicit_file_name, str(m.param) )
     m.set_metadata( VerilogTranslationPass.explicit_module_name, str(m.param) )
-    # th.apply( VerilogPlaceholderPass() )
+    th.apply( VerilogPlaceholderPass() )
     th = VerilogTranslationImportPass()( th )
 
     if dump_vtb:
-      m.verilog_tbgen = dump_vtb
+      th.cache.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )
     
     # Replace sram with wrapper
