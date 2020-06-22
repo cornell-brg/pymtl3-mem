@@ -38,7 +38,7 @@ class BlockingCacheRTL ( Component ):
 
     # Generate additional constants and bitstructs from the given parameters
     s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType,
-    MemRespType, num_bytes, associativity )
+                                      MemRespType, num_bytes, associativity )
 
     #---------------------------------------------------------------------
     # Interface
@@ -73,9 +73,9 @@ class BlockingCacheRTL ( Component ):
 
   # Line tracing
   def line_trace( s, level=2 ):
-    if level==1:
+    if level == 1:
       msg = s.cacheCtrl.line_trace()
-    elif level==2:
+    elif level == 2:
       memreq_msg = f"{' '*(19 + s.param.bitwidth_cacheline//4)}"
       memresp_msg = f"{' '*(12 + s.param.bitwidth_cacheline//4)}"
 
