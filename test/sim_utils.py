@@ -10,17 +10,18 @@ Date   : 21 Decemeber 2019
 
 import struct
 import random
-from pymtl3 import *
 
+from pymtl3 import *
 from pymtl3.stdlib.mem        import MemMasterIfcRTL, MemMinionIfcRTL
 from pymtl3.stdlib.test_utils import TestSrcCL
 from pymtl3.stdlib.test_utils import TestSinkCL
-# from pymtl3.stdlib.mem       import MemoryCL 
 
-from pymtl3.passes.backends.verilog  import (
-  VerilogTranslationPass, VerilogTranslationImportPass, VerilogPlaceholderPass, 
+from pymtl3.passes.tracing import VcdGenerationPass
+from pymtl3.passes.backends.verilog import (
+  VerilogTranslationPass, VerilogTranslationImportPass, VerilogPlaceholderPass,
   VerilogTBGenPass, VerilogVerilatorImportPass
 )
+
 # cifer specific memory req/resp msg
 from mem_ifcs.MemMsg import MemMsgType, mk_mem_msg
 
@@ -40,11 +41,13 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
   test_verilog = cmdline_opts['test_verilog']
   dump_vcd     = cmdline_opts['dump_vcd']
   dump_vtb     = cmdline_opts['dump_vtb']
-  max_cycles   = cmdline_opts['max_cycles']
-  if max_cycles == 'inf':
-    max_cycles = 20000
+  max_cycles   = cmdline_opts['max_cycles'] or 20000
+
+  if dump_vcd:
+    th.set_metadata( VcdGenerationPass.vcd_file_name, dump_vcd )
+
   if test_verilog:
-    m = th.cache 
+    m = th.cache
     file_name    = f"{m.param}.v"
     m.set_metadata( VerilogTranslationImportPass.enable, True )
     m.set_metadata( VerilogVerilatorImportPass.vl_xinit, test_verilog )
@@ -58,9 +61,9 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
     if dump_vtb:
       th.cache.verilog_tbgen = dump_vtb
       th.apply( VerilogTBGenPass() )
-    
+
     # Replace sram with wrapper
-    if sram_wrapper: 
+    if sram_wrapper:
       replace_sram( file_name )
       bashCommand = f"cat {sram_wrapper_file} >> {file_name}"
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
@@ -68,10 +71,13 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
 
   th.apply( DefaultPassGroup(print_line_trace=True) )
   th.sim_reset()
+
   while not th.done() and th.sim_cycle_count() < max_cycles:
     th.sim_tick()
- # Check timeout
+
+  # Check timeout
   assert th.sim_cycle_count() < max_cycles
+
   th.sim_tick()
   th.sim_tick()
   th.sim_tick()
@@ -141,7 +147,7 @@ class TestHarness( Component ):
     s.proc_model.cache //= s.cache.mem_minion_ifc
 
     # Connect the cache req and resp ports to test memory
-    s.mem.ifc[0] //= s.cache.mem_master_ifc 
+    s.mem.ifc[0] //= s.cache.mem_master_ifc
 
   def load( s, addrs, data_ints ):
     for addr, data_int in zip( addrs, data_ints ):
@@ -215,11 +221,11 @@ def mk_req_resp( ReqRespType, msg ):
   return out
 
 class SingleCacheTestParams:
-  def __init__( self, msg, mem, associativity, bitwidth_mem_data, bitwidth_cache_data, 
+  def __init__( self, msg, mem, associativity, bitwidth_mem_data, bitwidth_cache_data,
                 cache_size=None):
     self.CacheReqType, self.CacheRespType = mk_mem_msg( obw, abw, bitwidth_cache_data, False )
     self.MemReqType, self.MemRespType = mk_mem_msg( obw, abw, bitwidth_mem_data, True )
-    self.msg = mk_req_resp( (self.CacheReqType, self.CacheRespType), msg ) if msg else None 
+    self.msg = mk_req_resp( (self.CacheReqType, self.CacheRespType), msg ) if msg else None
     if cache_size == None:
       self.size = bitwidth_mem_data * 2 // 8 * associativity
     else:
@@ -305,7 +311,7 @@ class MultiCacheTestHarness( Component ):
     for i in range( p.ncaches ):
       connect( s.proc.mem_master_ifc[i],  s.cache.mem_minion_ifc[i] )
       # connect( s.cache.mem_master_ifc[i], s.mem.ifc[i]              )
-      s.cache.mem_master_ifc[i] //= s.mem.ifc[i]       
+      s.cache.mem_master_ifc[i] //= s.mem.ifc[i]
 
   def load( s ):
     addrs = s.tp.mem[::2]
