@@ -1,5 +1,5 @@
 # Pipelined Blocking Cache 
-
+  
 ## Datapath
 ![Pipelined Blocking Cache Datapath](/figures/pipelined_blocking_cache_cifer.svg)
 ## Pipeline Stages
