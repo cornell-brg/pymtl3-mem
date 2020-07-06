@@ -138,7 +138,6 @@ The cache supports the following transactions
 4. [INV](#inv)
 5. [FLUSH](#flush)
 
-
 ### READ and WRITE
 Reading and writing are the most basic operations of the cache. For reads, the cache reads from
 the tag array in M0 and checks for a hit in M1 using the `TagArrayProcessingUnit`. This module
@@ -154,14 +153,14 @@ isn’t significant in comparison to the memory access latency.
 #### Hit Clean 
 If we have a WRITE hit to a clean cache line, we must stall one extra cycle to write the dirty bit into the tag array. 
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 |
-|:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|:-:          |:-:|:-:|:-:|:-:|:-:|:-:|
 |  rd (hit)   |M0 |M1 |M2 |
 |  wr (hit clean)   |   |M0 |M0*|M1 |M2 |
 |  wr (hit)   |   |   |  |M0 | M1|M2 |
 
 #### Hit Dirty 
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 |
-|:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|:-:          |:-:|:-:|:-:|:-:|:-:|:-:|
 |  rd (hit)   |M0 |M1 |M2 |
 |  rd (hit)   |   |M0 |M1 |M2 |
 |  rd (hit)   |   |   |M0 |M1 | M2|
@@ -169,6 +168,7 @@ If we have a WRITE hit to a clean cache line, we must stall one extra cycle to w
 
 #### Miss Clean 
 If we have a miss, then we refuse the next transaction coming in until the miss is resolved.
+
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 |:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 |  rd (miss)  |M0 |M1 |M2 |...| Y |M0 |M1 |M2 |
@@ -176,6 +176,7 @@ If we have a miss, then we refuse the next transaction coming in until the miss 
 
 #### Miss Dirty 
 For a miss to a dirty line, we send a write memory request for the writeback and and read memory request for the refill. One transaction spawns two new ones going down the pipeline. Write responses are ignored.
+
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |10
 |:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | rd (evict)  |M0 |M1 |M2 |...|   |   |   |   |
@@ -228,6 +229,7 @@ word accessed is dirty. If it is dirty, then we simply respond with the word wit
 expensive refill request.
 
 #### INV
+
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |10
 |:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | INV (start) |M0 |M1 |M2 ||   |   |   |   |
@@ -252,6 +254,7 @@ for flush it allows us to go down the pipeline again to clear the dirty bit in t
 acknowledgment and dirty line update, we repeat this process for the next line.
 
 #### FLUSH Example
+
 | transaction | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |10
 |:-:          |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | FLUSH(start)|M0 |M1 |M2 ||  |   |   |   |
@@ -261,6 +264,7 @@ acknowledgment and dirty line update, we repeat this process for the next line.
 |      (wait) |   |   |   |   |M0 |M1 |M2 |
 |      (wait) |   |   |   |   |   |M0 |M1 |M2 |
 |      (end)  |   |   |   |   |   |   |   |M0 |M1 |M2 |
+
 This example shows flushing a line that is dirty. We always read the line first for the dirty bit and then send a writeback if the line is dirty. If the line is dirty, we also need to clear the dirty, whose latency is hidden in the wait stages. While the writeback is in flight, the cache waits until the write comes back. This is the only case where a write response isn't ignored. The end state sends a `MemMinion.resp` signal to the processor to let it know it terminated.
 
 ## Testing
@@ -271,7 +275,7 @@ correctness. The CIFER processor only sets the cache response ready signal only 
 cache request. However, since we have separate models for the source and sink we cannot easily
 replicate this dependency by simply connecting the source and sink to the DUT. For this reason, we created a `ProcModel` where we implement this rule to unify the cache request enable signal in the source and the cache response ready signal in the sink. The cache also connects to the magic memory that acts as a lower level cache for refills and AMO transactions.
 
-![Single Cache Testbench](/doc/figures/testbench/single_cache_testing.pdf)
+![Single Cache Testbench](/doc/figures/testbench/single_cache_testing.svg)
 
 ### Multi-Cache Testbench
 For multi-cache testing, we designed a modular test bench reusing components from single
@@ -289,7 +293,7 @@ and then test it. Random testing has many additional challenges such as the test
 to generate a valid sequence of transactions that ensure coherence. This requires implementing an
 additional coherence reference model for transactions.
 
-![Multi-Cache Testbench](/doc/figures/testbench/multi_cache_testing.pdf)
+![Multi-Cache Testbench](/doc/figures/testbench/multi_cache_testing.svg)
 
 The testbench introduces two new modules `CurrOrderInFlight`,
 which tracks the total number of transactions of this order still in flight, and `CurrOrderCounter`,
