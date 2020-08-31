@@ -14,12 +14,13 @@ from .AmoTests          import AmoTests
 from .InvFlushTests     import InvFlushTests
 from .RandomTestCases   import RandomTests
 from .HypothesisTest    import HypothesisTests
+from .OtherCiferTests   import OtherCiferTests
 
 class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
-                              HypothesisTests, RandomTests ):
+                              HypothesisTests, RandomTests, OtherCiferTests ):
 
   def run_test( s, msgs, mem, CacheReqType, CacheRespType, MemReqType, MemRespType,
-                associativity, cacheSize, stall_prob, latency, src_delay, 
+                associativity, cacheSize, stall_prob, latency, src_delay,
                 sink_delay, cmdline_opts, trace ):
 
     th = TestHarness( msgs[::2], msgs[1::2], stall_prob, latency,
@@ -29,5 +30,5 @@ class BlockingCacheRTL_Tests( GenericTestCases, InvFlushTests, AmoTests,
     th.elaborate()
     if mem != None:
       th.load( mem[::2], mem[1::2] )
-    sram_wrapper = True if cacheSize == 4096 else False    
+    sram_wrapper = True if cacheSize == 4096 else False
     run_sim( th, cmdline_opts, trace, sram_wrapper )
