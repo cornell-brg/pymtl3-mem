@@ -65,20 +65,22 @@ class DataReplicator( Component ):
       s.output_mux.in_[i+1] //= s.replications[i]
 
     BitsSel = mk_bits( clog2(ninputs) )
+    BitsLen = mk_bits( p.bitwidth_len )
+
     @update
     def output_mux_selection_logic():
       s.output_mux.sel @= 0
       if ~s.amo:
         s.output_mux.sel @= BitsSel(ninputs-2)
-        if s.len_ == 0:
+        if s.len_ == BitsLen(0):
           # choose the largest byte access available if len is 0
           s.output_mux.sel @= BitsSel(ninputs-2)
-        elif s.len_ == 3:
+        elif s.len_ == BitsLen(3):
           s.output_mux.sel @= BitsSel(ninputs-1)
         else:
           # Iterate to check for matching len and then map to appropriate select
-          for i in range(ninputs - 2):
-            if s.len_ == 2**i:
+          for i in range(ninputs - 3):
+            if s.len_ == BitsLen(2**i):
               s.output_mux.sel @= BitsSel(i) + 1
     s.out //= s.output_mux.out
 
