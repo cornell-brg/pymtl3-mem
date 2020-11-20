@@ -37,11 +37,17 @@ module SramGenericPRTL
   assign cen = CSB1;  // CSB1 Active Low
   assign bw = WBM1;  // WBM1 Active High
 
-if ((num_bits==128) && (num_words==256)) begin
+  if ((num_bits==128) && (num_words==256)) begin
     gf14_sram_256x128 brg_sram_256x128 (.clk(clk), .cen(cen), .rdwen(rdwen), .a(a), .d(d), .bw(bw), .q(q));
   end
   else if((num_bits==26) && (num_words==128)) begin
     gf14_sram_128x26 brg_sram_128x26 (.clk(clk), .cen(cen), .rdwen(rdwen), .a(a), .d(d), .bw(bw), .q(q));
+  end
+  else if((num_bits==128) && (num_words==512)) begin
+    gf14_sram_512x128 brg_sram_512x128 (.clk(clk), .cen(cen), .rdwen(rdwen), .a(a), .d(d), .bw(bw), .q(q));
+  end
+  else if((num_bits==25) && (num_words==256)) begin
+    gf14_sram_256x25 brg_sram_256x25 (.clk(clk), .cen(cen), .rdwen(rdwen), .a(a), .d(d), .bw(bw), .q(q));
   end
   else begin
   // Do not find a hard SRAM, then use the behavioral model
@@ -118,6 +124,38 @@ module gf14_sram_256x128
 
 endmodule
 
+module gf14_sram_512x128
+   (
+    input  clk,
+    input  cen,
+    input  rdwen,
+    input  [8:0] a,
+    input  [127:0] d,
+    input  [127:0] bw,
+    output [127:0] q
+    );
+
+   sram_512x128 R1PB
+     (
+      .CLK         (clk),
+      .CEN         (cen),
+      .RDWEN       (rdwen),
+      .A           (a),
+      .D           (d),
+      .BW          (bw),
+      .T_LOGIC     (1'b0),
+      .T_Q_RST     (1'b0),
+      .MA_SAWL     (1'b0),
+      .MA_WL       (1'b0),
+      .MA_VD1      (1'b0),
+      .MA_VD0      (1'b0),
+      .MA_WRT      (1'b0),
+      .Q           (q),
+      .OBSV_CTL    ()
+     );
+
+endmodule
+
 module gf14_sram_128x26
    (
     input  clk,
@@ -129,8 +167,39 @@ module gf14_sram_128x26
     output [25:0] q
     );
 
-
    sram_128x26 R1PB
+     (
+      .CLK         (clk),
+      .CEN         (cen),
+      .RDWEN       (rdwen),
+      .A           (a),
+      .D           (d),
+      .BW          (bw),
+      .T_LOGIC     (1'b0),
+      .T_Q_RST     (1'b0),
+      .MA_SAWL     (1'b0),
+      .MA_WL       (1'b0),
+      .MA_VD1      (1'b0),
+      .MA_VD0      (1'b0),
+      .MA_WRT      (1'b0),
+      .Q           (q),
+      .OBSV_CTL    ()
+     );
+
+endmodule
+
+module gf14_sram_256x25
+   (
+    input  clk,
+    input  cen,
+    input  rdwen,
+    input  [7:0] a,
+    input  [24:0] d,
+    input  [24:0] bw,
+    output [24:0] q
+    );
+
+   sram_256x25 R1PB
      (
       .CLK         (clk),
       .CEN         (cen),
