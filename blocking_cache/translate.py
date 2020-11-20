@@ -1,12 +1,11 @@
-"""
-=========================================================================
-translate.py
-=========================================================================
-Translates the Blocking Cache to System Verilog
-
-Author : Xiaoyu Yan, Eric Tang
-Date   : 23 December 2019
-"""
+#!/usr/bin/env python
+#=========================================================================
+# translate.py
+#=========================================================================
+# Translates the Blocking Cache to System Verilog
+#
+# Author : Xiaoyu Yan, Eric Tang
+# Date   : 23 December 2019
 
 import argparse
 import os
@@ -21,7 +20,11 @@ sys.path.insert( 0, parent_path )
 sram_wrapper_file = os.path.join( parent_path, 'sram', 'brg_gf14_sram_generic.v' )
 
 # Import the translation pass from verilog backend
-from pymtl3.passes.backends.verilog import VerilogTranslationPass
+from pymtl3.passes.backends.verilog import (
+        VerilogTranslationPass,
+        VerilogTranslationImportPass,
+        VerilogPlaceholderPass,
+)
 
 # Import the Cache generator
 from blocking_cache.BlockingCacheRTL import BlockingCacheRTL
@@ -77,18 +80,20 @@ def main( opts ):
   success = False
   module_name = f"BlockingCache_{opts.size}_{opts.clw}_{opts.abw}_{opts.dbw}_{opts.asso}"
   file_name = module_name + ".v"
-  
-  dut.set_metadata( TranslationPass.enable, True )
-  dut.set_metadata( TranslationPass.explicit_file_name, module_name )
-  dut.set_metadata( TranslationPass.explicit_module_name, module_name )
+
+  dut.set_metadata( VerilogTranslationPass.enable, True )
+  dut.set_metadata( VerilogTranslationPass.explicit_file_name, module_name )
+  dut.set_metadata( VerilogTranslationPass.explicit_module_name, module_name )
+
   # dut.verilog_translate = True
   # dut.config_verilog_translate = TranslationConfigs(
   #     explicit_module_name = module_name,
   #     explicit_file_name = file_name
   #   )
+
   try:
     dut.elaborate()
-    dut.apply( TranslationPass() )
+    dut.apply( VerilogTranslationPass() )
     success = True
   finally:
     if success:
