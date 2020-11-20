@@ -17,7 +17,7 @@ file_path   = os.path.abspath( __file__ )
 dir_path    = os.path.dirname( file_path )
 parent_path = os.path.dirname( dir_path )
 sys.path.insert( 0, parent_path )
-sram_wrapper_file = os.path.join( parent_path, 'sram', 'brg_gf14_sram_generic.v' )
+sram_wrapper_file = os.path.join( parent_path, 'sram', 'brg_gf14_sram_generic_synopsys.v' )
 
 # Import the translation pass from verilog backend
 from pymtl3.passes.backends.verilog import (
