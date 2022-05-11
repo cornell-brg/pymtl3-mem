@@ -69,7 +69,7 @@ def run_sim( th, cmdline_opts, trace, sram_wrapper ):
       process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
 
-  th.apply( DefaultPassGroup(print_line_trace=True) )
+  th.apply( DefaultPassGroup( linetrace=True ) )
   th.sim_reset()
 
   while not th.done() and th.sim_cycle_count() < max_cycles:
