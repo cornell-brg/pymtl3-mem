@@ -245,13 +245,24 @@ class TagArrayRDataProcessUnit( Component ):
     s.inval_hit = OutPort() # hit on an invalid cache line that is dirty
 
     s.offset     = InPort(p.bitwidth_offset)
+    s.wr_len     = InPort(p.bitwidth_len)
     s.word_dirty = OutPort(p.associativity) # If the word in cacheline is dirty
     s.line_dirty = OutPort(p.associativity) # If the line is dirty
     s.tag_entires= [ OutPort(p.StructTagArray) for _ in range(p.associativity) ]
 
     # word dirty logic
-    for i in range(p.associativity):
-      s.word_dirty[i] //= lambda: s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ]
+    @update
+    def word_dirty_logic():
+      for i in range(p.associativity):
+        # moyang: this is a CIFER hack. When writing a double word (zero
+        # extending a 32-bit word to a 64-bit double word), we only consider the
+        # double word dirty if both 32-bit words are dirty, because we need to
+        # stall the pipeline to set the two dirty bits if any of them is not
+        # already dirty.
+        if s.wr_len == 3:
+          s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ] & s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] + 1 ]
+        else:
+          s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ]
 
     @update
     def line_dirty_logic():
@@ -292,5 +303,5 @@ class TagArrayRDataProcessUnit( Component ):
           s.tag_entires[i] @= p.StructTagArray()
 
   def line_trace( s ):
-    msg = f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} '
+    msg = f'hit:{s.hit} hit_way:{s.hit_way} inv_hit:{s.inval_hit} wr_len:{s.wr_len} word_dirty:{s.word_dirty}'
     return msg

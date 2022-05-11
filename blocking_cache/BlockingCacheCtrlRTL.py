@@ -90,7 +90,7 @@ TRANS_TYPE_REPLAY_FLUSH = 18 # Replay the flush req after is done
 class BlockingCacheCtrlRTL( Component ):
 
   def construct( s, p ):
-    
+
     #=====================================================================
     # Interface
     #=====================================================================
@@ -125,7 +125,7 @@ class BlockingCacheCtrlRTL( Component ):
     s.memresp_en_M0 = m = RegEnRst(1)
     m.in_ //= s.memresp_en
     m.en  //= s.ctrl.reg_en_M0
-    
+
 
     # Checks if memory response if valid
     s.memresp_val_M0 = Wire()
@@ -149,7 +149,7 @@ class BlockingCacheCtrlRTL( Component ):
     s.flush_refill_M1_bypass    = Wire()
     s.prev_flush_done_M0        = Wire()
 
-    s.prev_flush_done_M0 //= lambda: (s.no_flush_needed_M1_bypass | s.memresp_wr_ack_M0 
+    s.prev_flush_done_M0 //= lambda: (s.no_flush_needed_M1_bypass | s.memresp_wr_ack_M0
                                     | s.flush_refill_M1_bypass )
 
     #---------------------------------------------------------------------
@@ -160,18 +160,18 @@ class BlockingCacheCtrlRTL( Component ):
     s.FSM_state_M0 = m = RegEnRst(M0_FSM_STATE_NBITS, reset_value=M0_FSM_STATE_INIT )
     m.in_ //= s.FSM_state_M0_next
     m.en  //= s.ctrl.reg_en_M0
-    
+
     # Next state logic
     @update
     def fsm_M0_next_state():
       s.FSM_state_M0_next @= M0_FSM_STATE_INIT
-      
+
       if   s.FSM_state_M0.out == M0_FSM_STATE_INIT:
         if s.counter_M0.out == 0:
           s.FSM_state_M0_next @= M0_FSM_STATE_READY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_INIT
-      
+
       elif s.FSM_state_M0.out == M0_FSM_STATE_READY:
         if s.memresp_val_M0 & ((s.status.MSHR_type == WRITE) | (s.status.MSHR_type == READ)):
           # Have valid replays in the MSHR
@@ -185,13 +185,13 @@ class BlockingCacheCtrlRTL( Component ):
             s.FSM_state_M0_next @= M0_FSM_STATE_READY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_READY
-      
+
       elif s.FSM_state_M0.out == M0_FSM_STATE_INV:
         if s.counter_M0.out == 0:
           s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_INV
-      
+
       elif s.FSM_state_M0.out == M0_FSM_STATE_REPLAY:
         # For flush we need to wait for the final write_ack
         if (~s.status.MSHR_empty) & (s.status.MSHR_type == FLUSH):
@@ -202,7 +202,7 @@ class BlockingCacheCtrlRTL( Component ):
         # MSHR will be dealloc this cycle
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_READY
-      
+
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH:
         if s.has_flush_sent_M1_bypass:
           s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH_WAIT
@@ -210,7 +210,7 @@ class BlockingCacheCtrlRTL( Component ):
           s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
         else:
           s.FSM_state_M0_next @= M0_FSM_STATE_FLUSH
-      
+
       elif s.FSM_state_M0.out == M0_FSM_STATE_FLUSH_WAIT:
         if s.memresp_wr_ack_M0:
           if s.counter_M0.out == trunc(Bits32(p.total_num_cachelines - 1), p.bitwidth_num_lines):
@@ -321,7 +321,7 @@ class BlockingCacheCtrlRTL( Component ):
     # We will select MSHR dealloc output instead of incoming cachereq if:
     # 1. We have a valid memresp ( we prioritize handling refills/replays )
     # 2. We are in a middle of a replay
-    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: ((s.FSM_state_M0.out == M0_FSM_STATE_REPLAY) 
+    s.ctrl.cachereq_memresp_mux_sel_M0 //= lambda: ((s.FSM_state_M0.out == M0_FSM_STATE_REPLAY)
                                                    | s.memresp_en_M0.out)
 
     # We will stall for the following conditions:
@@ -473,7 +473,7 @@ class BlockingCacheCtrlRTL( Component ):
     m.repreq_is_hit  //= s.repreq_is_hit_M1
     m.repreq_ptr     //= s.status.ctrl_bit_rep_rd_M1 # Read replacement mask
     m.represp_ptr    //= s.ctrl.ctrl_bit_rep_wr_M0   # Bypass to M0 stage?
-    
+
 
     # Selects the index offset for the Data array based on which way to
     # read/write. We only use one data array and we have offset the index
@@ -574,12 +574,12 @@ class BlockingCacheCtrlRTL( Component ):
     m.in_ //= s.ostall_M2
     s.evict_bypass = Wire(1)
 
-    s.ctrl.tag_processing_en_M1 //= lambda:( (~s.is_evict_M2.out) & 
-                                             ((s.trans_M1.out==TRANS_TYPE_READ_REQ) |  
-                                             (s.trans_M1.out==TRANS_TYPE_WRITE_REQ) |  
-                                             (s.trans_M1.out==TRANS_TYPE_AMO_REQ) |  
-                                             (s.trans_M1.out==TRANS_TYPE_FLUSH_READ) ) 
-                                            ) 
+    s.ctrl.tag_processing_en_M1 //= lambda:( (~s.is_evict_M2.out) &
+                                             ((s.trans_M1.out==TRANS_TYPE_READ_REQ) |
+                                             (s.trans_M1.out==TRANS_TYPE_WRITE_REQ) |
+                                             (s.trans_M1.out==TRANS_TYPE_AMO_REQ) |
+                                             (s.trans_M1.out==TRANS_TYPE_FLUSH_READ) )
+                                            )
 
     #---------------------------------------------------------------------
     # M1 control signal table
@@ -667,14 +667,14 @@ class BlockingCacheCtrlRTL( Component ):
     s.is_evict_M2 = m = RegEnRst(1)
     m.in_ //= s.is_evict_M1
     m.en  //= s.ctrl_pipeline_reg_en_M2
-    
+
     s.evict_bypass //= s.is_evict_M2.out
 
     s.hit_reg_M2 = m = RegEnRst(1)
     m.in_ //= s.hit_M1
     m.en  //= s.ctrl_pipeline_reg_en_M2
     m.out //= s.ctrl.hit_M2[0]
-    
+
     s.has_flush_sent_M2 = m = RegEnRst(1)
     m.in_ //= s.has_flush_sent_M1_bypass
     m.en  //= s.ctrl_pipeline_reg_en_M2
@@ -739,11 +739,11 @@ class BlockingCacheCtrlRTL( Component ):
     # dpath pipeline reg en; will only en if we have a stall in M2 and if
     # we are not initing the cache since that is entirely internal
     # We can likely not need to stall for inv also
-    s.ctrl.reg_en_M2 //= lambda: ( ( ~s.stall_M2 ) & ( s.trans_M1.out != 
+    s.ctrl.reg_en_M2 //= lambda: ( ( ~s.stall_M2 ) & ( s.trans_M1.out !=
                                                       TRANS_TYPE_CACHE_INIT ) )
     # ctrl pipeline reg en; We will enable ctrl during cache init even during
     # an external stall since the transaction is entirely internal
-    s.ctrl_pipeline_reg_en_M2 //= lambda: ( s.ctrl.reg_en_M2 | ( s.trans_M1.out 
+    s.ctrl_pipeline_reg_en_M2 //= lambda: ( s.ctrl.reg_en_M2 | ( s.trans_M1.out
                                                       == TRANS_TYPE_CACHE_INIT ) )
 
     s.ctrl.stall_reg_en_M2 //= lambda: ~s.was_stalled.out

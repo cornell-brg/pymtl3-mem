@@ -60,10 +60,9 @@ class BlockingCacheDpathRTL( Component ):
     s.cachereq_memresp_mux_M0 = m = Mux(p.CacheReqType, 2)
     m.in_[0] //= s.cachereq_Y
     m.in_[1] //= s.MSHR_dealloc_mux_in_M0
-    m.sel    //= s.ctrl.cachereq_memresp_mux_sel_M0 
+    m.sel    //= s.ctrl.cachereq_memresp_mux_sel_M0
 
     s.cachereq_M0 = Wire(p.PipelineMsg)
-    s.cachereq_M0.len    //= s.cachereq_memresp_mux_M0.out.len
     s.cachereq_M0.type_  //= s.cachereq_memresp_mux_M0.out.type_
     s.cachereq_M0.opaque //= s.cachereq_memresp_mux_M0.out.opaque
 
@@ -73,16 +72,26 @@ class BlockingCacheDpathRTL( Component ):
     m.in_[0] //= s.cachereq_memresp_mux_M0.out.addr
     m.in_[1] //= s.cachereq_addr_M1_forward
     m.sel    //= s.ctrl.addr_mux_sel_M0
+
+    # moyang: Forward the `len` from cache request in M1 as a result of write
+    # hit clean
+    s.cachereq_len_M1_forward = Wire(p.bitwidth_len)
+    s.len_mux_M0 = m = Mux(p.bitwidth_len, 2)
+    m.in_[0] //= s.cachereq_memresp_mux_M0.out.len
+    m.in_[1] //= s.cachereq_len_M1_forward
+    m.sel    //= s.ctrl.addr_mux_sel_M0
+
     @update
     def cachereq_M0_addr_bits_to_bitstruct():
       s.cachereq_M0.addr @= s.addr_mux_M0.out
+      s.cachereq_M0.len  @= s.len_mux_M0.out
 
     # Converts a 32-bit word to 128-bit line by replicated the word multiple times
     s.replicator_M0 = m = DataReplicator(p)
     m.len_ //= s.cachereq_memresp_mux_M0.out.len
     m.in_  //= s.cachereq_memresp_mux_M0.out.data
     m.amo  //= s.ctrl.is_amo_M0
-    
+
     # Selects between data from the memory resp or from the replicator
     # Dependent on if we have a refill response
     s.write_data_mux_M0 = m = Mux(p.bitwidth_cacheline, 2)
@@ -105,7 +114,8 @@ class BlockingCacheDpathRTL( Component ):
     m.offset     //= s.cachereq_M0.addr.offset
     m.cmd        //= s.ctrl.update_tag_cmd_M0
     m.refill_dty //= s.MSHR_dealloc_out.dirty_bits
-    
+    m.wr_len     //= s.cachereq_M0.len
+
     s.tag_entries_M1_bypass = [ Wire(p.StructTagArray) for _ in range(p.associativity) ]
     for i in range(p.associativity):
       s.update_tag_unit.old_entries[i] //= s.tag_entries_M1_bypass[i]
@@ -155,10 +165,11 @@ class BlockingCacheDpathRTL( Component ):
     m.in_ //= s.MSHR_dealloc_out.dirty_bits # From M0 stage
     m.en  //= s.ctrl.reg_en_M1
 
-    # Foward the M1 addr to M0
+    # Foward the M1 addr and len to M0
     @update
     def up_cachereq_addr_M1_forward_bits_to_bitstruct():
       s.cachereq_addr_M1_forward @= s.cachereq_M1.out.addr
+      s.cachereq_len_M1_forward  @= s.cachereq_M1.out.len
 
     # Register file to store the replacement info
     s.replacement_bits_M1 = m = ReplacementBitsReg(p)
@@ -166,9 +177,9 @@ class BlockingCacheDpathRTL( Component ):
     m.waddr //= s.cachereq_M1.out.addr.index
     m.wdata //= s.ctrl.ctrl_bit_rep_wr_M0
     m.wen   //= s.ctrl.ctrl_bit_rep_en_M1
-  
+
     # Tag arrays instantiations
-    s.tag_arrays_M1 = [ SramPRTL( p.bitwidth_tag_array, p.nblocks_per_way ) 
+    s.tag_arrays_M1 = [ SramPRTL( p.bitwidth_tag_array, p.nblocks_per_way )
                         for _ in range(p.associativity) ]
     for i, m in enumerate(s.tag_arrays_M1):
       m.port0_val   //= s.ctrl.tag_array_val_M0[i]
@@ -177,7 +188,7 @@ class BlockingCacheDpathRTL( Component ):
       m.port0_wdata //= s.tag_array_wdata_M0
       m.port0_wben  //= s.ctrl.tag_array_wben_M0
 
-    # Saves output of the SRAM during stall 
+    # Saves output of the SRAM during stall
     s.tag_array_rdata_M1 = [ StallEngine(p.StructTagArray) for _ in range(p.associativity) ]
     for i, m in enumerate(s.tag_array_rdata_M1):
       m.in_ //= lambda: s.tag_arrays_M1[i].port0_rdata
@@ -217,14 +228,15 @@ class BlockingCacheDpathRTL( Component ):
     m.hit_way    //= s.status.hit_way_M1
     m.inval_hit  //= s.status.inval_hit_M1
     m.offset     //= s.cachereq_M1.out.addr.offset
+    m.wr_len     //= s.cachereq_M1.out.len
     m.line_dirty //= s.status.ctrl_bit_dty_rd_line_M1
     m.word_dirty //= s.status.ctrl_bit_dty_rd_word_M1
     m.en         //= s.ctrl.tag_processing_en_M1
-    
+
     # Send the output of tag array sram into the processing unit
     for i in range(p.associativity):
       m.tag_array[i] //= s.tag_array_rdata_M1[i].out
-      
+
       # Bypass the current tag-array entries to M0
       s.tag_entries_M1_bypass[i] //= m.tag_entires[i]
 
@@ -325,7 +337,7 @@ class BlockingCacheDpathRTL( Component ):
     m.amo    //= s.ctrl.is_amo_M2
     m.len_   //= s.cachereq_M2.out.len
     m.offset //= s.cachereq_M2.out.addr.offset
-    
+
     # selects the appropriate offset and len for memreq based on the type
     s.mem_req_off_len_M2 = m = OffsetLenSelector(p)
     m.len_i    //= s.cachereq_M2.out.len
@@ -363,4 +375,6 @@ class BlockingCacheDpathRTL( Component ):
 
   def line_trace( s ):
     msg = ""
+    # msg = s.update_tag_unit.line_trace()
+    # msg = s.tag_array_PU.line_trace()
     return msg
