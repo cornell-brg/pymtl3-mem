@@ -10,7 +10,7 @@ Date   : 20 February 2020
 """
 
 from pymtl3                 import *
-from pymtl3.stdlib.mem      import MemMasterIfcRTL, MemMinionIfcRTL
+from pymtl3.stdlib.mem.ifcs import MemRequesterIfc, MemResponderIfc
 from .BlockingCacheCtrlRTL  import BlockingCacheCtrlRTL
 from .BlockingCacheDpathRTL import BlockingCacheDpathRTL
 from .CacheDerivedParams    import CacheDerivedParams
@@ -45,29 +45,29 @@ class BlockingCacheRTL ( Component ):
     #---------------------------------------------------------------------
 
     # Memory-Minion Interface (e.g. proc <-> cache)
-    s.mem_minion_ifc = MemMinionIfcRTL( CacheReqType, CacheRespType )
+    s.mem_minion_ifc = MemResponderIfc( CacheReqType, CacheRespType )
     # Memory-Master Interface (e.g. cache <-> main memory or lower-level cache)
-    s.mem_master_ifc = MemMasterIfcRTL( MemReqType, MemRespType )
+    s.mem_master_ifc = MemRequesterIfc( MemReqType, MemRespType )
 
     #---------------------------------------------------------------------
     # Structural Composition
     #---------------------------------------------------------------------
 
     s.cacheDpath = m = BlockingCacheDpathRTL( p )
-    m.cachereq_Y   //= s.mem_minion_ifc.req.msg
-    m.cacheresp_M2 //= s.mem_minion_ifc.resp.msg
-    m.memresp_Y    //= s.mem_master_ifc.resp.msg
-    m.memreq_M2    //= s.mem_master_ifc.req.msg
+    m.cachereq_Y   //= s.mem_minion_ifc.reqstream.msg
+    m.cacheresp_M2 //= s.mem_minion_ifc.respstream.msg
+    m.memresp_Y    //= s.mem_master_ifc.respstream.msg
+    m.memreq_M2    //= s.mem_master_ifc.reqstream.msg
 
     s.cacheCtrl = m = BlockingCacheCtrlRTL( p )
-    m.cachereq_en   //= s.mem_minion_ifc.req.en
-    m.cachereq_rdy  //= s.mem_minion_ifc.req.rdy
-    m.memresp_en    //= s.mem_master_ifc.resp.en
-    m.memresp_rdy   //= s.mem_master_ifc.resp.rdy
-    m.cacheresp_en  //= s.mem_minion_ifc.resp.en
-    m.cacheresp_rdy //= s.mem_minion_ifc.resp.rdy
-    m.memreq_en     //= s.mem_master_ifc.req.en
-    m.memreq_rdy    //= s.mem_master_ifc.req.rdy
+    m.cachereq_val  //= s.mem_minion_ifc.reqstream.val
+    m.cachereq_rdy  //= s.mem_minion_ifc.reqstream.rdy
+    m.memresp_val   //= s.mem_master_ifc.respstream.val
+    m.memresp_rdy   //= s.mem_master_ifc.respstream.rdy
+    m.cacheresp_val //= s.mem_minion_ifc.respstream.val
+    m.cacheresp_rdy //= s.mem_minion_ifc.respstream.rdy
+    m.memreq_val    //= s.mem_master_ifc.reqstream.val
+    m.memreq_rdy    //= s.mem_master_ifc.reqstream.rdy
     m.status        //= s.cacheDpath.status
     m.ctrl          //= s.cacheDpath.ctrl
 
@@ -79,10 +79,10 @@ class BlockingCacheRTL ( Component ):
       memreq_msg = f"{' '*(19 + s.param.bitwidth_cacheline//4)}"
       memresp_msg = f"{' '*(12 + s.param.bitwidth_cacheline//4)}"
 
-      if s.mem_master_ifc.resp.en:
-        memresp_msg = "{}".format(s.mem_master_ifc.resp.msg)
-      if s.mem_master_ifc.req.en:
-        memreq_msg  = "{}".format(s.mem_master_ifc.req.msg)
+      if s.mem_master_ifc.respstream.val:
+        memresp_msg = "{}".format(s.mem_master_ifc.respstream.msg)
+      if s.mem_master_ifc.reqstream.val:
+        memreq_msg  = "{}".format(s.mem_master_ifc.reqstream.msg)
       msg = "{} {}{}{}".format(
         s.cacheDpath.line_trace(), memresp_msg, s.cacheCtrl.line_trace(),
         memreq_msg

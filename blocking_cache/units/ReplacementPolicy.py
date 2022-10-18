@@ -9,7 +9,7 @@ Date   : 12/23/19
 """
 
 from pymtl3                  import *
-from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst
+from pymtl3.stdlib.primitive import RegEnRst, RegRst
 
 class ReplacementPolicy (Component):
   """

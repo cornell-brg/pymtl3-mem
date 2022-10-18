@@ -8,9 +8,8 @@ Author : Xiaoyu Yan (xy97), Eric Tang (et396)
 Date   : 13 April 2020
 """
 from pymtl3 import *
-from pymtl3.stdlib.mem import MemMasterIfcRTL, MemMinionIfcRTL
-from pymtl3.stdlib.test_utils.test_srcs  import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test_utils.test_sinks import TestSinkCL, TestSinkRTL
+from pymtl3.stdlib.mem.ifcs import MemRequesterIfc, MemResponderIfc
+from pymtl3.stdlib.stream import StreamSourceFL, StreamSinkFL
 from constants import *
 from .ProcModel import ProcModel
 from blocking_cache.units.counters import CounterUpDown, CounterEnRst
@@ -29,7 +28,7 @@ class MulticoreModel( Component ):
     s.p = p
     srcMsg = mk_multicache_test_struct( p )
 
-    s.mem_master_ifc = [MemMasterIfcRTL( p.CacheReqType, p.CacheRespType ) 
+    s.mem_master_ifc = [MemRequesterIfc( p.CacheReqType, p.CacheRespType ) 
     for _ in range(p.ncaches)]
 
     src_transactions = [ [] for _ in range( p.ncaches ) ]
@@ -44,17 +43,17 @@ class MulticoreModel( Component ):
       # src_transactions[cache_number].append( msg )
       sink_transactions[cache_number].append( sinks[i] )
 
-    s.src  = [ TestSrcRTL( srcMsg, src_transactions[i], p.src_init_delay,
+    s.src  = [ StreamSourceFL( srcMsg, src_transactions[i], p.src_init_delay,
      p.src_delay ) for i in range( p.ncaches ) ]
-    s.sink = [ TestSinkRTL( p.CacheRespType, sink_transactions[i], p.sink_init_delay,
+    s.sink = [ StreamSinkFL( p.CacheRespType, sink_transactions[i], p.sink_init_delay,
      p.sink_delay ) for i in range( p.ncaches ) ]
     s.proc_model = [ ProcModel( p.CacheReqType, p.CacheRespType ) for _ in range( p.ncaches ) ]
     
     for i in range( p.ncaches ):
       s.proc_model[i].cache //= s.mem_master_ifc[i]
-      s.sink[i].recv        //= s.proc_model[i].proc.resp  
-      s.proc_model[i].proc.req.msg //= s.src[i].send.msg.req
-      s.proc_model[i].proc.req.en  //= s.src[i].send.en
+      s.sink[i].istream     //= s.proc_model[i].proc.respstream
+      s.proc_model[i].proc.reqstream.msg //= s.src[i].ostream.msg.req
+      s.proc_model[i].proc.reqstream.val //= s.src[i].ostream.val
 
     s.curr_order          = CounterUpDown( Bits32 )
     s.curr_order.up_amt //= b32(1)
@@ -73,17 +72,17 @@ class MulticoreModel( Component ):
     @update
     def src_send_recv():
       for i in range( p.ncaches ):
-        s.src[i].send.rdy @= n
-        if s.proc_model[i].proc.req.rdy:      
-          if s.src[i].send.msg.order <= s.curr_order.out:
-            s.src[i].send.rdy @= y
+        s.src[i].ostream.rdy @= n
+        if s.proc_model[i].proc.reqstream.rdy:      
+          if s.src[i].ostream.msg.order <= s.curr_order.out:
+            s.src[i].ostream.rdy @= y
         
     @update
     def curr_order_in_flight_logic():
       s.curr_order_in_flight.dw_en @= n
       trans_done = 0
       for i in range( p.ncaches ):
-        if s.proc_model[i].proc.resp.en:
+        if s.proc_model[i].proc.respstream.val & s.proc_model[i].proc.respstream.rdy:
           s.curr_order_in_flight.dw_en @= y
           trans_done += 1
 
@@ -102,16 +101,16 @@ class MulticoreModel( Component ):
   def line_trace( s ):
     msg = ''
     for i in range( s.p.ncaches ):
-      if s.src[i].send.en:
-        msg += f'{i}:{s.src[i].send.msg} '  
-      elif s.src[i].send.rdy:
+      if s.src[i].ostream.val:
+        msg += f'{i}:{s.src[i].ostream.msg} '  
+      elif s.src[i].ostream.rdy:
         msg += ' '*(39)
       else:
         msg += '#'+' '*(38)
     for i in range( s.p.ncaches ):
-      if s.sink[i].recv.en:
-        msg += f'{i}:{s.sink[i].recv.msg} '  
-      elif s.sink[i].recv.rdy:
+      if s.sink[i].istream.val:
+        msg += f'{i}:{s.sink[i].istream.msg} '  
+      elif s.sink[i].istream.rdy:
         msg += ' '*(23)
       else:
         msg += ' #'+' '*(21)

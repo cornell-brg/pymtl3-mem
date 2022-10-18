@@ -11,7 +11,7 @@ Date   : 1 March 2020
 
 from pymtl3                  import *
 from constants.constants     import *
-from pymtl3.stdlib.basic_rtl import RegEnRst, RegEn, Mux
+from pymtl3.stdlib.primitive import RegEnRst, RegEn, Mux
 from constants               import *
 from ..cache_constants       import *
 

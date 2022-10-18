@@ -6,16 +6,15 @@ import pytest
 import random
 
 from pymtl3 import *
-from pymtl3.stdlib.test.test_utils import mk_test_case_table
-from pymtl3.stdlib.ifcs.SendRecvIfc import RecvCL2SendRTL, RecvIfcRTL, RecvRTL2SendCL, SendIfcRTL
-from pymtl3.stdlib.test.test_srcs import TestSrcCL, TestSrcRTL
-from pymtl3.stdlib.test.test_sinks import TestSinkCL, TestSinkRTL
-from pymtl3.stdlib.test import run_sim
-from pymtl3.stdlib.rtl.registers import RegRst
+from pymtl3.stdlib.test_utils import mk_test_case_table, run_sim
+from pymtl3.stdlib.stream.ifcs import IStreamIfc, OStreamIfc
+from pymtl3.stdlib.stream import StreamSourceFL, StreamSinkFL
+from pymtl3.stdlib.primitive import RegRst
+from pymtl3.stdlib.connects import connect_pairs
 
-from ifcs.MemMsg import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.mem import MemMsgType, mk_mem_msg
 
-from ..SramPRTL  import SramPRTL
+from sram.SramPRTL import SramPRTL
 
 MemReqMsg4B, MemRespMsg4B = mk_mem_msg(8,10,32)
 
@@ -27,8 +26,8 @@ class memWrapper(Component):
     ab          = mk_bits(abw)
     ix          = mk_bits(idw)
 
-    s.sramreq    = RecvIfcRTL(MemReqMsg4B)
-    s.sramresp   = SendIfcRTL(MemRespMsg4B)
+    s.sramreq    = IStreamIfc(MemReqMsg4B)
+    s.sramresp   = OStreamIfc(MemRespMsg4B)
     s.sram_val   = Wire(b1)
     s.sram_type  = Wire(b1)
     s.sram_idx   = Wire(ix)
@@ -36,45 +35,52 @@ class memWrapper(Component):
     s.sram_wben  = Wire(mk_bits(twb_b))
     s.sram_rdata = Wire(ab)
 
-    s.SRAM = SramPRTL(abw, nbl)(
-      port0_val   = s.sram_val,
-      port0_type  = s.sram_type,
-      port0_idx   = s.sram_idx,
-      port0_wdata = s.sram_wdata,
-      port0_wben  = s.sram_wben,
-      port0_rdata = s.sram_rdata,
+    m = s.SRAM = SramPRTL(abw, nbl)
+    connect_pairs(
+      m.port0_val, s.sram_val,
+      m.port0_type, s.sram_type,
+      m.port0_idx, s.sram_idx,
+      m.port0_wdata, s.sram_wdata,
+      # m.port0_wben, s.sram_wben,
+      m.port0_rdata, s.sram_rdata,
     )
+
+    for i in range(twb_b):
+      s.SRAM.port0_wben[i*8:i*8+8] //= lambda: sext(s.sram_wben[i], 8)
 
     s.done = Wire(b1)
-    s.reg_val = RegRst(b1)(
-      in_ = s.sramreq.en,
-      out = s.done
+    m = s.reg_val = RegRst(b1)
+    connect_pairs(
+      m.in_, s.sramreq.val,
+      m.out, s.done
     )
 
-    s.reg_type_ = RegRst(b4)(
-      in_ = s.sramreq.msg.type_,
-      out = s.sramresp.msg.type_
+    m = s.reg_type_ = RegRst(b4)
+    connect_pairs(
+      m.in_, s.sramreq.msg.type_,
+      m.out, s.sramresp.msg.type_
     )
 
-    s.reg_opaque = RegRst(b8)(
-      in_ = s.sramreq.msg.opaque,
-      out = s.sramresp.msg.opaque
+    m = s.reg_opaque = RegRst(b8)
+    connect_pairs(
+      m.in_, s.sramreq.msg.opaque,
+      m.out, s.sramresp.msg.opaque
     )
 
-    @s.update
+    @update
     def comb_logic():
-      s.sramreq.rdy = b1(1)
+      s.sramreq.rdy @= b1(1)
       if s.sramreq.msg.type_ == MemMsgType.WRITE_INIT:
-        s.sram_type = b1(1)
-        s.sram_wben  = b4(0xf)
+        s.sram_type @= b1(1)
+        s.sram_wben @= b4(0xf)
       else:
-        s.sram_type = b1(0)
-        s.sram_wben  = b4(0x0)
-      s.sram_val   = s.sramreq.en
-      s.sram_idx   = ix(s.sramreq.msg.addr)
-      s.sram_wdata = ab(s.sramreq.msg.data)
-      s.sramresp.msg.data = s.sram_rdata
-      s.sramresp.en = s.done
+        s.sram_type @= b1(0)
+        s.sram_wben @= b4(0x0)
+      s.sram_val   @= s.sramreq.val
+      s.sram_idx   @= ix(s.sramreq.msg.addr)
+      s.sram_wdata @= ab(s.sramreq.msg.data)
+      s.sramresp.msg.data @= s.sram_rdata
+      s.sramresp.val @= s.done
 
 
   def line_trace(s):
@@ -84,19 +90,16 @@ class TestHarness(Component):
   def construct(s,src_msgs, sink_msgs, stall_prob, latency,
                 src_delay, sink_delay, memModel):
     # Instantiate models
-    s.src   = TestSrcCL(MemReqMsg4B, src_msgs, src_delay)
+    s.src   = StreamSourceFL(MemReqMsg4B, src_msgs, src_delay)
     s.mem   = memModel(32,1024)
-    s.sink  = TestSinkCL(MemRespMsg4B, sink_msgs, sink_delay)
-    s.src2mem  = RecvCL2SendRTL(MemReqMsg4B)
-    s.mem2sink = RecvRTL2SendCL(MemRespMsg4B)
+    s.sink  = StreamSinkFL(MemRespMsg4B, sink_msgs, sink_delay)
 
-    connect (s.src.send, s.src2mem.recv)
-    connect (s.src2mem.send, s.mem.sramreq)
-    connect (s.mem.sramresp, s.mem2sink.recv)
-    connect (s.mem2sink.send, s.sink.recv)
+    connect (s.src.ostream, s.mem.sramreq)
+    connect (s.mem.sramresp, s.sink.istream)
 
   def done(s):
     return s.src.done() and s.sink.done()
+
   def line_trace(s):
     return s.src.line_trace() + " " + s.mem.line_trace() \
          + " " + s.sink.line_trace()
@@ -187,4 +190,4 @@ def test_generic( test_params ):
                          test_params.src, test_params.sink,
                          memWrapper)
   # Run the test
-  run_sim( th, max_cycles=250 )
+  run_sim( th )

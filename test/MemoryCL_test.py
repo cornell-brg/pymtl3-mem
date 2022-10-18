@@ -8,10 +8,9 @@ import struct
 import pytest
 
 from pymtl3 import *
-from pymtl3.stdlib.ifcs import MemMsgType, mk_mem_msg
-from pymtl3.stdlib.test import mk_test_case_table
-from pymtl3.stdlib.test.test_sinks import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcCL
+from pymtl3.stdlib.mem import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.test_utils import mk_test_case_table
+from pymtl3.stdlib.stream import StreamSinkFL, StreamSourceFL
 
 from .MemoryCL import MemoryCL
 
@@ -25,16 +24,16 @@ class TestHarness( Component ):
                  stall_prob, mem_latency, src_initial,  src_interval, sink_initial, sink_interval,
                  arrival_time=None ):
     assert len(PortTypes) == nports
-    s.srcs = [ TestSrcCL( PortTypes[i][0], src_msgs[i], src_initial, src_interval )
+    s.srcs = [ StreamSourceFL( PortTypes[i][0], src_msgs[i], src_initial, src_interval )
                 for i in range(nports) ]
-    s.mem  = cls( nports, PortTypes, mem_latency )
-    s.sinks = [ TestSinkCL( PortTypes[i][1], sink_msgs[i], sink_initial, sink_interval,
+    s.mem  = cls( nports, PortTypes, stall_prob = stall_prob, latency = mem_latency )
+    s.sinks = [ StreamSinkFL( PortTypes[i][1], sink_msgs[i], sink_initial, sink_interval,
                             arrival_time ) for i in range(nports) ]
 
     # Connections
     for i in range(nports):
-      connect( s.srcs[i].send, s.mem.ifc[i].req )
-      connect( s.mem.ifc[i].resp,  s.sinks[i].recv  )
+      connect( s.srcs[i].ostream, s.mem.ifc[i].reqstream )
+      connect( s.mem.ifc[i].respstream,  s.sinks[i].istream  )
 
   def done( s ):
     return all([x.done() for x in s.srcs] + [x.done() for x in s.sinks])
@@ -246,20 +245,22 @@ test_case_table = mk_test_case_table([
 # Test cases for 1 port
 #-------------------------------------------------------------------------
 
-#  @pytest.mark.parametrize( **test_case_table )
-#  def test_1port( test_params, dump_vcd ):
-  #  msgs = test_params.msg_func(0x1000)
-  #  run_sim( TestHarness( 1, [ msgs[::2] ], [ msgs[1::2] ],
-                        #  test_params.stall, test_params.lat,
-                        #  test_params.src, test_params.sink ),
-           #  dump_vcd )
+@pytest.mark.parametrize( **test_case_table )
+def test_1port( test_params ):
+  msgs0 = test_params.msg_func(0x1000)
+  run_sim( TestHarness( MemoryCL, 1, [(req_cls, resp_cls)]*1,
+                        [ msgs0[::2]  ],
+                        [ msgs0[1::2] ],
+                        test_params.stall, test_params.lat,
+                        test_params.src_init, test_params.src_intv,
+                        test_params.sink_init, test_params.sink_intv ) )
 
 #-------------------------------------------------------------------------
 # Test cases for 2 port
 #-------------------------------------------------------------------------
 
 @pytest.mark.parametrize( **test_case_table )
-def test_2port( test_params, dump_vcd ):
+def test_2port( test_params ):
   msgs0 = test_params.msg_func(0x1000)
   msgs1 = test_params.msg_func(0x2000)
   run_sim( TestHarness( MemoryCL, 2, [(req_cls, resp_cls)]*2,
@@ -270,7 +271,7 @@ def test_2port( test_params, dump_vcd ):
                         test_params.sink_init, test_params.sink_intv ) )
 
 @pytest.mark.parametrize( **test_case_table )
-def test_20port( test_params, dump_vcd ):
+def test_20port( test_params ):
   msgs = [ test_params.msg_func(0x1000*i) for i in range(20) ]
   run_sim( TestHarness( MemoryCL, 20, [(req_cls, resp_cls)]*20,
                         [ x[::2]  for x in msgs ],
@@ -282,7 +283,7 @@ def test_20port( test_params, dump_vcd ):
 # Test Read/Write Mem
 #-------------------------------------------------------------------------
 
-def test_read_write_mem( dump_vcd ):
+def test_read_write_mem():
 
   rgen = random.Random()
   rgen.seed(0x05a3e95b)
@@ -333,7 +334,7 @@ def run_sim( th, max_cycles=1000 ):
 
   # Create a simulator
 
-  th.apply( SimulationPass() )
+  th.apply( DefaultPassGroup() )
   th.sim_reset()
 
   # Run simulation
@@ -342,7 +343,7 @@ def run_sim( th, max_cycles=1000 ):
   ncycles = 0
   print("{:3}:{}".format( ncycles, th.line_trace() ))
   while not th.done() and ncycles < max_cycles:
-    th.tick()
+    th.sim_tick()
     ncycles += 1
     print("{:3}:{}".format( ncycles, th.line_trace() ))
 
@@ -350,6 +351,6 @@ def run_sim( th, max_cycles=1000 ):
 
   assert ncycles < max_cycles
 
-  th.tick()
-  th.tick()
-  th.tick()
+  th.sim_tick()
+  th.sim_tick()
+  th.sim_tick()

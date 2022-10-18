@@ -10,7 +10,7 @@ Date   : 10 February 2020
 
 from colorama                import Fore, Back, Style
 from pymtl3                  import *
-from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst
+from pymtl3.stdlib.primitive import RegEnRst, RegRst
 # Import generic constants used in the repo
 from constants               import *
 
@@ -91,20 +91,22 @@ class BlockingCacheCtrlRTL( Component ):
 
   def construct( s, p ):
 
+    s.p = p
+
     #=====================================================================
     # Interface
     #=====================================================================
 
-    s.cachereq_en   = InPort ()
+    s.cachereq_val  = InPort ()
     s.cachereq_rdy  = OutPort()
 
-    s.cacheresp_en  = OutPort()
+    s.cacheresp_val = OutPort()
     s.cacheresp_rdy = InPort ()
 
-    s.memreq_en     = OutPort()
+    s.memreq_val    = OutPort()
     s.memreq_rdy    = InPort ()
 
-    s.memresp_en    = InPort ()
+    s.memresp_val   = InPort ()
     s.memresp_rdy   = OutPort()
 
     s.status        = InPort (p.StructStatus)
@@ -123,7 +125,7 @@ class BlockingCacheCtrlRTL( Component ):
     #=====================================================================
 
     s.memresp_en_M0 = m = RegEnRst(1)
-    m.in_ //= s.memresp_en
+    m.in_ //= lambda: s.memresp_val & s.memresp_rdy
     m.en  //= s.ctrl.reg_en_M0
 
 
@@ -176,7 +178,7 @@ class BlockingCacheCtrlRTL( Component ):
         if s.memresp_val_M0 & ((s.status.MSHR_type == WRITE) | (s.status.MSHR_type == READ)):
           # Have valid replays in the MSHR
           s.FSM_state_M0_next @= M0_FSM_STATE_REPLAY
-        elif ( s.status.MSHR_empty & s.cachereq_en ):
+        elif ( s.status.MSHR_empty & s.cachereq_val & s.cachereq_rdy ):
           if s.status.cachereq_type_M0 == INV:
             s.FSM_state_M0_next @= M0_FSM_STATE_INV
           elif s.status.cachereq_type_M0 == FLUSH:
@@ -267,7 +269,7 @@ class BlockingCacheCtrlRTL( Component ):
                  (s.status.MSHR_type <  INV) ):
             s.trans_M0 @= TRANS_TYPE_REPLAY_AMO
 
-        elif s.status.MSHR_empty & s.cachereq_en:
+        elif s.status.MSHR_empty & s.cachereq_val & s.cachereq_rdy:
           # Request from s.cachereq, not MSHR
           if s.status.cachereq_type_M0 == INIT:
             s.trans_M0 @= TRANS_TYPE_INIT_REQ
@@ -692,8 +694,8 @@ class BlockingCacheCtrlRTL( Component ):
     CS_read_data_mux_sel_M2 = slice( 7, 8 )
     CS_ostall_M2            = slice( 6, 7 )
     CS_memreq_type          = slice( 2, 6 )
-    CS_memreq_en            = slice( 1, 2 )
-    CS_cacheresp_en         = slice( 0, 1 )
+    CS_memreq_en           = slice( 1, 2 )
+    CS_cacheresp_en        = slice( 0, 1 )
 
     @update
     def cs_table_M2():
@@ -729,12 +731,40 @@ class BlockingCacheCtrlRTL( Component ):
       s.ctrl.data_size_mux_en_M2  @= s.cs2[ CS_data_size_mux_en_M2  ]
       s.ctrl.read_data_mux_sel_M2 @= s.cs2[ CS_read_data_mux_sel_M2 ]
       s.ostall_M2                 @= s.cs2[ CS_ostall_M2            ]
-      if s.cs2[ CS_memreq_type ] >= AMO:
-        s.ctrl.memreq_type        @= s.status.cachereq_type_M2
-      else:
-        s.ctrl.memreq_type        @= s.cs2[ CS_memreq_type          ]
-      s.cacheresp_en              @= s.cs2[ CS_cacheresp_en         ]
-      s.memreq_en                 @= s.cs2[ CS_memreq_en            ]
+
+      # if s.cs2[ CS_memreq_type ] >= AMO:
+      #   s.ctrl.memreq_type        @= s.status.cachereq_type_M2
+      # else:
+      #   s.ctrl.memreq_type        @= s.cs2[ CS_memreq_type          ]
+      s.ctrl.memreq_type @= READ
+      if s.cacheresp_rdy:
+        if (s.trans_M2.out == TRANS_TYPE_FLUSH_READ) | (s.is_evict_M2.out) |\
+           (s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE):
+          s.ctrl.memreq_type @= WRITE
+        elif (s.trans_M2.out == TRANS_TYPE_AMO_REQ):
+          # AMO operation
+          s.ctrl.memreq_type @= s.status.cachereq_type_M2
+
+      # PP: need to decouple val from rdy for s.cacheresp_val and s.memreq_val.
+      # s.cacheresp_en             @= s.cs2[ CS_cacheresp_en        ]
+      s.cacheresp_val @= n
+      if s.memreq_rdy:
+        if (s.trans_M2.out == TRANS_TYPE_REPLAY_READ) | (s.trans_M2.out == TRANS_TYPE_REPLAY_WRITE) |\
+           (s.trans_M2.out == TRANS_TYPE_REPLAY_AMO) | (s.trans_M2.out == TRANS_TYPE_REPLAY_INV) |\
+           (s.trans_M2.out == TRANS_TYPE_REPLAY_FLUSH) | (s.trans_M2.out == TRANS_TYPE_INIT_REQ) |\
+           ((s.trans_M2.out == TRANS_TYPE_READ_REQ) & s.ctrl.hit_M2[0]) |\
+           ((s.trans_M2.out == TRANS_TYPE_WRITE_REQ) & s.ctrl.hit_M2[0]):
+          s.cacheresp_val @= y
+
+      # s.memreq_en                @= s.cs2[ CS_memreq_en           ]
+      s.memreq_val @= n
+      if s.cacheresp_rdy:
+        if (s.trans_M2.out == TRANS_TYPE_FLUSH_READ):
+          s.memreq_val @= flush
+        elif (s.is_evict_M2.out) | (s.trans_M2.out == TRANS_TYPE_AMO_REQ) |\
+             ((s.trans_M2.out == TRANS_TYPE_READ_REQ) & (~s.ctrl.hit_M2[0])) |\
+             ((s.trans_M2.out == TRANS_TYPE_WRITE_REQ) & (~s.ctrl.hit_M2[0])):
+          s.memreq_val @= y
 
     # dpath pipeline reg en; will only en if we have a stall in M2 and if
     # we are not initing the cache since that is entirely internal
@@ -760,6 +790,8 @@ class BlockingCacheCtrlRTL( Component ):
   #=======================================================================
 
   def line_trace( s ):
+
+    enable_color = s.p.is_line_trace_colored
 
     msg_M0 = ""
     if s.FSM_state_M0.out == M0_FSM_STATE_INIT:
@@ -803,14 +835,19 @@ class BlockingCacheCtrlRTL( Component ):
     else:                  msg_M0 = " " + msg_M0
 
     msg_M1 = "   "
-    color_m1 = Back.BLACK + Fore.GREEN if s.hit_M1 else Back.BLACK + Fore.RED
+    if enable_color:
+      color_m1 = Back.BLACK + Fore.GREEN if s.hit_M1 else Back.BLACK + Fore.RED
+      style_reset = Style.RESET_ALL
+    else:
+      color_m1 = ""
+      style_reset = ""
 
     if s.trans_M1.out == TRANS_TYPE_REFILL:         msg_M1 = " rf"
     elif s.trans_M1.out == TRANS_TYPE_CLEAN_HIT:    msg_M1 = " wc"
     elif s.trans_M1.out == TRANS_TYPE_REPLAY_READ:  msg_M1 = "rpr"
     elif s.trans_M1.out == TRANS_TYPE_REPLAY_WRITE: msg_M1 = "rpw"
-    elif s.trans_M1.out == TRANS_TYPE_READ_REQ:     msg_M1 = color_m1 + " rd" + Style.RESET_ALL
-    elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:    msg_M1 = color_m1 + " wr" + Style.RESET_ALL
+    elif s.trans_M1.out == TRANS_TYPE_READ_REQ:     msg_M1 = color_m1 + " rd" + style_reset
+    elif s.trans_M1.out == TRANS_TYPE_WRITE_REQ:    msg_M1 = color_m1 + " wr" + style_reset
     elif s.trans_M1.out == TRANS_TYPE_INIT_REQ:     msg_M1 = " in"
     elif s.trans_M1.out == TRANS_TYPE_CACHE_INIT:   msg_M1 = "ini"
     elif s.trans_M1.out == TRANS_TYPE_AMO_REQ:      msg_M1 = "amo"
@@ -845,12 +882,12 @@ class BlockingCacheCtrlRTL( Component ):
     elif s.trans_M2.out == TRANS_TYPE_FLUSH_WRITE:  msg_M2 = "flw"
     elif s.trans_M2.out == TRANS_TYPE_REPLAY_FLUSH: msg_M2 = "flp"
 
-    msg_memresp = ">" if s.memresp_en else " "
-    msg_memreq = ">" if s.memreq_en else " "
+    msg_memresp = ">" if s.memresp_val & s.memresp_rdy else " "
+    msg_memreq = ">" if s.memreq_val & s.memreq_rdy else " "
 
-    stage1 = "{}|{}".format(msg_memresp, msg_M0) if s.memresp_en else " |{}".format(msg_M0)
+    stage1 = "{}|{}".format(msg_memresp, msg_M0) if s.memresp_val & s.memresp_rdy else " |{}".format(msg_M0)
     stage2 = "|{}".format(msg_M1)
-    stage3 = "|{}|{}".format(msg_M2, msg_memreq)
+    stage3 = "|{}|ostall?{} progress?{} {}".format(msg_M2, s.ostall_M2, s.ctrl.reg_en_M2, msg_memreq)
     pipeline = stage1 + stage2 + stage3
 
     add_msgs = ''

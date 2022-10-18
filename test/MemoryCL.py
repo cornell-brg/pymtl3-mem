@@ -14,8 +14,10 @@ Date   : Mar 12, 2018
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.mem import MagicMemoryFL, MemMsgType, mk_mem_msg, MemMinionIfcCL
-from pymtl3.stdlib.delays import DelayPipeDeqCL, DelayPipeSendCL, StallCL
+from pymtl3.stdlib.mem.BehavioralMemory import BehavioralMemory
+from pymtl3.stdlib.mem.MemoryFL import RandomStall, InelasticDelayPipe
+from pymtl3.stdlib.mem import MemMsgType, mk_mem_msg
+from pymtl3.stdlib.mem.ifcs import MemResponderIfc
 
 class MemoryCL( Component ):
 
@@ -33,52 +35,52 @@ class MemoryCL( Component ):
 
     # Local constants
 
+    assert len(mem_ifc_dtypes) == nports
     s.nports = nports
     req_classes  = [ x for (x,y) in mem_ifc_dtypes ]
     resp_classes = [ y for (x,y) in mem_ifc_dtypes ]
     
-    s.mem = MagicMemoryFL( mem_nbytes )
+    s.mem = BehavioralMemory( mem_nbytes )
 
     # Interface
 
-    s.ifc = [ MemMinionIfcCL( req_classes[i], resp_classes[i] ) for i in range(nports) ]
+    s.ifc = [ MemResponderIfc( req_classes[i], resp_classes[i] ) for i in range(nports) ]
 
-    # Queues
-    req_latency = min(1, latency)
-    resp_latency = latency - req_latency
+    # stall and delays
+    s.req_stalls = [ RandomStall( req_classes[i], stall_prob, i ) for i in range(nports) ]
+    # s.req_qs     = [ NormalQueueRTL( req_classes[i], 2 ) for i in range(nports) ]
+    s.resp_qs    = [ InelasticDelayPipe( resp_classes[i], latency+1 ) for i in range(nports) ]
 
-    s.req_stalls = [ StallCL( stall_prob, i )     for i in range(nports) ]
-    s.req_qs  = [ DelayPipeDeqCL( req_latency )   for i in range(nports) ]
-    s.resp_qs = [ DelayPipeSendCL( resp_latency ) for i in range(nports) ]
-    
     for i in range(nports):
-      s.req_stalls[i].recv //= s.ifc[i].req
-      s.resp_qs[i].send    //= s.ifc[i].resp
+      s.req_stalls[i].istream //= s.ifc[i].reqstream
+      # s.req_stalls[i].ostream //= s.req_qs[i].istream
+      s.resp_qs[i].ostream    //= s.ifc[i].respstream
 
-      s.req_qs[i].enq      //= s.req_stalls[i].send
-
-    data_nbits = req_classes[i].data_nbits
+      s.req_stalls[i].ostream.rdy //= s.resp_qs[i].istream.rdy
+      s.req_stalls[i].ostream.val //= s.resp_qs[i].istream.val
 
     @update_once
     def up_mem():
 
       for i in range(s.nports):
 
-        if s.req_qs[i].deq.rdy() and s.resp_qs[i].enq.rdy():
+        data_nbits = req_classes[i].data_nbits
+
+        if s.req_stalls[i].ostream.val:
 
           # Dequeue memory request message
 
-          req = s.req_qs[i].deq()
+          req = s.req_stalls[i].ostream.msg
           len_ = int(req.len)
-          if len_ == 0: len_ = req_classes[i].data_nbits >> 3
+          if len_ == 0: len_ = data_nbits >> 3
 
           if   req.type_ == MemMsgType.READ:
             if hasattr( req, "wr_mask" ):
               resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
-                                    req.wr_mask, s.mem.read( req.addr, len_ ) )
+                                      req.wr_mask, s.mem.read( req.addr, len_ ) )
             else:
               resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
-                                    s.mem.read( req.addr, len_ ) )
+                                      zext( s.mem.read( req.addr, len_ ), data_nbits ) )
           elif req.type_ == MemMsgType.WRITE:
 
             if hasattr(req, "wr_mask"):
@@ -91,17 +93,21 @@ class MemoryCL( Component ):
             else:
               # no write mask
               s.mem.write( req.addr, len_, req.data )
-            # FIXME do we really set len=0 in response when doing subword wr?
-            # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
+              # FIXME do we really set len=0 in response when doing subword wr?
+              # resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0 )
               resp = resp_classes[i]( req.type_, req.opaque, 0, 0, 0 )
 
           else: # AMOS
             # Assume AMO operations are always a word
             amo_result = s.mem.amo( req.type_, req.addr, len_, req.data[0:32] )
-            resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0,
-              zext(amo_result, data_nbits) )
+            if hasattr(req, "wr_mask"):
+              resp = resp_classes[i]( req.type_, req.opaque, 0, req.len, 0,
+                zext(amo_result, data_nbits) )
+            else:
+              resp = resp_classes[i]( req.type_, req.opaque, 0, req.len,
+                zext(amo_result, data_nbits) )
 
-          s.resp_qs[i].enq( resp )
+          s.resp_qs[i].istream.msg @= resp
 
   #-----------------------------------------------------------------------
   # line_trace
@@ -109,4 +115,4 @@ class MemoryCL( Component ):
   # TODO: better line trace.
 
   def line_trace( s ):
-    return "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_qs, s.resp_qs) ] )
+    return "|".join( [ x[0].line_trace() + x[1].line_trace() for x in zip(s.req_stalls, s.resp_qs) ] )

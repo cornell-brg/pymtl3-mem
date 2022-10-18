@@ -9,8 +9,7 @@ Date   : 12 February 2020
 """
 
 from pymtl3                  import *
-from pymtl3.stdlib.ifcs      import RecvIfcRTL, SendIfcRTL
-from pymtl3.stdlib.basic_rtl import RegEnRst, RegRst, Reg, RegEn, Mux
+from pymtl3.stdlib.primitive import RegEnRst, RegRst, Reg, RegEn, Mux
 from constants.constants import *
 
 class MSHR(Component):

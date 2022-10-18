@@ -31,6 +31,8 @@ class CacheDerivedParams:
     self.MemRespType   = MemRespType
     self.associativity = associativity
 
+    self.is_line_trace_colored = False
+
     #--------------------------------------------------------------------------
     # Bitwidths
     #--------------------------------------------------------------------------

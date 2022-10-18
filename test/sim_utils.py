@@ -12,9 +12,8 @@ import struct
 import random
 
 from pymtl3 import *
-from pymtl3.stdlib.mem        import MemMasterIfcRTL, MemMinionIfcRTL
-from pymtl3.stdlib.test_utils import TestSrcCL
-from pymtl3.stdlib.test_utils import TestSinkCL
+from pymtl3.stdlib.mem.ifcs import MemRequesterIfc, MemResponderIfc
+from pymtl3.stdlib.stream import StreamSourceFL, StreamSinkFL
 
 from pymtl3.passes.tracing import VcdGenerationPass
 from pymtl3.passes.backends.verilog import (
@@ -130,19 +129,19 @@ class TestHarness( Component ):
                  sink_delay, CacheModel, CacheReqType, CacheRespType,
                  MemReqType, MemRespType, cacheSize=128, associativity=1 ):
     # Instantiate models
-    s.src   = TestSrcCL(CacheReqType, src_msgs, src_delay, src_delay)
+    s.src   = StreamSourceFL(CacheReqType, src_msgs, src_delay, src_delay)
     s.proc_model = ProcModel(CacheReqType, CacheRespType)
     s.cache = CacheModel(CacheReqType, CacheRespType, MemReqType, MemRespType,
                          cacheSize, associativity)
     s.mem   = CiferMemoryCL( 1, [(MemReqType, MemRespType)],
                              stall_prob=stall_prob, latency=latency) # Use our own modified mem
-    s.sink  = TestSinkCL(CacheRespType, sink_msgs, src_delay, sink_delay)
+    s.sink  = StreamSinkFL(CacheRespType, sink_msgs, src_delay, sink_delay)
 
     # Set the test signals to better model the processor
 
     # Connect the src and sink to model proc
-    s.src.send  //= s.proc_model.proc.req
-    s.sink.recv //= s.proc_model.proc.resp
+    s.src.ostream //= s.proc_model.proc.reqstream
+    s.sink.istream //= s.proc_model.proc.respstream
     # Connect the proc model to the cache
     s.proc_model.cache //= s.cache.mem_minion_ifc
 
@@ -159,8 +158,11 @@ class TestHarness( Component ):
     return s.src.done() and s.sink.done()
 
   def line_trace( s ):
-    return s.src.line_trace() + " " + s.cache.line_trace() + " " \
-        + s.proc_model.line_trace() + s.mem.line_trace()  + " " + s.sink.line_trace()
+    src = s.src.line_trace()
+    cache = s.cache.line_trace()
+    mem = s.mem.line_trace()
+    sink = s.sink.line_trace()
+    return f"{src} > {sink} || ${cache} || M{mem}"
 
 #-------------------------------------------------------------------------
 # make messages
@@ -285,8 +287,8 @@ class MultiCache( Component ):
   def construct( s, Cache, p ):
     s.p = p
     s.param = f'MultiCache_{p.ncaches}'
-    s.mem_minion_ifc = [ MemMinionIfcRTL( p.CacheReqType, p.CacheRespType ) for i in range( p.ncaches ) ]
-    s.mem_master_ifc = [ MemMasterIfcRTL( p.MemReqType, p.MemRespType ) for i in range( p.ncaches ) ]
+    s.mem_minion_ifc = [ MemResponderIfc( p.CacheReqType, p.CacheRespType ) for i in range( p.ncaches ) ]
+    s.mem_master_ifc = [ MemRequesterIfc( p.MemReqType, p.MemRespType ) for i in range( p.ncaches ) ]
 
     s.caches = [ Cache( p.CacheReqType, p.CacheRespType, p.MemReqType, p.MemRespType,
                         p.cache_size[i], p.associativity[i] ) for i in range( p.ncaches ) ]

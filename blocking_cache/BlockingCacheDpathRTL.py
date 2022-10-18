@@ -9,7 +9,7 @@ Date   : 20 February 2020
 """
 
 from pymtl3                         import *
-from pymtl3.stdlib.basic_rtl        import Mux, RegisterFile, RegEnRst, RegEn
+from pymtl3.stdlib.primitive        import Mux, RegisterFile, RegEnRst, RegEn
 
 # Import generic constants used in the repo
 from constants  import *

@@ -9,7 +9,7 @@ Date   : 29 March 2020
 
 from pymtl3 import *
 from constants.constants import *
-from pymtl3.stdlib.basic_rtl  import Mux, RegEnRst, RegEn
+from pymtl3.stdlib.primitive  import Mux, RegEnRst, RegEn
 
 class StallEngine( Component ):
   """
