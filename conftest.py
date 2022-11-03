@@ -3,8 +3,6 @@ import sys
 import pytest
 import random
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) )
-
 def pytest_addoption(parser):
   parser.addoption( "--line-trace", action="store", default=1, choices=[0,1,2], type=int,
                     help="verbosity of line trace" )
