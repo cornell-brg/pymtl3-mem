@@ -54,7 +54,8 @@ class MulticoreModel( Component ):
       s.proc_model[i].cache //= s.mem_master_ifc[i]
       s.sink[i].istream     //= s.proc_model[i].proc.respstream
       s.proc_model[i].proc.reqstream.msg //= s.src[i].ostream.msg.req
-      s.proc_model[i].proc.reqstream.val //= s.src[i].ostream.val
+      # s.proc_model[i].proc.reqstream.val //= s.src[i].ostream.val
+      # s.proc_model[i].proc.reqstream.rdy //= s.src[i].ostream.rdy
 
     s.curr_order          = CounterUpDown( Bits32 )
     s.curr_order.up_amt //= b32(1)
@@ -72,11 +73,17 @@ class MulticoreModel( Component ):
 
     @update
     def src_send_recv():
+      # for i in range( p.ncaches ):
+      #   s.src[i].ostream.rdy @= n
+      #   if s.proc_model[i].proc.reqstream.rdy:      
+      #     if s.src[i].ostream.msg.order <= s.curr_order.out:
+      #       s.src[i].ostream.rdy @= y
       for i in range( p.ncaches ):
-        s.src[i].ostream.rdy @= n
-        if s.proc_model[i].proc.reqstream.rdy:      
-          if s.src[i].ostream.msg.order <= s.curr_order.out:
-            s.src[i].ostream.rdy @= y
+        s.proc_model[i].proc.reqstream.val @= 0
+        s.src[i].ostream.rdy @= 0
+        if s.src[i].ostream.msg.order <= s.curr_order.out:
+          s.proc_model[i].proc.reqstream.val @= s.src[i].ostream.val
+          s.src[i].ostream.rdy @= s.proc_model[i].proc.reqstream.rdy
         
     @update
     def curr_order_in_flight_logic():
@@ -101,24 +108,28 @@ class MulticoreModel( Component ):
 
   def line_trace( s ):
     msg = ''
-    for i in range( s.p.ncaches ):
-      if s.src[i].ostream.val:
-        msg += f'{i}:{s.src[i].ostream.msg} '  
-      elif s.src[i].ostream.rdy:
-        msg += ' '*(39)
-      else:
-        msg += '#'+' '*(38)
-    for i in range( s.p.ncaches ):
-      if s.sink[i].istream.val:
-        msg += f'{i}:{s.sink[i].istream.msg} '  
-      elif s.sink[i].istream.rdy:
-        msg += ' '*(23)
-      else:
-        msg += ' #'+' '*(21)
+
+    # for i in range( s.p.ncaches ):
+    #   if s.src[i].ostream.val & s.src[i].ostream.rdy:
+    #     msg += f'{i}>{s.src[i].ostream.msg} '  
+    #   elif ~s.src[i].ostream.val & s.src[i].ostream.rdy:
+    #     msg += ' '*(39)
+    #   else:
+    #     msg += '#'+' '*(38)
+    # for i in range( s.p.ncaches ):
+    #   if s.sink[i].istream.val & s.sink[i].istream.rdy:
+    #     msg += f'{i}<{s.sink[i].istream.msg} '  
+    #   elif ~s.sink[i].istream.val & s.sink[i].istream.rdy:
+    #     msg += ' '*(23)
+    #   else:
+    #     msg += ' #'+' '*(21)
 
     # msg += s.curr_order_in_flight.line_trace()
     # msg += s.curr_order.line_trace()
     # msg += f' lden:{s.curr_order_in_flight.ld_en} lda:{s.curr_order_in_flight.ld_amt} '
     # msg += s.proc_model[0].line_trace()
+
+    for i in range( s.p.ncaches ):
+      msg += f"{s.proc_model[i].proc}(P{i}){s.proc_model[i].cache} || "
 
     return msg
