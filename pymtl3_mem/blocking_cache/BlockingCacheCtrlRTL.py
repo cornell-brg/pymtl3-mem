@@ -887,7 +887,7 @@ class BlockingCacheCtrlRTL( Component ):
 
     stage1 = "{}|{}".format(msg_memresp, msg_M0) if s.memresp_val & s.memresp_rdy else " |{}".format(msg_M0)
     stage2 = "|{}".format(msg_M1)
-    stage3 = "|{}|ostall?{} progress?{} {}".format(msg_M2, s.ostall_M2, s.ctrl.reg_en_M2, msg_memreq)
+    stage3 = "|{}|cntM0 {} ostall?{} progress?{} {}".format(msg_M2, s.counter_M0.out, s.ostall_M2, s.ctrl.reg_en_M2, msg_memreq)
     pipeline = stage1 + stage2 + stage3
 
     add_msgs = ''

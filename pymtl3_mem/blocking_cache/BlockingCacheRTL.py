@@ -19,7 +19,7 @@ from .CacheDerivedParams    import CacheDerivedParams
 class BlockingCacheRTL ( Component ):
 
   def construct( s, CacheReqType, CacheRespType, MemReqType, MemRespType,
-                 num_bytes=4096, associativity=2 ):
+                 num_bytes=4096, associativity=2, mem_len_for_word="num_bytes" ):
     """
       Parameters
       ----------
@@ -38,7 +38,8 @@ class BlockingCacheRTL ( Component ):
 
     # Generate additional constants and bitstructs from the given parameters
     s.param = p = CacheDerivedParams( CacheReqType, CacheRespType, MemReqType,
-                                      MemRespType, num_bytes, associativity )
+                                      MemRespType, num_bytes, associativity,
+                                      mem_len_for_word )
 
     #---------------------------------------------------------------------
     # Interface

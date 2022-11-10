@@ -363,7 +363,8 @@ class BlockingCacheDpathRTL( Component ):
     s.memreq_M2.opaque  //= s.cachereq_M2.out.opaque
     s.memreq_M2.addr    //= s.memreq_addr_bits
     s.memreq_M2.len     //= s.mem_req_off_len_M2.len_o
-    s.memreq_M2.wr_mask //= s.write_mask_M2.out
+    # PP: I don't think we need this for Hammerblade's memory messages?
+    # s.memreq_M2.wr_mask //= s.write_mask_M2.out
     s.memreq_M2.data    //= s.read_data_mux_M2.out
 
     # Construct the cacheresp signal

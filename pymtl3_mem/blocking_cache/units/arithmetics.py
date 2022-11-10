@@ -138,7 +138,7 @@ class OffsetLenSelector( Component ):
     # the len field for the cache is 0 but the memrequest must be 4
     # for word access.
     if p.bitwidth_data == 32:
-      s.amo_len //= 4
+      s.amo_len //= p.MemLenForWord
     else:
       s.amo_len //= lambda: zext(s.len_i, p.bitwidth_mem_len)
 
@@ -202,7 +202,7 @@ class WriteBitEnGen( Component ):
     s.wben_req   = Wire(p.bitwidth_data_wben)
     s.wben_dirty = Wire(p.bitwidth_data_wben)
     bitwidth_clog_nbyte = clog2(bitwidth_nbyte)
-    bitwidth_clog_dirty = clog2(p.bitwidth_dirty)
+    bitwidth_clog_dirty = 1 if p.bitwidth_dirty == 1 else clog2(p.bitwidth_dirty)
 
     @update
     def wben_shift_logic():
@@ -250,18 +250,27 @@ class TagArrayRDataProcessUnit( Component ):
     s.tag_entires= [ OutPort(p.StructTagArray) for _ in range(p.associativity) ]
 
     # word dirty logic
-    @update
-    def word_dirty_logic():
-      for i in range(p.associativity):
-        # moyang: this is a CIFER hack. When writing a double word (zero
-        # extending a 32-bit word to a 64-bit double word), we only consider the
-        # double word dirty if both 32-bit words are dirty, because we need to
-        # stall the pipeline to set the two dirty bits if any of them is not
-        # already dirty.
-        if s.wr_len == 3:
-          s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ] & s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] + 1 ]
-        else:
-          s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ]
+    if p.bitwidth_cacheline == 32:
+      # PP: specialize the dirty logic because the original logic does not work
+      # for cacheline size == 32. Under a 4B word there should only be 1 dirty
+      # bit.
+      @update
+      def word_dirty_logic():
+        for i in range(p.associativity):
+          s.word_dirty[i] @= s.tag_array[i].dty[0]
+    else:
+      @update
+      def word_dirty_logic():
+        for i in range(p.associativity):
+          # moyang: this is a CIFER hack. When writing a double word (zero
+          # extending a 32-bit word to a 64-bit double word), we only consider the
+          # double word dirty if both 32-bit words are dirty, because we need to
+          # stall the pipeline to set the two dirty bits if any of them is not
+          # already dirty.
+          if s.wr_len == 3:
+            s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ] & s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] + 1 ]
+          else:
+            s.word_dirty[i] @= s.tag_array[i].dty[ s.offset[2 : p.bitwidth_offset] ]
 
     @update
     def line_dirty_logic():

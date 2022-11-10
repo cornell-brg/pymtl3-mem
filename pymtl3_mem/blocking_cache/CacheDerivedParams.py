@@ -22,7 +22,7 @@ class CacheDerivedParams:
            f"{self.bitwidth_data}_{self.associativity}"
 
   def __init__( self, CacheReqType, CacheRespType, MemReqType, MemRespType,
-                num_bytes, associativity ):
+                num_bytes, associativity, mem_len_for_word="num_bytes" ):
 
     self.num_bytes     = num_bytes
     self.CacheReqType  = CacheReqType
@@ -119,6 +119,12 @@ class CacheDerivedParams:
     self.MSHRMsg        = mk_MSHR_msg( self )
     self.StructTagArray = mk_tag_array_struct( self )
     self.StructHit      = mk_hit_stall_struct( self )
+
+    # Constants used in dpath
+    assert mem_len_for_word in ["zero", "num_bytes"]
+    self.MemLenForWord = self.BitsMemLen( 0 )
+    if mem_len_for_word == "num_bytes":
+      self.MemLenForWord = mk_bits(self.bitwidth_mem_len+1)( self.bitwidth_cacheline // 8 )
 
     #--------------------------------------------------------------------
     # Msgs for Ctrl
